@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 99,
+  "producer": {
+    "name": "rocm-cli",
+    "version": "0.1.0",
+    "build": "unknown"
+  },
+  "observedAtUnixMs": 1767225600000,
+  "platform": {
+    "os": "linux",
+    "arch": "x86_64",
+    "isWsl": false,
+    "support": {
+      "state": "supported"
+    }
+  },
+  "gpu": {
+    "name": "AMD Radeon AI PRO R9700",
+    "gfxTarget": "gfx1201",
+    "therockFamily": "gfx120X-all"
+  },
+  "health": {
+    "verdict": "quantum-superposition",
+    "reasons": [],
+    "nextAction": null
+  },
+  "components": [
+    {
+      "kind": "cli",
+      "name": "rocm",
+      "state": {
+        "state": "installed",
+        "version": "0.1.0"
+      }
+    }
+  ],
+  "runtimes": [
+    {
+      "key": "nightly-wheel-gfx120x-all-7-14-0",
+      "runtimeId": "therock-nightly:gfx120X-all",
+      "version": "7.14.0",
+      "active": true,
+      "previous": false,
+      "validation": {
+        "state": "ready"
+      },
+      "channel": "nightly",
+      "family": "gfx120X-all",
+      "format": "wheel",
+      "installSource": {
+        "kind": "index",
+        "url": "https://example.invalid/simple"
+      },
+      "installRoot": "/tmp/rocm/runtime",
+      "readOnly": false
+    }
+  ],
+  "driver": {
+    "installed": {
+      "state": "detected-without-version",
+      "detail": "amdgpu kernel module is loaded"
+    },
+    "latestKnown": null,
+    "supportLinks": []
+  },
+  "update": {
+    "state": {
+      "state": "no-update",
+      "installed": "7.14.0"
+    },
+    "checkedAtUnixMs": 1767225600000,
+    "trust": {
+      "kind": "signed",
+      "keySource": "pinned"
+    }
+  },
+  "eligibleActions": [
+    "install-runtime",
+    "validate-runtime"
+  ]
+}

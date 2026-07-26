@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "producer": {
+    "name": "rocm-cli"
+  },
+  "platform": {
+    "os": "linux"
+  }
+}

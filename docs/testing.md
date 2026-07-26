@@ -41,6 +41,49 @@ renderer.
 backend present. `src/lib/backend.ts` resolves from local fixtures when
 `isTauri()` is false, which is what makes the UI testable without a WebView.
 
+## The rocm-cli contract
+
+`rocm app-snapshot` is a versioned, read-only JSON contract between the CLI and
+this app. It is a **separate surface** from `rocm examine --json`, whose 50 top
+level keys are a frozen wire contract that additions would break.
+
+The producer lives in rocm-cli's `rocm` *binary* crate, which cannot be linked
+as a library, and this app pins rocm-cli to a published revision. So the wire
+format — not a shared Rust type — is the contract, and drift is caught two ways:
+
+**Golden fixtures** in `fixtures/contract/` are generated from the real producer,
+never hand-written. Regenerate them from the rocm-cli checkout:
+
+```bash
+ROCM_APP_GOLDEN_DIR=../rocm-app/fixtures/contract \
+  cargo test -p rocm --bin rocm app_contract
+```
+
+| Fixture | Covers |
+|---|---|
+| `healthy`, `setup-required`, `attention`, `partial`, `offline-stale` | verdict space |
+| `unsupported-wsl` | no eligible actions at all |
+| `invalid-future-version` | schema version this build cannot implement |
+| `invalid-payload` | right version, incomplete body |
+| `invalid-malformed` | not JSON — the CLI printed an error instead |
+
+**A live harness** (`tests/contract_producer_consumer.rs`) runs the
+repository-built `rocm` binary against three empty state roots and decodes its
+real output. Goldens prove the decoder handles what the producer *once* emitted;
+this proves it handles what the producer emits *now*. The isolation is itself
+asserted — a run that reached the developer's real `~/.rocm` would list runtimes,
+and every other assertion in that file would be measuring the wrong machine.
+
+Two rules the contract enforces and the tests pin:
+
+- **Driver data is read-only.** `driver` has exactly `installed`, `latestKnown`,
+  and `supportLinks`; no `EligibleAction` targets a driver. Asserted on the type,
+  on every fixture, and on live producer output.
+- **An unsupported host is offered nothing.** The producer omits actions, and
+  `AppSnapshot::offerable_actions` re-checks. A consumer that trusted the
+  producer's list alone would ship an Install button to WSL the day a producer
+  bug lands.
+
 ## Fixtures
 
 `fixtures/scenarios.json` is the single source of truth, read by both

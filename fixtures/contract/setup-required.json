@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "producer": {
+    "name": "rocm-cli",
+    "version": "0.1.0",
+    "build": "unknown"
+  },
+  "observedAtUnixMs": 1767225600000,
+  "platform": {
+    "os": "linux",
+    "arch": "x86_64",
+    "isWsl": false,
+    "support": {
+      "state": "supported"
+    }
+  },
+  "gpu": {
+    "name": "AMD Radeon AI PRO R9700",
+    "gfxTarget": "gfx1201",
+    "therockFamily": "gfx120X-all"
+  },
+  "health": {
+    "verdict": "setup-required",
+    "reasons": [
+      {
+        "code": "runtime-absent",
+        "detail": "No managed ROCm runtime is installed."
+      }
+    ],
+    "nextAction": "Set up ROCm."
+  },
+  "components": [
+    {
+      "kind": "cli",
+      "name": "rocm",
+      "state": {
+        "state": "installed",
+        "version": "0.1.0"
+      }
+    }
+  ],
+  "runtimes": [],
+  "driver": {
+    "installed": {
+      "state": "detected-without-version",
+      "detail": "amdgpu kernel module is loaded"
+    },
+    "latestKnown": null,
+    "supportLinks": []
+  },
+  "update": {
+    "state": {
+      "state": "not-applicable"
+    },
+    "checkedAtUnixMs": 1767225600000,
+    "trust": {
+      "kind": "signed",
+      "keySource": "pinned"
+    }
+  },
+  "eligibleActions": [
+    "install-runtime"
+  ]
+}
