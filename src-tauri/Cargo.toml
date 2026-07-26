@@ -1,0 +1,74 @@
+[workspace]
+members = ["crates/rocm-app-core"]
+# The Tauri app and the domain crate are both default members so the plan's
+# `cargo test --manifest-path src-tauri/Cargo.toml` gate covers domain tests
+# too. Without this, `rocm-app-core`'s suite silently never runs.
+default-members = [".", "crates/rocm-app-core"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+rust-version = "1.96"
+publish = false
+
+[workspace.dependencies]
+# Shared rocm-cli crates, pinned to one exact 40-character revision.
+#
+# NEVER relax these to a branch, tag, or version range. The app bundles a
+# specific `rocm`/`rocmd` build identity and reasons about runtime families and
+# health semantics defined by these crates; a moving pin lets that meaning
+# change underneath a released installer, which is this project's single
+# largest cross-repository risk.
+rocm-core = { git = "https://github.com/mikeroysoft/rocm-cli", rev = "cae77819a58ee8448a14160ce989832f500e6cc4" }
+rocm-dash-collectors = { git = "https://github.com/mikeroysoft/rocm-cli", rev = "cae77819a58ee8448a14160ce989832f500e6cc4" }
+rocm-dash-core = { git = "https://github.com/mikeroysoft/rocm-cli", rev = "cae77819a58ee8448a14160ce989832f500e6cc4" }
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[workspace.lints.rust]
+# `deny`, not `forbid`: a documented `#[allow(unsafe_code)]` stays possible for
+# platform FFI. Nothing in this app needs it today.
+unsafe_code = "deny"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+# Mirrors the rocm-cli allow-list where it applies to this codebase.
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+must_use_candidate = "allow"
+module_name_repetitions = "allow"
+doc_markdown = "allow"
+multiple_crate_versions = "allow"
+cargo_common_metadata = "allow"
+option_if_let_else = "allow"
+
+[package]
+name = "rocm-app"
+description = "Install, update, change, monitor, and diagnose managed ROCm on Radeon and Ryzen AI systems."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+# Tauri's mobile targets need a cdylib; the desktop binary links the rlib.
+name = "rocm_app_lib"
+crate-type = ["lib", "cdylib"]
+
+[build-dependencies]
+tauri-build = { version = "2.6.3", features = [] }
+
+[dependencies]
+rocm-app-core = { path = "crates/rocm-app-core" }
+serde.workspace = true
+serde_json.workspace = true
+tauri = { version = "2.11.5", features = [] }

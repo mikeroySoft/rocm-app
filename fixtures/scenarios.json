@@ -1,0 +1,52 @@
+[
+  {
+    "scenario": "healthy",
+    "platform": "linux",
+    "verdict": "healthy",
+    "reasonCode": "rocm.ready",
+    "headline": "ROCm is ready",
+    "detail": "Your GPU, driver, and ROCm runtime all check out. Nothing needs your attention.",
+    "installAvailable": false,
+    "checkedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "scenario": "setup-required",
+    "platform": "linux",
+    "verdict": "setup-required",
+    "reasonCode": "rocm.absent",
+    "headline": "ROCm is not installed yet",
+    "detail": "This computer has a supported GPU but no managed ROCm runtime. Setup takes one review step.",
+    "installAvailable": true,
+    "checkedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "scenario": "attention",
+    "platform": "linux",
+    "verdict": "attention",
+    "reasonCode": "runtime.validation-failed",
+    "headline": "ROCm needs attention",
+    "detail": "The active runtime failed its last validation check. Your previous working runtime is still available.",
+    "installAvailable": false,
+    "checkedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "scenario": "unsupported-wsl",
+    "platform": "wsl",
+    "verdict": "unsupported",
+    "reasonCode": "platform.wsl",
+    "headline": "WSL is not supported",
+    "detail": "ROCm App manages ROCm on native Windows and native Linux. Run it on your Windows desktop instead.",
+    "installAvailable": false,
+    "checkedAt": "2026-01-01T00:00:00Z"
+  },
+  {
+    "scenario": "partial",
+    "platform": "linux",
+    "verdict": "unknown",
+    "reasonCode": "probe.incomplete",
+    "headline": "Some checks could not finish",
+    "detail": "GPU telemetry did not respond. The rest of the report is accurate as of the last check.",
+    "installAvailable": false,
+    "checkedAt": "2026-01-01T00:00:00Z"
+  }
+]

@@ -1,0 +1,18 @@
+[package]
+name = "rocm-app-core"
+description = "Domain logic for ROCm App: platform eligibility, health verdicts, and fixtures. No Tauri dependency."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+rocm-core.workspace = true
+rocm-dash-collectors.workspace = true
+rocm-dash-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true

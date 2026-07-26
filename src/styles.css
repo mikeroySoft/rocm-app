@@ -1,0 +1,136 @@
+/*
+ * Copyright © Advanced Micro Devices, Inc., or its affiliates.
+ *
+ * SPDX-License-Identifier: MIT
+ *
+ * Light-first baseline tokens. Phase 12 owns the final visual system; this file
+ * exists so Phase 1 renders legibly and so the status colours are never the
+ * only carrier of meaning.
+ */
+
+:root {
+  --bg: #ffffff;
+  --fg: #14161a;
+  --muted: #5b6270;
+  --border: #d8dce3;
+  --ok: #0f7b3f;
+  --warn: #8a5300;
+  --bad: #b3261e;
+  --unknown: #5b6270;
+  --radius: 10px;
+  --font:
+    system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.app {
+  padding: 20px;
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.app__title {
+  font-size: 18px;
+  font-weight: 650;
+  margin: 0;
+}
+
+.app__scenario {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.app__error {
+  color: var(--bad);
+}
+
+.card {
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card--healthy {
+  border-left-color: var(--ok);
+}
+.card--setup-required {
+  border-left-color: var(--warn);
+}
+.card--attention {
+  border-left-color: var(--bad);
+}
+.card--unsupported,
+.card--unknown {
+  border-left-color: var(--unknown);
+}
+
+.card__verdict {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.card__headline {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 620;
+}
+
+.card__detail,
+.card__checked {
+  margin: 0;
+  color: var(--muted);
+}
+
+.card__checked {
+  font-size: 12px;
+}
+
+.card__action {
+  align-self: flex-start;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: #0b5cd5;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.card__action:focus-visible {
+  outline: 2px solid #0b5cd5;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
