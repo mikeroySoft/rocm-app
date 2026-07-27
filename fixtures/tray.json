@@ -1,0 +1,1135 @@
+{
+  "states": [
+    {
+      "name": "checking",
+      "description": "no probe has answered yet",
+      "windows": {
+        "status": "checking",
+        "shortStatus": "ROCm — Checking",
+        "tooltip": "Checking this computer…",
+        "items": [
+          {
+            "id": "status",
+            "text": "ROCm — Checking",
+            "kind": "label",
+            "enabled": false
+          },
+          {
+            "id": "separator-status",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "quick-status",
+            "text": "Quick status",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "open-app",
+            "text": "Open ROCm App",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "check-now",
+            "text": "Check now",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "separator-settings",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "start-at-login",
+            "text": "Start at login",
+            "kind": {
+              "check": {
+                "checked": true
+              }
+            },
+            "enabled": true
+          },
+          {
+            "id": "separator-quit",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "quit",
+            "text": "Quit ROCm App",
+            "kind": "action",
+            "enabled": true
+          }
+        ]
+      },
+      "linux": {
+        "status": "checking",
+        "shortStatus": "ROCm — Checking",
+        "tooltip": "Checking this computer…",
+        "items": [
+          {
+            "id": "status",
+            "text": "ROCm — Checking",
+            "kind": "label",
+            "enabled": false
+          },
+          {
+            "id": "separator-status",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "quick-status",
+            "text": "Quick status",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "open-app",
+            "text": "Open ROCm App",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "check-now",
+            "text": "Check now",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "separator-settings",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "start-at-login",
+            "text": "Start at login",
+            "kind": {
+              "check": {
+                "checked": true
+              }
+            },
+            "enabled": true
+          },
+          {
+            "id": "separator-quit",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "quit",
+            "text": "Quit ROCm App",
+            "kind": "action",
+            "enabled": true
+          }
+        ]
+      },
+      "quick": {
+        "status": "checking",
+        "statusLabel": "Checking",
+        "gpu": "Not known yet — still checking",
+        "rocmVersion": "Not known yet — still checking",
+        "lastCheck": "Checking now",
+        "reason": "Reading this computer's ROCm setup.",
+        "action": null
+      }
+    },
+    {
+      "name": "healthy",
+      "description": "ROCm is ready",
+      "windows": {
+        "status": "healthy",
+        "shortStatus": "ROCm 7.14.0 — Ready",
+        "tooltip": "ROCm is set up and working.",
+        "items": [
+          {
+            "id": "status",
+            "text": "ROCm 7.14.0 — Ready",
+            "kind": "label",
+            "enabled": false
+          },
+          {
+            "id": "separator-status",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "quick-status",
+            "text": "Quick status",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "open-app",
+            "text": "Open ROCm App",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "check-now",
+            "text": "Check now",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "separator-settings",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "start-at-login",
+            "text": "Start at login",
+            "kind": {
+              "check": {
+                "checked": true
+              }
+            },
+            "enabled": true
+          },
+          {
+            "id": "separator-quit",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "quit",
+            "text": "Quit ROCm App",
+            "kind": "action",
+            "enabled": true
+          }
+        ]
+      },
+      "linux": {
+        "status": "healthy",
+        "shortStatus": "ROCm 7.14.0 — Ready",
+        "tooltip": "ROCm is set up and working.",
+        "items": [
+          {
+            "id": "status",
+            "text": "ROCm 7.14.0 — Ready",
+            "kind": "label",
+            "enabled": false
+          },
+          {
+            "id": "separator-status",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "quick-status",
+            "text": "Quick status",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "open-app",
+            "text": "Open ROCm App",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "check-now",
+            "text": "Check now",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "separator-settings",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "start-at-login",
+            "text": "Start at login",
+            "kind": {
+              "check": {
+                "checked": true
+              }
+            },
+            "enabled": true
+          },
+          {
+            "id": "separator-quit",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "quit",
+            "text": "Quit ROCm App",
+            "kind": "action",
+            "enabled": true
+          }
+        ]
+      },
+      "quick": {
+        "status": "healthy",
+        "statusLabel": "Ready",
+        "gpu": "AMD Radeon AI PRO R9700",
+        "rocmVersion": "7.14.0",
+        "lastCheck": "Checked just now",
+        "reason": "ROCm is set up and working.",
+        "action": null
+      }
+    },
+    {
+      "name": "setup-required",
+      "description": "no ROCm runtime installed yet",
+      "windows": {
+        "status": "setup-required",
+        "shortStatus": "ROCm None yet — Setup needed",
+        "tooltip": "ROCm is not set up on this computer yet.",
+        "items": [
+          {
+            "id": "status",
+            "text": "ROCm None yet — Setup needed",
+            "kind": "label",
+            "enabled": false
+          },
+          {
+            "id": "separator-status",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "quick-status",
+            "text": "Quick status",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "open-app",
+            "text": "Open ROCm App",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "check-now",
+            "text": "Check now",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "separator-settings",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "start-at-login",
+            "text": "Start at login",
+            "kind": {
+              "check": {
+                "checked": true
+              }
+            },
+            "enabled": true
+          },
+          {
+            "id": "separator-quit",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "quit",
+            "text": "Quit ROCm App",
+            "kind": "action",
+            "enabled": true
+          }
+        ]
+      },
+      "linux": {
+        "status": "setup-required",
+        "shortStatus": "ROCm None yet — Setup needed",
+        "tooltip": "ROCm is not set up on this computer yet.",
+        "items": [
+          {
+            "id": "status",
+            "text": "ROCm None yet — Setup needed",
+            "kind": "label",
+            "enabled": false
+          },
+          {
+            "id": "separator-status",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "quick-status",
+            "text": "Quick status",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "open-app",
+            "text": "Open ROCm App",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "check-now",
+            "text": "Check now",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "separator-settings",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "start-at-login",
+            "text": "Start at login",
+            "kind": {
+              "check": {
+                "checked": true
+              }
+            },
+            "enabled": true
+          },
+          {
+            "id": "separator-quit",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "quit",
+            "text": "Quit ROCm App",
+            "kind": "action",
+            "enabled": true
+          }
+        ]
+      },
+      "quick": {
+        "status": "setup-required",
+        "statusLabel": "Setup needed",
+        "gpu": "AMD Radeon AI PRO R9700",
+        "rocmVersion": "None yet",
+        "lastCheck": "Checked just now",
+        "reason": "ROCm is not set up on this computer yet.",
+        "action": {
+          "label": "Set up ROCm",
+          "opens": "onboarding"
+        }
+      }
+    },
+    {
+      "name": "attention",
+      "description": "something is wrong with the active runtime",
+      "windows": {
+        "status": "attention",
+        "shortStatus": "ROCm 7.14.0 — failed its check",
+        "tooltip": "The ROCm version in use did not pass its check.",
+        "items": [
+          {
+            "id": "status",
+            "text": "ROCm 7.14.0 — failed its check",
+            "kind": "label",
+            "enabled": false
+          },
+          {
+            "id": "separator-status",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "quick-status",
+            "text": "Quick status",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "open-app",
+            "text": "Open ROCm App",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "check-now",
+            "text": "Check now",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "separator-settings",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "start-at-login",
+            "text": "Start at login",
+            "kind": {
+              "check": {
+                "checked": true
+              }
+            },
+            "enabled": true
+          },
+          {
+            "id": "separator-quit",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "quit",
+            "text": "Quit ROCm App",
+            "kind": "action",
+            "enabled": true
+          }
+        ]
+      },
+      "linux": {
+        "status": "attention",
+        "shortStatus": "ROCm 7.14.0 — failed its check",
+        "tooltip": "The ROCm version in use did not pass its check.",
+        "items": [
+          {
+            "id": "status",
+            "text": "ROCm 7.14.0 — failed its check",
+            "kind": "label",
+            "enabled": false
+          },
+          {
+            "id": "separator-status",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "quick-status",
+            "text": "Quick status",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "open-app",
+            "text": "Open ROCm App",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "check-now",
+            "text": "Check now",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "separator-settings",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "start-at-login",
+            "text": "Start at login",
+            "kind": {
+              "check": {
+                "checked": true
+              }
+            },
+            "enabled": true
+          },
+          {
+            "id": "separator-quit",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "quit",
+            "text": "Quit ROCm App",
+            "kind": "action",
+            "enabled": true
+          }
+        ]
+      },
+      "quick": {
+        "status": "attention",
+        "statusLabel": "Needs attention",
+        "gpu": "AMD Radeon AI PRO R9700",
+        "rocmVersion": "7.14.0 — failed its check",
+        "lastCheck": "Checked just now",
+        "reason": "The ROCm version in use did not pass its check.",
+        "action": {
+          "label": "Check the ROCm version in use",
+          "opens": "runtimes"
+        }
+      }
+    },
+    {
+      "name": "offline-stale",
+      "description": "the reading is old and AMD could not be reached",
+      "windows": {
+        "status": "unknown",
+        "shortStatus": "ROCm 7.14.0 — Not sure",
+        "tooltip": "This computer could not reach AMD to check for updates.",
+        "items": [
+          {
+            "id": "status",
+            "text": "ROCm 7.14.0 — Not sure",
+            "kind": "label",
+            "enabled": false
+          },
+          {
+            "id": "separator-status",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "quick-status",
+            "text": "Quick status",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "open-app",
+            "text": "Open ROCm App",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "check-now",
+            "text": "Check now",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "separator-settings",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "start-at-login",
+            "text": "Start at login",
+            "kind": {
+              "check": {
+                "checked": true
+              }
+            },
+            "enabled": true
+          },
+          {
+            "id": "separator-quit",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "quit",
+            "text": "Quit ROCm App",
+            "kind": "action",
+            "enabled": true
+          }
+        ]
+      },
+      "linux": {
+        "status": "unknown",
+        "shortStatus": "ROCm 7.14.0 — Not sure",
+        "tooltip": "This computer could not reach AMD to check for updates.",
+        "items": [
+          {
+            "id": "status",
+            "text": "ROCm 7.14.0 — Not sure",
+            "kind": "label",
+            "enabled": false
+          },
+          {
+            "id": "separator-status",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "quick-status",
+            "text": "Quick status",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "open-app",
+            "text": "Open ROCm App",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "check-now",
+            "text": "Check now",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "separator-settings",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "start-at-login",
+            "text": "Start at login",
+            "kind": {
+              "check": {
+                "checked": true
+              }
+            },
+            "enabled": true
+          },
+          {
+            "id": "separator-quit",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "quit",
+            "text": "Quit ROCm App",
+            "kind": "action",
+            "enabled": true
+          }
+        ]
+      },
+      "quick": {
+        "status": "unknown",
+        "statusLabel": "Not sure",
+        "gpu": "AMD Radeon AI PRO R9700",
+        "rocmVersion": "7.14.0",
+        "lastCheck": "Checked just now",
+        "reason": "This computer could not reach AMD to check for updates.",
+        "action": null
+      }
+    },
+    {
+      "name": "unsupported",
+      "description": "a host the app cannot manage ROCm on",
+      "windows": {
+        "status": "unsupported",
+        "shortStatus": "ROCm 7.14.0 — Not supported",
+        "tooltip": "This is running inside WSL, which cannot reach the graphics card the way ROCm App needs.",
+        "items": [
+          {
+            "id": "status",
+            "text": "ROCm 7.14.0 — Not supported",
+            "kind": "label",
+            "enabled": false
+          },
+          {
+            "id": "separator-status",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "quick-status",
+            "text": "Quick status",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "open-app",
+            "text": "Open ROCm App",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "check-now",
+            "text": "Check now",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "separator-settings",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "start-at-login",
+            "text": "Start at login",
+            "kind": {
+              "check": {
+                "checked": false
+              }
+            },
+            "enabled": true
+          },
+          {
+            "id": "separator-quit",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "quit",
+            "text": "Quit ROCm App",
+            "kind": "action",
+            "enabled": true
+          }
+        ]
+      },
+      "linux": {
+        "status": "unsupported",
+        "shortStatus": "ROCm 7.14.0 — Not supported",
+        "tooltip": "This is running inside WSL, which cannot reach the graphics card the way ROCm App needs.",
+        "items": [
+          {
+            "id": "status",
+            "text": "ROCm 7.14.0 — Not supported",
+            "kind": "label",
+            "enabled": false
+          },
+          {
+            "id": "separator-status",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "quick-status",
+            "text": "Quick status",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "open-app",
+            "text": "Open ROCm App",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "check-now",
+            "text": "Check now",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "separator-settings",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "start-at-login",
+            "text": "Start at login",
+            "kind": {
+              "check": {
+                "checked": false
+              }
+            },
+            "enabled": true
+          },
+          {
+            "id": "separator-quit",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "quit",
+            "text": "Quit ROCm App",
+            "kind": "action",
+            "enabled": true
+          }
+        ]
+      },
+      "quick": {
+        "status": "unsupported",
+        "statusLabel": "Not supported",
+        "gpu": "AMD Radeon AI PRO R9700",
+        "rocmVersion": "7.14.0",
+        "lastCheck": "Checked just now",
+        "reason": "This is running inside WSL, which cannot reach the graphics card the way ROCm App needs.",
+        "action": null
+      }
+    },
+    {
+      "name": "error",
+      "description": "the probe itself failed",
+      "windows": {
+        "status": "error",
+        "shortStatus": "ROCm 7.14.0 — Cannot check",
+        "tooltip": "The ROCm command-line tool this app found cannot report status. Reinstall ROCm App so the app and the command-line tool match.",
+        "items": [
+          {
+            "id": "status",
+            "text": "ROCm 7.14.0 — Cannot check",
+            "kind": "label",
+            "enabled": false
+          },
+          {
+            "id": "separator-status",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "quick-status",
+            "text": "Quick status",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "open-app",
+            "text": "Open ROCm App",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "check-now",
+            "text": "Check now",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "separator-settings",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "start-at-login",
+            "text": "Start at login",
+            "kind": {
+              "check": {
+                "checked": true
+              }
+            },
+            "enabled": true
+          },
+          {
+            "id": "separator-quit",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "quit",
+            "text": "Quit ROCm App",
+            "kind": "action",
+            "enabled": true
+          }
+        ]
+      },
+      "linux": {
+        "status": "error",
+        "shortStatus": "ROCm 7.14.0 — Cannot check",
+        "tooltip": "The ROCm command-line tool this app found cannot report status. Reinstall ROCm App so the app and the command-line tool match.",
+        "items": [
+          {
+            "id": "status",
+            "text": "ROCm 7.14.0 — Cannot check",
+            "kind": "label",
+            "enabled": false
+          },
+          {
+            "id": "separator-status",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "quick-status",
+            "text": "Quick status",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "open-app",
+            "text": "Open ROCm App",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "check-now",
+            "text": "Check now",
+            "kind": "action",
+            "enabled": true
+          },
+          {
+            "id": "separator-settings",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "start-at-login",
+            "text": "Start at login",
+            "kind": {
+              "check": {
+                "checked": true
+              }
+            },
+            "enabled": true
+          },
+          {
+            "id": "separator-quit",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
+          },
+          {
+            "id": "quit",
+            "text": "Quit ROCm App",
+            "kind": "action",
+            "enabled": true
+          }
+        ]
+      },
+      "quick": {
+        "status": "error",
+        "statusLabel": "Cannot check",
+        "gpu": "AMD Radeon AI PRO R9700",
+        "rocmVersion": "7.14.0",
+        "lastCheck": "Checked just now",
+        "reason": "The ROCm command-line tool this app found cannot report status. Reinstall ROCm App so the app and the command-line tool match.",
+        "action": null
+      }
+    }
+  ],
+  "autostart": [
+    {
+      "enabled": true,
+      "available": true,
+      "detail": "ROCm App starts with this computer and watches ROCm in the background."
+    },
+    {
+      "enabled": false,
+      "available": true,
+      "detail": "ROCm App only runs when you open it."
+    },
+    {
+      "enabled": false,
+      "available": false,
+      "detail": "ROCm App manages ROCm on native Windows and native Linux. WSL cannot reach the GPU the way this app requires — run ROCm App on your Windows desktop instead."
+    }
+  ],
+  "icons": [
+    {
+      "status": "checking",
+      "label": "Checking",
+      "colour": "#9AA0A6",
+      "mask": [
+        "........",
+        "........",
+        "........",
+        "##.##.##",
+        "##.##.##",
+        "........",
+        "........",
+        "........"
+      ]
+    },
+    {
+      "status": "healthy",
+      "label": "Ready",
+      "colour": "#1E9E52",
+      "mask": [
+        "........",
+        "......##",
+        ".....##.",
+        "....##..",
+        "#...##..",
+        "##.##...",
+        ".####...",
+        "..##...."
+      ]
+    },
+    {
+      "status": "unknown",
+      "label": "Not sure",
+      "colour": "#7A6FF0",
+      "mask": [
+        "..####..",
+        ".##..##.",
+        ".....##.",
+        "....##..",
+        "...##...",
+        "...##...",
+        "........",
+        "...##..."
+      ]
+    },
+    {
+      "status": "setup-required",
+      "label": "Setup needed",
+      "colour": "#2C7BE5",
+      "mask": [
+        "...##...",
+        "...##...",
+        "...##...",
+        "...##...",
+        ".######.",
+        "..####..",
+        "...##...",
+        "........"
+      ]
+    },
+    {
+      "status": "attention",
+      "label": "Needs attention",
+      "colour": "#E8A33D",
+      "mask": [
+        "...##...",
+        "...##...",
+        "...##...",
+        "...##...",
+        "...##...",
+        "........",
+        "...##...",
+        "...##..."
+      ]
+    },
+    {
+      "status": "unsupported",
+      "label": "Not supported",
+      "colour": "#6B6B6B",
+      "mask": [
+        "......##",
+        ".....##.",
+        "....##..",
+        "...##...",
+        "..##....",
+        ".##.....",
+        "##......",
+        "........"
+      ]
+    },
+    {
+      "status": "error",
+      "label": "Cannot check",
+      "colour": "#D64545",
+      "mask": [
+        "##....##",
+        ".##..##.",
+        "..####..",
+        "...##...",
+        "..####..",
+        ".##..##.",
+        "##....##",
+        "........"
+      ]
+    }
+  ]
+}

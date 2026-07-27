@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Minimum capability set for the main window. Grants no shell execution, no filesystem access, and no arbitrary HTTP. Every privileged operation goes through a typed command in this crate, never a generic plugin permission.",
-  "windows": ["main"],
+  "description": "Minimum capability set for the app's windows. Grants no shell execution, no filesystem access, and no arbitrary HTTP. Every privileged operation goes through a typed command in this crate, never a generic plugin permission. The tray monitor's autostart and notification plugins are called from Rust only, so neither appears here.",
+  "windows": ["main", "quick"],
   "permissions": ["core:default"]
 }

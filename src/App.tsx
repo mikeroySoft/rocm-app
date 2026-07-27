@@ -14,6 +14,7 @@
  * in Rust.
  */
 
+import { listen } from "@tauri-apps/api/event";
 import { useCallback, useEffect, useState } from "react";
 import Dashboard from "./dashboard/Dashboard";
 import {
@@ -34,6 +35,10 @@ import {
   fixtureRuntimes,
 } from "./lib/runtimes";
 import type { RuntimesBackend } from "./lib/runtimes";
+import QuickStatus from "./tray/QuickStatus";
+import Settings from "./tray/Settings";
+import { desktopTray, fixtureAutostart, fixtureTray } from "./lib/tray";
+import type { FullSurface, TrayBackend } from "./lib/tray";
 
 /**
  * Fixture mode is opt-in at build time. It is what lets renderer tests and
@@ -42,7 +47,12 @@ import type { RuntimesBackend } from "./lib/runtimes";
  */
 const FIXTURE_MODE = import.meta.env.ROCM_APP_FIXTURE === "1" || import.meta.env.MODE === "test";
 
-type Surface = "dashboard" | "onboarding" | "runtimes";
+type Surface = "dashboard" | "onboarding" | "runtimes" | "settings";
+
+/** A tray hand-off names a surface as a bare string; only three are real. */
+function isFullSurface(value: string): value is FullSurface {
+  return value === "dashboard" || value === "onboarding" || value === "runtimes";
+}
 
 export interface AppProps {
   /** Force a surface. Tests drive this directly. */
@@ -50,11 +60,35 @@ export interface AppProps {
 }
 
 export default function App({ initialSurface }: AppProps = {}) {
+  // The compact window is checked first and outside the fixture gate: it is a
+  // real product surface that a release build has to be able to reach, not a
+  // test affordance.
+  const quick = quickRoute();
+  if (quick) {
+    return quick;
+  }
   const route = FIXTURE_MODE ? fixtureRoute() : null;
   if (route) {
     return route;
   }
   return <DesktopShell initialSurface={initialSurface} />;
+}
+
+/** `?window=quick` — the 380x300 panel the tray shows and hides. */
+function quickRoute(): React.ReactElement | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("window") !== "quick") {
+    return null;
+  }
+  const scenario = params.get("scenario");
+  return (
+    <QuickStatus
+      backend={FIXTURE_MODE && scenario !== null ? fixtureTray(scenario) : desktopTray()}
+    />
+  );
 }
 
 /**
@@ -95,6 +129,12 @@ function fixtureRoute(): React.ReactElement | null {
       />
     );
   }
+  if (view === "settings") {
+    const backend = fixtureTray("healthy", {
+      autostart: fixtureAutostart(Number(params.get("scenario") ?? "0")),
+    });
+    return <Settings backend={backend} />;
+  }
   return null;
 }
 
@@ -102,6 +142,7 @@ function DesktopShell({ initialSurface }: { readonly initialSurface?: Surface | 
   const [dashboard] = useState<DashboardSource>(desktopSource);
   const [onboarding] = useState<OnboardingBackend>(desktopBackend);
   const [runtimes] = useState<RuntimesBackend>(desktopRuntimes);
+  const [tray] = useState<TrayBackend>(desktopTray);
   const [surface, setSurface] = useState<Surface | null>(initialSurface ?? null);
 
   // One read decides the landing surface. It is the Overview's own answer, so
@@ -130,6 +171,25 @@ function DesktopShell({ initialSurface }: { readonly initialSurface?: Surface | 
     };
   }, [dashboard, initialSurface]);
 
+  // The tray hands a surface over rather than routing itself, so the shell
+  // stays the only place that decides what is on screen.
+  useEffect(() => {
+    const subscription = listen<string>("rocm://open-surface", ({ payload }) => {
+      // An unrecognised payload leaves the window where it was. Blanking a
+      // window because the event grew a fourth surface is the worse failure.
+      if (isFullSurface(payload)) {
+        setSurface(payload);
+      }
+    }).catch(() => null);
+    return () => {
+      void subscription.then((unlisten) => {
+        if (unlisten) {
+          unlisten();
+        }
+      });
+    };
+  }, []);
+
   const toDashboard = useCallback(() => {
     setSurface("dashboard");
   }, []);
@@ -138,6 +198,9 @@ function DesktopShell({ initialSurface }: { readonly initialSurface?: Surface | 
   }, []);
   const toRuntimes = useCallback(() => {
     setSurface("runtimes");
+  }, []);
+  const toSettings = useCallback(() => {
+    setSurface("settings");
   }, []);
 
   if (surface === null) {
@@ -150,7 +213,7 @@ function DesktopShell({ initialSurface }: { readonly initialSurface?: Surface | 
   if (surface === "onboarding") {
     return <OnboardingFlow backend={onboarding} onFinished={toDashboard} />;
   }
-  if (surface === "runtimes") {
+  if (surface === "runtimes" || surface === "settings") {
     return (
       <>
         <nav className="shell__nav">
@@ -158,9 +221,16 @@ function DesktopShell({ initialSurface }: { readonly initialSurface?: Surface | 
             Back to overview
           </button>
         </nav>
-        <Runtimes backend={runtimes} />
+        {surface === "runtimes" ? <Runtimes backend={runtimes} /> : <Settings backend={tray} />}
       </>
     );
   }
-  return <Dashboard source={dashboard} onStartSetup={toOnboarding} onManageVersions={toRuntimes} />;
+  return (
+    <Dashboard
+      source={dashboard}
+      onStartSetup={toOnboarding}
+      onManageVersions={toRuntimes}
+      onOpenSettings={toSettings}
+    />
+  );
 }

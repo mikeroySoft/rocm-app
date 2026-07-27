@@ -675,3 +675,145 @@ body {
 .dash > button {
   align-self: flex-start;
 }
+
+/* --------------------------------------------------------------------------
+ * Compact tray window
+ *
+ * 380x300, undecorated, always on top: there is no title bar and no room to
+ * scroll, so this owns its own padding and the healthy state has to fit. The
+ * status word is text first — the accent only tints what it already says.
+ * ------------------------------------------------------------------------ */
+
+.quick {
+  min-height: 100vh;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quick__status {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 650;
+  color: var(--unknown);
+}
+
+.quick__status[data-status="healthy"] {
+  color: var(--ok);
+}
+.quick__status[data-status="setup-required"],
+.quick__status[data-status="unknown"],
+.quick__status[data-status="checking"] {
+  color: var(--warn);
+}
+.quick__status[data-status="attention"],
+.quick__status[data-status="unsupported"],
+.quick__status[data-status="error"] {
+  color: var(--bad);
+}
+
+.quick__reason {
+  margin: 0;
+  color: var(--muted);
+}
+
+.quick__facts {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 12px;
+  font-size: 13px;
+}
+
+.quick__fact {
+  display: contents;
+}
+
+.quick__fact dt {
+  color: var(--muted);
+}
+
+.quick__fact dd {
+  margin: 0;
+  font-weight: 550;
+}
+
+/* Pinned to the bottom of the fixed height so the controls do not move as the
+ * facts above them change length. */
+.quick__actions {
+  margin-block-start: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.quick button {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.quick button.quick__primary {
+  border-color: #0b5cd5;
+  background: #0b5cd5;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.quick button:focus-visible {
+  outline: 2px solid #0b5cd5;
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+ * Settings
+ * ------------------------------------------------------------------------ */
+
+.settings {
+  padding: 20px;
+  max-width: 780px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settings__field {
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings__toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 550;
+  cursor: pointer;
+}
+
+/* A control the host cannot honour still has to read as text, so it is dimmed
+ * rather than hidden and its reason stays at full contrast below it. */
+.settings__toggle:has(input:disabled) {
+  color: var(--muted);
+  cursor: default;
+}
+
+.settings__toggle input:focus-visible {
+  outline: 2px solid #0b5cd5;
+  outline-offset: 2px;
+}
+
+.settings__detail {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}

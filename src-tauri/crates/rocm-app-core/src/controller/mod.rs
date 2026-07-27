@@ -404,7 +404,25 @@ impl RocmController {
             Ok(()) => {
                 // Re-probe *after* the change so the caller never renders a
                 // stale view of a machine it just modified.
-                let snapshot = self.adapters.inspector.snapshot()?;
+                //
+                // A failure here is reported as a terminal `Failed`, not
+                // returned bare. Every consumer of this stream — the progress
+                // panel, and the tray monitor that resumes a deferred probe on
+                // a terminal event — waits for one; a silent early return
+                // leaves a spinner running forever and a monitor still
+                // deferring against a mutation that has already ended.
+                let snapshot = match self.adapters.inspector.snapshot() {
+                    Ok(snapshot) => snapshot,
+                    Err(error) => {
+                        let operation_error = error.to_operation_error();
+                        progress.emit(ProgressEvent::Failed {
+                            operation_id: plan.id().clone(),
+                            error: operation_error.clone(),
+                        });
+                        self.record(&plan, audit::Outcome::Failed, Some(operation_error.code));
+                        return Err(ControllerError::Adapter(error));
+                    }
+                };
                 *self.cached.lock().expect("poisoned") = Some(snapshot.clone());
 
                 progress.emit(ProgressEvent::Completed {

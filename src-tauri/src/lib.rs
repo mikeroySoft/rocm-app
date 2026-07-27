@@ -20,6 +20,7 @@ compile_error!(
 );
 
 pub mod controller_host;
+pub mod tray_host;
 
 use rocm_app_core::platform::HostPlatform;
 
@@ -34,19 +35,55 @@ fn host_platform() -> HostPlatform {
 }
 
 /// Build and run the desktop application.
+///
+/// `Builder::build` then `App::run`, not `Builder::run`: only the latter form
+/// gives access to `RunEvent::ExitRequested`, and without intercepting it Wry
+/// terminates the process as soon as its last window is destroyed — which is
+/// exactly what a tray-only app must survive.
 pub fn run() {
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
+        // Registered first, as the plugin's documentation requires, so a second
+        // launch is intercepted before anything else can act on it.
+        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+            tray_host::focus_existing_instance(app, &argv);
+        }))
+        .plugin(tauri_plugin_notification::init())
+        // The login item launches with `--hidden`, so a boot start monitors
+        // without putting a window in front of anyone.
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            Some(vec![rocm_app_core::tray::HIDDEN_FLAG]),
+        ))
+        // The compact window is transient and positioned by the tray; restoring
+        // a remembered geometry for it would fight that.
+        .plugin(
+            tauri_plugin_window_state::Builder::new()
+                .with_denylist(&[tray_host::QUICK_WINDOW])
+                .build(),
+        )
         .setup(|app| {
             use tauri::Manager as _;
             let data_dir = app.path().app_data_dir()?;
+            let mut adapters = controller_host::production_adapters(data_dir);
+            let storage = adapters.storage.clone();
+            // Operation outcomes now reach the desktop as well as the log the
+            // Phase 9 diagnostics view reads.
+            adapters.notifier = std::sync::Arc::new(tray_host::DesktopNotifier::new(
+                app.handle().clone(),
+                adapters.notifier.clone(),
+            ));
             app.manage(controller_host::ControllerState {
-                controller: rocm_app_core::RocmController::new(
-                    controller_host::production_adapters(data_dir),
-                ),
+                controller: rocm_app_core::RocmController::new(adapters),
                 telemetry: controller_host::TelemetryStore::new(),
+                storage,
             });
+            // The tray is created before the first probe runs, so a boot launch
+            // shows an icon while the snapshot is still being taken.
+            tray_host::start(app.handle())?;
             Ok(())
         })
+        // Closing a window closes a view, not the product.
+        .on_window_event(tray_host::on_window_event)
         // No shell plugin is registered here, and none may be added: the
         // controller owns every process invocation, in Rust, from a typed
         // operation. See capabilities/default.json.
@@ -59,9 +96,28 @@ pub fn run() {
             controller_host::onboarding_view,
             controller_host::health_overview,
             controller_host::runtimes_view,
+            tray_host::tray_quick_status,
+            tray_host::tray_model,
+            tray_host::tray_check_now,
+            tray_host::tray_autostart_state,
+            tray_host::tray_set_autostart,
+            tray_host::tray_open_full,
         ])
-        .run(tauri::generate_context!())
+        .build(tauri::generate_context!())
         .expect("failed to start ROCm App");
+
+    app.run(|_app, event| {
+        // `code: None` is a user-driven exit request — the one Wry raises when
+        // the last window is destroyed. Quit calls `AppHandle::exit(0)`, which
+        // carries a code and is therefore never prevented here. An
+        // unconditional `prevent_exit` would make the app unquittable.
+        if let tauri::RunEvent::ExitRequested {
+            code: None, api, ..
+        } = event
+        {
+            api.prevent_exit();
+        }
+    });
 }
 
 #[cfg(test)]

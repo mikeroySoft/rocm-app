@@ -19,6 +19,7 @@ pub mod onboarding;
 pub mod platform;
 pub mod runtimes;
 pub mod shared;
+pub mod tray;
 
 pub use contract::{AppSnapshot, ContractError, HealthVerdict, ReasonCode};
 pub use controller::{ControllerError, Freshness, RocmController};
@@ -26,3 +27,4 @@ pub use health::{HealthOverview, overview};
 pub use onboarding::{OnboardingView, recommend};
 pub use platform::HostPlatform;
 pub use runtimes::RuntimesView;
+pub use tray::{QuickStatus, TrayStatus, TrayView, quick_status, tray_view};

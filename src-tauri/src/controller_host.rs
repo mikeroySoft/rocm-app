@@ -530,6 +530,11 @@ impl TelemetryStore {
 pub struct ControllerState {
     pub controller: RocmController,
     pub telemetry: TelemetryStore,
+    /// The same handle the controller's adapters use. Held here because the
+    /// tray monitor persists its own last-notified state and autostart choice
+    /// through it, and reaching into the controller's private adapters to find
+    /// it would be worse than naming it once.
+    pub storage: Arc<dyn Storage>,
 }
 
 /// A refusal, shaped for the renderer.
@@ -744,7 +749,7 @@ fn directory_size(root: &std::path::Path) -> Option<u64> {
     Some(total)
 }
 
-fn now_unix_ms() -> u64 {
+pub(crate) fn now_unix_ms() -> u64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_or(0, |d| u64::try_from(d.as_millis()).unwrap_or(u64::MAX))
