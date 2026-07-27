@@ -24,7 +24,7 @@ env:
   # rocm-app bundles the CLI, so CI has to build it. This is the revision the
   # app's Cargo.toml pins for its shared crates; the packaged binaries and the
   # linked crates then come from the same source.
-  ROCM_CLI_REPO: https://github.com/mikeroysoft/rocm-cli
+  ROCM_CLI_GIT_URL: https://github.com/mikeroysoft/rocm-cli
   ROCM_CLI_REV: cae77819a58ee8448a14160ce989832f500e6cc4
   CARGO_TERM_COLOR: always
 
@@ -63,7 +63,7 @@ jobs:
         # anyway. The app crate's own tests and clippy run there, on every push.
         working-directory: src-tauri
         run: |
-          cargo test -p rocm-app-core --all-targets
+          cargo test -p rocm-app-core --lib
           cargo clippy -p rocm-app-core --all-targets -- -D warnings
 
       - name: Harness self-tests
@@ -98,7 +98,7 @@ jobs:
 
       - name: Build the ROCm CLI this app will ship
         run: |
-          git clone --filter=blob:none "$ROCM_CLI_REPO" rocm-cli
+          git clone --filter=blob:none "$ROCM_CLI_GIT_URL" rocm-cli
           git -C rocm-cli checkout "$ROCM_CLI_REV"
           cargo build --release --manifest-path rocm-cli/Cargo.toml -p rocm -p rocmd
 
@@ -109,8 +109,13 @@ jobs:
           python3 scripts/stage_cli.py --check
 
       - name: Rust tests and lints (whole app workspace)
-        # The app crate compiles only now that its sidecars exist.
+        # The app crate compiles only now that its sidecars exist, and the live
+        # cross-repo harness needs the checkout this job already made. Both are
+        # why the full suite runs here rather than in the fast job.
         working-directory: src-tauri
+        env:
+          ROCM_CLI_REPO: ${{ github.workspace }}/rocm-cli
+          ROCM_CLI_BIN: ${{ github.workspace }}/rocm-cli/target/release/rocm
         run: |
           cargo test --all-targets
           cargo clippy --all-targets -- -D warnings
@@ -156,7 +161,7 @@ jobs:
 
       - name: Build the ROCm CLI this app will ship
         run: |
-          git clone --filter=blob:none "$env:ROCM_CLI_REPO" rocm-cli
+          git clone --filter=blob:none "$env:ROCM_CLI_GIT_URL" rocm-cli
           git -C rocm-cli checkout "$env:ROCM_CLI_REV"
           cargo build --release --manifest-path rocm-cli/Cargo.toml -p rocm -p rocmd
 
