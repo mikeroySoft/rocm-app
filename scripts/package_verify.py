@@ -46,7 +46,24 @@ from pathlib import Path
 from typing import Mapping
 
 APP_ROOT = Path(__file__).resolve().parent.parent
-CLI_ROOT = APP_ROOT.parent / "rocm-cli"
+def _cli_root() -> Path:
+    """Where the rocm-cli checkout is.
+
+    A sibling directory on a developer machine, but CI clones it *inside* the
+    workspace, and the first Windows run failed four checks on a path that
+    simply was not there. `ROCM_CLI_REPO` is the same variable the live contract
+    harness already uses, so one setting covers both.
+    """
+    explicit = os.environ.get("ROCM_CLI_REPO")
+    if explicit:
+        return Path(explicit)
+    for candidate in (APP_ROOT / "rocm-cli", APP_ROOT.parent / "rocm-cli"):
+        if candidate.is_dir():
+            return candidate
+    return APP_ROOT.parent / "rocm-cli"
+
+
+CLI_ROOT = _cli_root()
 
 # Every bundle must carry these three beside each other. `rocm-app` alone is the
 # silent failure this list exists to catch: the app installs and runs, and every
