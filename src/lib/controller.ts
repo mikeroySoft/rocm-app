@@ -15,7 +15,7 @@
  * rejected by comparison rather than trusted.
  */
 
-import { invoke, isTauri } from "@tauri-apps/api/core";
+import { Channel as IpcChannel, invoke, isTauri } from "@tauri-apps/api/core";
 import type { AppSnapshot } from "./contract";
 
 export type Channel = "release" | "nightly";
@@ -24,7 +24,14 @@ export type VersionSelector = { kind: "latest" } | { kind: "exact"; version: str
 
 /** Every change the app may request. No variant targets a driver. */
 export type OperationRequest =
-  | { operation: "install-runtime"; channel: Channel; family: string; version: VersionSelector }
+  | {
+      operation: "install-runtime";
+      channel: Channel;
+      family: string;
+      version: VersionSelector;
+      /** Absolute folder the user reviewed. Covered by the plan digest. */
+      installRoot: string | null;
+    }
   | { operation: "update-runtime"; key: string }
   | { operation: "activate-runtime"; key: string }
   | { operation: "remove-runtime"; key: string }
@@ -107,7 +114,13 @@ export function approvalFor(plan: ChangePlan): Approval {
   return { planId: plan.id, planDigest: plan.digest, request: plan.request };
 }
 
-function requireTauri(): void {
+/**
+ * Refuse a backend call outside the desktop shell.
+ *
+ * Exported so sibling modules that invoke their own commands share one
+ * message rather than each inventing a different failure string.
+ */
+export function requireTauri(): void {
   if (!isTauri()) {
     throw new Error("controller operations require the desktop backend");
   }
@@ -126,4 +139,27 @@ export async function plan(request: OperationRequest): Promise<ChangePlan> {
 export async function cancel(): Promise<void> {
   requireTauri();
   await invoke("controller_cancel");
+}
+
+export interface ExecuteResponse {
+  readonly operationId: string;
+  readonly operation: string;
+  readonly snapshot: AppSnapshot;
+}
+
+/**
+ * Apply an approved plan, streaming progress.
+ *
+ * The channel is created here rather than accepted from a caller: it is the
+ * only way progress reaches the UI, and a caller that forgot one would leave a
+ * running install with no visible output.
+ */
+export async function execute(
+  approval: Approval,
+  onEvent: (event: ProgressEvent) => void,
+): Promise<ExecuteResponse> {
+  requireTauri();
+  const channel = new IpcChannel<ProgressEvent>();
+  channel.onmessage = onEvent;
+  return await invoke<ExecuteResponse>("controller_execute", { approval, channel });
 }

@@ -45,4 +45,11 @@ export default tseslint.config(
     files: ["**/*.js"],
     languageOptions: { globals: globals.node },
   },
+  {
+    // Node scripts that drive a real browser: the `page.evaluate` callbacks
+    // they contain are authored as browser code and run there, so both global
+    // sets are genuinely in scope.
+    files: ["**/*.mjs"],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
+  },
 );

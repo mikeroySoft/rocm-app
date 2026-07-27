@@ -52,7 +52,11 @@ pub struct OperationError {
 
 /// One event in an operation's lifecycle.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "event", rename_all = "kebab-case", rename_all_fields = "camelCase")]
+#[serde(
+    tag = "event",
+    rename_all = "kebab-case",
+    rename_all_fields = "camelCase"
+)]
 pub enum ProgressEvent {
     Started {
         operation_id: PlanId,
@@ -178,7 +182,10 @@ impl RecordingSink {
 
 impl ProgressSink for RecordingSink {
     fn emit(&self, event: ProgressEvent) {
-        self.events.lock().expect("progress sink poisoned").push(event);
+        self.events
+            .lock()
+            .expect("progress sink poisoned")
+            .push(event);
     }
 }
 
@@ -213,7 +220,10 @@ mod tests {
             message: "Done".to_owned(),
         });
 
-        assert_eq!(sink.trace(), ["started:plan", "stage:download", "completed"]);
+        assert_eq!(
+            sink.trace(),
+            ["started:plan", "stage:download", "completed"]
+        );
     }
 
     #[test]

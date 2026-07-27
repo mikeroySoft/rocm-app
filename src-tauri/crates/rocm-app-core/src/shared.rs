@@ -19,9 +19,9 @@
 /// R9700) resolves to the `gfx120X-all` family.
 pub use rocm_core::normalize_therock_family as runtime_family;
 
+pub use rocm_dash_core::traits::GpuCollector;
 /// Telemetry value types shared with the rocm-cli dashboard.
 pub use rocm_dash_core::{GpuMetrics, Snapshot};
-pub use rocm_dash_core::traits::GpuCollector;
 
 /// sysfs/hwmon GPU collector.
 pub use rocm_dash_collectors::sysfs::SysfsGpuCollector;
@@ -38,7 +38,10 @@ mod tests {
         assert_eq!(runtime_family("gfx1201").as_deref(), Some("gfx120X-all"));
         assert_eq!(runtime_family("gfx1200").as_deref(), Some("gfx120X-all"));
         assert_eq!(runtime_family("gfx1100").as_deref(), Some("gfx110X-all"));
-        assert_eq!(runtime_family("  GFX1201  ").as_deref(), Some("gfx120X-all"));
+        assert_eq!(
+            runtime_family("  GFX1201  ").as_deref(),
+            Some("gfx120X-all")
+        );
         assert_eq!(runtime_family(""), None);
         assert_eq!(runtime_family("not-a-target"), None);
     }

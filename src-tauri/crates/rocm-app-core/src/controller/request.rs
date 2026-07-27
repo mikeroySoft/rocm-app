@@ -154,10 +154,86 @@ impl Channel {
     }
 }
 
+/// An absolute, user-owned folder an install may write into.
+///
+/// Paths need different rules than tokens: they legitimately contain
+/// separators, spaces, and drive letters, so [`validate_token`]'s allowlist
+/// cannot be reused. What matters instead is that the value is an absolute
+/// path, cannot climb out of itself, cannot be read as a flag, and does not
+/// name a system location.
+///
+/// The protected-location test is delegated to
+/// `rocm_core::runtime_install_root_is_protected`, which rocm-cli already uses
+/// for the same decision. A second, app-local list of system directories would
+/// be a second answer to one question.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(try_from = "String", into = "String")]
+pub struct InstallPath(String);
+
+impl InstallPath {
+    pub fn new(value: impl Into<String>) -> Result<Self, RequestError> {
+        let value = value.into();
+        let invalid = |detail: &str| RequestError::Invalid {
+            field: "installRoot",
+            detail: detail.to_owned(),
+        };
+        if value.is_empty() {
+            return Err(invalid("must not be empty"));
+        }
+        if value.len() > 4096 {
+            return Err(invalid("longer than 4096 characters"));
+        }
+        if value.chars().any(char::is_control) {
+            return Err(invalid("contains a control character"));
+        }
+        // A leading dash is read as a flag by any argv consumer, and `--prefix`
+        // takes the next argument verbatim.
+        if value.starts_with('-') {
+            return Err(invalid("must not start with '-'"));
+        }
+        if !rocm_core::runtime_path_text_is_absolute_for_host(&value) {
+            return Err(invalid("must be a full path, not a relative one"));
+        }
+        // Rejected before normalisation: `..` in the value the user reviewed
+        // means the folder shown and the folder written are different strings.
+        if value.split(['/', '\\']).any(|component| component == "..") {
+            return Err(invalid("must not contain '..'"));
+        }
+        if rocm_core::runtime_install_root_is_protected(std::path::Path::new(&value)) {
+            return Err(invalid(
+                "is a system folder; choose a folder inside your own home folder",
+            ));
+        }
+        Ok(Self(value))
+    }
+
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl TryFrom<String> for InstallPath {
+    type Error = RequestError;
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Self::new(value)
+    }
+}
+
+impl From<InstallPath> for String {
+    fn from(value: InstallPath) -> Self {
+        value.0
+    }
+}
+
 /// Which version to install. `Latest` is resolved against the catalog at plan
 /// time so the review screen shows a concrete version, never "latest".
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "kebab-case", rename_all_fields = "camelCase")]
+#[serde(
+    tag = "kind",
+    rename_all = "kebab-case",
+    rename_all_fields = "camelCase"
+)]
 pub enum VersionSelector {
     Latest,
     Exact { version: String },
@@ -177,12 +253,22 @@ impl VersionSelector {
 /// Every variant targets a **managed runtime**. Driver operations are absent by
 /// design; see the module docs.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "operation", rename_all = "kebab-case", rename_all_fields = "camelCase")]
+#[serde(
+    tag = "operation",
+    rename_all = "kebab-case",
+    rename_all_fields = "camelCase"
+)]
 pub enum OperationRequest {
     InstallRuntime {
         channel: Channel,
         family: RuntimeFamily,
         version: VersionSelector,
+        /// Where the install lands. `None` leaves the choice to rocm-cli's own
+        /// default; onboarding always names one so the folder the user
+        /// reviewed is the folder that is written, and is covered by the plan
+        /// digest like every other decision-bearing field.
+        #[serde(default)]
+        install_root: Option<InstallPath>,
     },
     UpdateRuntime {
         key: RuntimeKey,
@@ -206,8 +292,16 @@ impl OperationRequest {
     /// guarantees it regardless of how it got here.
     pub fn validate(&self) -> Result<(), RequestError> {
         match self {
-            Self::InstallRuntime { family, version, .. } => {
+            Self::InstallRuntime {
+                family,
+                version,
+                install_root,
+                ..
+            } => {
                 RuntimeFamily::new(family.as_str())?;
+                if let Some(root) = install_root {
+                    InstallPath::new(root.as_str())?;
+                }
                 version.validate()
             }
             Self::UpdateRuntime { key }
@@ -303,6 +397,7 @@ mod tests {
             channel: Channel::Nightly,
             family: RuntimeFamily::new("gfx120X-all").expect("family"),
             version: VersionSelector::Latest,
+            install_root: None,
         };
         let json = serde_json::to_string(&request).expect("serialize");
         assert_eq!(
@@ -320,13 +415,18 @@ mod tests {
                 channel: Channel::Release,
                 family: RuntimeFamily::new("gfx120X-all").expect("family"),
                 version: VersionSelector::Latest,
+                install_root: None,
             },
             OperationRequest::UpdateRuntime { key: key("k") },
             OperationRequest::ActivateRuntime { key: key("k") },
             OperationRequest::RemoveRuntime { key: key("k") },
             OperationRequest::ValidateRuntime { key: key("k") },
         ];
-        assert_eq!(all.len(), 5, "a new operation was added; is it driver-free?");
+        assert_eq!(
+            all.len(),
+            5,
+            "a new operation was added; is it driver-free?"
+        );
         for request in &all {
             assert!(!request.kind().contains("driver"));
             let wire = serde_json::to_string(request).expect("serialize");

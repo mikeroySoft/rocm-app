@@ -63,7 +63,10 @@ impl Harness {
     }
 
     fn healthy() -> Self {
-        Self::new("healthy", FakeCliRunner::succeeding(&["download", "install"]))
+        Self::new(
+            "healthy",
+            FakeCliRunner::succeeding(&["download", "install"]),
+        )
     }
 
     /// Plan an activation, the smallest mutating operation.
@@ -104,7 +107,12 @@ fn controller_executes_an_approved_plan_and_reports_an_ordered_stream() {
     assert_eq!(outcome.operation_id, *plan.id());
     assert_eq!(
         sink.trace(),
-        ["started:plan", "stage:download", "stage:install", "completed"]
+        [
+            "started:plan",
+            "stage:download",
+            "stage:install",
+            "completed"
+        ]
     );
     assert!(matches!(
         sink.terminal(),
@@ -126,6 +134,7 @@ fn controller_plan_resolves_latest_to_a_concrete_version() {
             channel: Channel::Nightly,
             family: RuntimeFamily::new("gfx120X-all").expect("family"),
             version: VersionSelector::Latest,
+            install_root: None,
         })
         .expect("plan");
 
@@ -176,7 +185,11 @@ fn controller_rejects_a_replayed_plan() {
         h.controller.execute(&approval, &RecordingSink::new()),
         Err(ControllerError::PlanAlreadyUsed)
     );
-    assert_eq!(h.cli.invocations().len(), 1, "replay must not re-run the CLI");
+    assert_eq!(
+        h.cli.invocations().len(),
+        1,
+        "replay must not re-run the CLI"
+    );
 }
 
 #[test]
@@ -186,7 +199,8 @@ fn controller_rejects_an_expired_plan() {
     h.clock.advance(super::PLAN_TTL_MS);
 
     assert_eq!(
-        h.controller.execute(&approval_for(&plan), &RecordingSink::new()),
+        h.controller
+            .execute(&approval_for(&plan), &RecordingSink::new()),
         Err(ControllerError::PlanExpired)
     );
     assert!(h.cli.invocations().is_empty());
@@ -236,7 +250,8 @@ fn controller_rejects_a_plan_whose_machine_changed() {
         .expect("refresh the cache");
 
     assert_eq!(
-        h.controller.execute(&approval_for(&plan), &RecordingSink::new()),
+        h.controller
+            .execute(&approval_for(&plan), &RecordingSink::new()),
         Err(ControllerError::SnapshotChanged)
     );
     assert!(h.cli.invocations().is_empty());
@@ -257,7 +272,10 @@ fn controller_every_rejection_is_actionable() {
     ] {
         let message = error.user_message();
         assert!(!message.is_empty());
-        assert!(!message.contains("Err("), "leaked debug formatting: {message}");
+        assert!(
+            !message.contains("Err("),
+            "leaked debug formatting: {message}"
+        );
     }
 }
 
@@ -312,16 +330,25 @@ fn controller_allows_only_one_mutation_at_a_time() {
 
     // A full refresh defers rather than blocking or interrupting the install.
     assert!(
-        controller.snapshot(Freshness::Full).expect("refresh").deferred,
+        controller
+            .snapshot(Freshness::Full)
+            .expect("refresh")
+            .deferred,
         "a refresh during a mutation must defer"
     );
 
     release_tx.send(()).expect("release the CLI");
-    runner.join().expect("thread").expect("first execution succeeds");
+    runner
+        .join()
+        .expect("thread")
+        .expect("first execution succeeds");
 
     assert!(!controller.is_mutating());
     assert!(
-        !controller.snapshot(Freshness::Full).expect("refresh").deferred,
+        !controller
+            .snapshot(Freshness::Full)
+            .expect("refresh")
+            .deferred,
         "refreshes are live again once the mutation finishes"
     );
 }
@@ -339,7 +366,9 @@ fn controller_releases_the_lock_after_a_failed_mutation() {
         ),
     );
     let plan = h.plan_activate();
-    let _ = h.controller.execute(&approval_for(&plan), &RecordingSink::new());
+    let _ = h
+        .controller
+        .execute(&approval_for(&plan), &RecordingSink::new());
 
     assert!(
         !h.controller.is_mutating(),
@@ -385,7 +414,10 @@ fn controller_reports_network_failure_without_activating_anything() {
 
     let result = h.controller.execute(&approval_for(&plan), &sink);
     assert!(result.is_err());
-    assert_eq!(sink.trace(), ["started:plan", "stage:download", "failed:network"]);
+    assert_eq!(
+        sink.trace(),
+        ["started:plan", "stage:download", "failed:network"]
+    );
 
     match sink.terminal() {
         Some(ProgressEvent::Failed { error, .. }) => {
@@ -494,7 +526,10 @@ fn controller_cancellation_leaves_the_prior_configuration_intact() {
         result,
         Err(ControllerError::Adapter(AdapterError::Cancelled))
     ));
-    assert!(h.cli.invocations().is_empty(), "cancelled before any command ran");
+    assert!(
+        h.cli.invocations().is_empty(),
+        "cancelled before any command ran"
+    );
     assert!(matches!(
         sink.terminal(),
         Some(ProgressEvent::Cancelled { .. })
@@ -531,7 +566,10 @@ fn controller_cancellation_mid_operation_reports_the_prior_state() {
         }
         other => panic!("expected Cancelled, got {other:?}"),
     }
-    assert_eq!(sink.trace(), ["started:plan", "stage:download", "cancelled"]);
+    assert_eq!(
+        sink.trace(),
+        ["started:plan", "stage:download", "cancelled"]
+    );
 }
 
 #[test]
@@ -568,6 +606,7 @@ fn controller_surfaces_a_catalog_failure_at_plan_time() {
         channel: Channel::Nightly,
         family: RuntimeFamily::new("gfx120X-all").expect("family"),
         version: VersionSelector::Latest,
+        install_root: None,
     });
     assert!(result.is_err());
 }
@@ -578,14 +617,12 @@ fn controller_surfaces_a_catalog_failure_at_plan_time() {
 
 #[test]
 fn controller_refuses_to_plan_a_mutation_on_an_unsupported_host() {
-    let h = Harness::new(
-        "unsupported-wsl",
-        FakeCliRunner::succeeding(&["install"]),
-    );
+    let h = Harness::new("unsupported-wsl", FakeCliRunner::succeeding(&["install"]));
     let result = h.controller.plan(&OperationRequest::InstallRuntime {
         channel: Channel::Nightly,
         family: RuntimeFamily::new("gfx120X-all").expect("family"),
         version: VersionSelector::Latest,
+        install_root: None,
     });
 
     assert!(

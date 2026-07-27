@@ -134,3 +134,221 @@ body {
     transition: none !important;
   }
 }
+
+/* --------------------------------------------------------------------------
+ * Guided setup
+ *
+ * Structural only. Phase 12 owns the visual system; what matters here is that
+ * one action reads as primary, progress is visible, and focus is never
+ * invisible.
+ * ------------------------------------------------------------------------ */
+
+.onboard {
+  padding: 24px 20px;
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.onboard__title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 650;
+}
+
+.onboard__title:focus-visible {
+  outline: 2px solid #0b5cd5;
+  outline-offset: 4px;
+}
+
+.onboard__subtitle {
+  margin: 4px 0 0;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.onboard__body {
+  margin: 0;
+}
+
+.onboard__muted {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.onboard__refusal {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--bad);
+  border-radius: var(--radius);
+  color: var(--bad);
+}
+
+.onboard__facts {
+  margin: 0;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.onboard__fact {
+  display: contents;
+}
+
+.onboard__fact dt {
+  color: var(--muted);
+}
+
+.onboard__fact dd {
+  margin: 0;
+  font-weight: 550;
+}
+
+.onboard__steps {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.onboard__badge {
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #fff3d6;
+  color: var(--warn);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.onboard__driver,
+.onboard__advanced {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.onboard__advanced summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.onboard__fieldset {
+  margin: 10px 0 0;
+  border: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.onboard__fieldset legend {
+  padding: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.onboard__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.onboard__field input {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+  color: var(--fg);
+}
+
+.onboard__choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.onboard__links {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.onboard__bar {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #0b5cd5 0%, #6ea8fb 50%, #0b5cd5 100%);
+  background-size: 200% 100%;
+  animation: onboard-sweep 1.6s linear infinite;
+}
+
+@keyframes onboard-sweep {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+.onboard__log {
+  margin: 0;
+  padding: 10px 12px 10px 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-size: 13px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.onboard__actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.onboard button {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+/* Written as `.onboard button.onboard__primary` so it outranks the generic
+ * `.onboard button` reset above it; the single-class form loses on
+ * specificity and the primary action renders as an ordinary button. */
+.onboard button.onboard__primary {
+  border-color: transparent;
+  background: #0b5cd5;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.onboard button:focus-visible {
+  outline: 2px solid #0b5cd5;
+  outline-offset: 2px;
+}
+
+/* A details toggle is not a primary action: keep it to its own width instead
+ * of stretching across the column the way flex `stretch` would. */
+.onboard > button {
+  align-self: flex-start;
+}
+
+.onboard__blocked {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}

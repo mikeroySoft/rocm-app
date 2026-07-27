@@ -15,10 +15,12 @@
 pub mod contract;
 pub mod controller;
 pub mod fixtures;
+pub mod onboarding;
 pub mod platform;
 pub mod shared;
 
 pub use contract::{AppSnapshot, ContractError, HealthVerdict, ReasonCode};
 pub use controller::{ControllerError, Freshness, RocmController};
 pub use fixtures::{FixtureSnapshot, Scenario, Verdict};
+pub use onboarding::{OnboardingView, recommend};
 pub use platform::HostPlatform;

@@ -81,9 +81,7 @@ impl HostPlatform {
                  WSL cannot reach the GPU the way this app requires — run ROCm \
                  App on your Windows desktop instead.",
             ),
-            Self::Unsupported => {
-                Some("ROCm App runs on native Windows and native Linux only.")
-            }
+            Self::Unsupported => Some("ROCm App runs on native Windows and native Linux only."),
         }
     }
 
@@ -124,8 +122,8 @@ fn detect_wsl() -> bool {
     if !cfg!(target_os = "linux") {
         return false;
     }
-    let env_marker = std::env::var_os("WSL_DISTRO_NAME").is_some()
-        || std::env::var_os("WSL_INTEROP").is_some();
+    let env_marker =
+        std::env::var_os("WSL_DISTRO_NAME").is_some() || std::env::var_os("WSL_INTEROP").is_some();
     let osrelease = std::fs::read_to_string("/proc/sys/kernel/osrelease").unwrap_or_default();
     wsl_marker_in_osrelease(&osrelease) || env_marker
 }
@@ -214,7 +212,9 @@ mod tests {
 
     #[test]
     fn osrelease_markers() {
-        assert!(wsl_marker_in_osrelease("5.15.153.1-microsoft-standard-WSL2"));
+        assert!(wsl_marker_in_osrelease(
+            "5.15.153.1-microsoft-standard-WSL2"
+        ));
         assert!(wsl_marker_in_osrelease("6.6.0-WSL2-custom"));
         assert!(wsl_marker_in_osrelease("4.4.0-19041-Microsoft"));
         assert!(!wsl_marker_in_osrelease("7.0.0-28-generic"));

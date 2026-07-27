@@ -33,6 +33,7 @@ use rocm_app_core::controller::plan::{Approval, ChangePlan};
 use rocm_app_core::controller::progress::{ProgressEvent, ProgressSink};
 use rocm_app_core::controller::request::OperationRequest;
 use rocm_app_core::controller::{Freshness, RocmController};
+use rocm_app_core::onboarding::{self, Choices, OnboardingView};
 
 /// Locate the bundled `rocm` binary.
 ///
@@ -48,7 +49,11 @@ fn bundled_cli_path() -> PathBuf {
 }
 
 const fn rocm_binary_name() -> &'static str {
-    if cfg!(target_os = "windows") { "rocm.exe" } else { "rocm" }
+    if cfg!(target_os = "windows") {
+        "rocm.exe"
+    } else {
+        "rocm"
+    }
 }
 
 /// Reads machine state by running the bundled CLI's app contract command.
@@ -137,14 +142,10 @@ impl Catalog for SnapshotCatalog {
             | UpdateState::AheadOfIndex { installed, .. }
             | UpdateState::Stale { installed, .. } => Ok(installed),
             UpdateState::Offline { detail } => Err(AdapterError::Network { detail }),
-            UpdateState::UntrustedMetadata { detail } => {
-                Err(AdapterError::Verification { detail })
-            }
-            UpdateState::NotApplicable | UpdateState::Unrecognised => {
-                Err(AdapterError::Network {
-                    detail: "no trusted version information is available yet".to_owned(),
-                })
-            }
+            UpdateState::UntrustedMetadata { detail } => Err(AdapterError::Verification { detail }),
+            UpdateState::NotApplicable | UpdateState::Unrecognised => Err(AdapterError::Network {
+                detail: "no trusted version information is available yet".to_owned(),
+            }),
         }
     }
 }
@@ -377,7 +378,11 @@ pub fn controller_snapshot(
     state: tauri::State<'_, ControllerState>,
     refresh: bool,
 ) -> Result<SnapshotResponse, CommandError> {
-    let freshness = if refresh { Freshness::Full } else { Freshness::Cached };
+    let freshness = if refresh {
+        Freshness::Full
+    } else {
+        Freshness::Cached
+    };
     let view = state.controller.snapshot(freshness)?;
     Ok(SnapshotResponse {
         snapshot: view.snapshot,
@@ -438,6 +443,27 @@ pub fn controller_cancel(state: tauri::State<'_, ControllerState>) {
     state.controller.request_cancel();
 }
 
+/// Decide what the guided setup flow should show.
+///
+/// Reads state and computes an answer; it starts nothing. The install itself
+/// still goes through `controller_plan` + `controller_execute` with an
+/// approval, so this command adds no second path to a mutation.
+#[tauri::command]
+pub fn onboarding_view(
+    state: tauri::State<'_, ControllerState>,
+    choices: Option<Choices>,
+) -> Result<OnboardingView, CommandError> {
+    let choices = choices.unwrap_or_else(Choices::recommended);
+    let snapshot = state.controller.snapshot(Freshness::Full)?.snapshot;
+    let available = onboarding::available_bytes_for(&choices.target_folder);
+    Ok(onboarding::recommend(
+        &snapshot,
+        &choices,
+        available,
+        &onboarding::folder_choices(),
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -481,7 +507,10 @@ mod tests {
             let command_error = CommandError::from(error);
             assert!(!command_error.code.is_empty());
             assert!(!command_error.message.is_empty());
-            assert!(!command_error.code.contains(' '), "codes are machine-readable");
+            assert!(
+                !command_error.code.contains(' '),
+                "codes are machine-readable"
+            );
         }
     }
 
@@ -519,6 +548,7 @@ mod tests {
                 version: VersionSelector::Exact {
                     version: "7.14.0".to_owned(),
                 },
+                install_root: None,
             },
             Some("7.14.0"),
         );

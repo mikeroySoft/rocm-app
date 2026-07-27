@@ -102,8 +102,10 @@ impl std::error::Error for ContractError {}
 /// The version is checked *before* the body, so an incompatible producer
 /// reports a version mismatch rather than a confusing field-level error.
 pub fn decode(payload: &str) -> Result<AppSnapshot, ContractError> {
-    let value: serde_json::Value = serde_json::from_str(payload)
-        .map_err(|e| ContractError::Malformed { detail: e.to_string() })?;
+    let value: serde_json::Value =
+        serde_json::from_str(payload).map_err(|e| ContractError::Malformed {
+            detail: e.to_string(),
+        })?;
 
     let version = value
         .get("schemaVersion")
@@ -162,10 +164,16 @@ pub enum OsFamily {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "state", rename_all = "kebab-case", rename_all_fields = "camelCase")]
+#[serde(
+    tag = "state",
+    rename_all = "kebab-case",
+    rename_all_fields = "camelCase"
+)]
 pub enum SupportStatus {
     Supported,
-    Unsupported { reason: ReasonCode },
+    Unsupported {
+        reason: ReasonCode,
+    },
     /// A support state a newer producer introduced. Treated as unsupported.
     #[serde(other)]
     Unrecognised,
@@ -261,15 +269,34 @@ pub enum ComponentKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "state", rename_all = "kebab-case", rename_all_fields = "camelCase")]
+#[serde(
+    tag = "state",
+    rename_all = "kebab-case",
+    rename_all_fields = "camelCase"
+)]
 pub enum ComponentState {
-    LatestCompatible { version: String },
-    Installed { version: String },
-    UpdateAvailable { installed: String, latest: String },
-    Unsupported { version: String, reason: String },
+    LatestCompatible {
+        version: String,
+    },
+    Installed {
+        version: String,
+    },
+    UpdateAvailable {
+        installed: String,
+        latest: String,
+    },
+    Unsupported {
+        version: String,
+        reason: String,
+    },
     NotInstalled,
-    Stale { version: Option<String>, checked_at_unix_ms: u64 },
-    Unknown { reason: String },
+    Stale {
+        version: Option<String>,
+        checked_at_unix_ms: u64,
+    },
+    Unknown {
+        reason: String,
+    },
     #[serde(other)]
     Unrecognised,
 }
@@ -283,22 +310,41 @@ pub struct ComponentReport {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "state", rename_all = "kebab-case", rename_all_fields = "camelCase")]
+#[serde(
+    tag = "state",
+    rename_all = "kebab-case",
+    rename_all_fields = "camelCase"
+)]
 pub enum RuntimeValidation {
     Ready,
-    Failed { detail: String },
+    Failed {
+        detail: String,
+    },
     Unvalidated,
     #[serde(other)]
     Unrecognised,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "kebab-case", rename_all_fields = "camelCase")]
+#[serde(
+    tag = "kind",
+    rename_all = "kebab-case",
+    rename_all_fields = "camelCase"
+)]
 pub enum InstallSource {
-    Index { url: String },
-    Tarball { url: String, file_name: String },
-    Adopted { path: PathBuf },
-    Imported { path: PathBuf },
+    Index {
+        url: String,
+    },
+    Tarball {
+        url: String,
+        file_name: String,
+    },
+    Adopted {
+        path: PathBuf,
+    },
+    Imported {
+        path: PathBuf,
+    },
     Unknown,
     #[serde(other)]
     Unrecognised,
@@ -322,12 +368,24 @@ pub struct RuntimeRecord {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "state", rename_all = "kebab-case", rename_all_fields = "camelCase")]
+#[serde(
+    tag = "state",
+    rename_all = "kebab-case",
+    rename_all_fields = "camelCase"
+)]
 pub enum DriverVersionState {
-    Known { version: String },
-    DetectedWithoutVersion { detail: String },
-    NotDetected { detail: String },
-    Unknown { reason: String },
+    Known {
+        version: String,
+    },
+    DetectedWithoutVersion {
+        detail: String,
+    },
+    NotDetected {
+        detail: String,
+    },
+    Unknown {
+        reason: String,
+    },
     #[serde(other)]
     Unrecognised,
 }
@@ -352,24 +410,51 @@ pub struct DriverReport {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "kebab-case", rename_all_fields = "camelCase")]
+#[serde(
+    tag = "kind",
+    rename_all = "kebab-case",
+    rename_all_fields = "camelCase"
+)]
 pub enum SourceTrust {
-    Signed { key_source: String },
+    Signed {
+        key_source: String,
+    },
     UnsignedAllowed,
-    Untrusted { reason: String },
+    Untrusted {
+        reason: String,
+    },
     #[serde(other)]
     Unrecognised,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "state", rename_all = "kebab-case", rename_all_fields = "camelCase")]
+#[serde(
+    tag = "state",
+    rename_all = "kebab-case",
+    rename_all_fields = "camelCase"
+)]
 pub enum UpdateState {
-    NoUpdate { installed: String },
-    Available { installed: String, latest: String },
-    AheadOfIndex { installed: String, latest: String },
-    Offline { detail: String },
-    Stale { installed: String, checked_at_unix_ms: u64 },
-    UntrustedMetadata { detail: String },
+    NoUpdate {
+        installed: String,
+    },
+    Available {
+        installed: String,
+        latest: String,
+    },
+    AheadOfIndex {
+        installed: String,
+        latest: String,
+    },
+    Offline {
+        detail: String,
+    },
+    Stale {
+        installed: String,
+        checked_at_unix_ms: u64,
+    },
+    UntrustedMetadata {
+        detail: String,
+    },
     NotApplicable,
     #[serde(other)]
     Unrecognised,
@@ -478,7 +563,12 @@ mod tests {
         assert!(snapshot.eligible_actions.is_empty());
         assert!(snapshot.offerable_actions().is_empty());
         assert_eq!(
-            snapshot.health.reasons.iter().map(|r| r.code).collect::<Vec<_>>(),
+            snapshot
+                .health
+                .reasons
+                .iter()
+                .map(|r| r.code)
+                .collect::<Vec<_>>(),
             vec![ReasonCode::PlatformWsl]
         );
     }
@@ -523,7 +613,11 @@ mod tests {
     fn contract_offline_golden_never_claims_an_update() {
         let snapshot = decode(&golden("offline-stale")).expect("decode");
         assert!(matches!(snapshot.update.state, UpdateState::Offline { .. }));
-        assert!(!snapshot.offerable_actions().contains(&EligibleAction::UpdateRuntime));
+        assert!(
+            !snapshot
+                .offerable_actions()
+                .contains(&EligibleAction::UpdateRuntime)
+        );
     }
 
     // -- Rejection paths -----------------------------------------------------
@@ -533,11 +627,14 @@ mod tests {
         // Checked-in fixture rather than a string edit: a future payload is a
         // real artifact a newer CLI will one day emit, and it carries
         // vocabulary this build has never seen.
-        let err = decode(&golden("invalid-future-version"))
-            .expect_err("future version must be refused");
+        let err =
+            decode(&golden("invalid-future-version")).expect_err("future version must be refused");
         assert_eq!(
             err,
-            ContractError::UnsupportedSchemaVersion { found: 99, supported: 1 }
+            ContractError::UnsupportedSchemaVersion {
+                found: 99,
+                supported: 1
+            }
         );
         assert!(err.user_message().contains("Update ROCm App"));
 
@@ -549,7 +646,10 @@ mod tests {
     #[test]
     fn contract_rejects_a_corrupt_payload_fixture() {
         let err = decode(&golden("invalid-payload")).expect_err("must refuse");
-        assert!(matches!(err, ContractError::InvalidPayload { .. }), "{err:?}");
+        assert!(
+            matches!(err, ContractError::InvalidPayload { .. }),
+            "{err:?}"
+        );
     }
 
     #[test]
@@ -597,10 +697,17 @@ mod tests {
     #[test]
     fn contract_every_error_gives_an_actionable_message() {
         for err in [
-            ContractError::Malformed { detail: "x".to_owned() },
+            ContractError::Malformed {
+                detail: "x".to_owned(),
+            },
             ContractError::MissingSchemaVersion,
-            ContractError::UnsupportedSchemaVersion { found: 2, supported: 1 },
-            ContractError::InvalidPayload { detail: "x".to_owned() },
+            ContractError::UnsupportedSchemaVersion {
+                found: 2,
+                supported: 1,
+            },
+            ContractError::InvalidPayload {
+                detail: "x".to_owned(),
+            },
         ] {
             assert!(!err.user_message().is_empty());
             assert!(!err.detail().is_empty());
@@ -615,8 +722,7 @@ mod tests {
     /// `Unrecognised`.
     #[test]
     fn contract_tolerates_additive_producer_changes() {
-        let mut value: serde_json::Value =
-            serde_json::from_str(&golden("healthy")).expect("parse");
+        let mut value: serde_json::Value = serde_json::from_str(&golden("healthy")).expect("parse");
         value["somethingNew"] = serde_json::json!("added later");
         value["eligibleActions"] = serde_json::json!(["install-runtime", "teleport-runtime"]);
         value["health"]["reasons"] = serde_json::json!([
@@ -640,7 +746,9 @@ mod tests {
     #[test]
     fn contract_driver_report_exposes_no_mutation() {
         let value = serde_json::to_value(DriverReport {
-            installed: DriverVersionState::Known { version: "25.10.1".to_owned() },
+            installed: DriverVersionState::Known {
+                version: "25.10.1".to_owned(),
+            },
             latest_known: Some("25.20.0".to_owned()),
             support_links: vec![SupportLink {
                 label: "release notes".to_owned(),

@@ -66,11 +66,7 @@ impl AdapterError {
                 "The bundled ROCm command-line tool does not match this app. Reinstall ROCm App.",
                 false,
             ),
-            Self::Storage { .. } => (
-                "storage",
-                "Could not save changes to this computer.",
-                true,
-            ),
+            Self::Storage { .. } => ("storage", "Could not save changes to this computer.", true),
             Self::Cancelled => ("cancelled", "The operation was cancelled.", true),
         };
         OperationError {
@@ -173,7 +169,12 @@ pub struct Adapters {
 pub fn argv_for(request: &OperationRequest, resolved_version: Option<&str>) -> Vec<String> {
     let owned = |s: &str| s.to_owned();
     match request {
-        OperationRequest::InstallRuntime { channel, family, .. } => {
+        OperationRequest::InstallRuntime {
+            channel,
+            family,
+            install_root,
+            ..
+        } => {
             let mut args = vec![
                 owned("install"),
                 owned("sdk"),
@@ -188,6 +189,13 @@ pub fn argv_for(request: &OperationRequest, resolved_version: Option<&str>) -> V
             if let Some(version) = resolved_version {
                 args.push(owned("--version"));
                 args.push(owned(version));
+            }
+            // `--prefix` is rocm-cli's own flag for the managed Python folder.
+            // Passed as its own argv element, so a folder containing spaces is
+            // one argument rather than several.
+            if let Some(root) = install_root {
+                args.push(owned("--prefix"));
+                args.push(owned(root.as_str()));
             }
             args
         }
@@ -208,7 +216,12 @@ pub fn argv_for(request: &OperationRequest, resolved_version: Option<&str>) -> V
             owned("--yes"),
         ],
         OperationRequest::ValidateRuntime { key } => {
-            vec![owned("runtimes"), owned("list"), owned("--runtime"), owned(key.as_str())]
+            vec![
+                owned("runtimes"),
+                owned("list"),
+                owned("--runtime"),
+                owned(key.as_str()),
+            ]
         }
     }
 }
@@ -423,7 +436,12 @@ impl FakeStorage {
 
     #[must_use]
     pub fn keys(&self) -> Vec<String> {
-        self.entries.lock().expect("poisoned").keys().cloned().collect()
+        self.entries
+            .lock()
+            .expect("poisoned")
+            .keys()
+            .cloned()
+            .collect()
     }
 }
 
@@ -531,6 +549,7 @@ mod tests {
                 channel: Channel::Nightly,
                 family: RuntimeFamily::new("gfx120X-all").expect("family"),
                 version: VersionSelector::Latest,
+                install_root: None,
             },
             OperationRequest::UpdateRuntime {
                 key: RuntimeKey::new("k").expect("key"),
@@ -562,6 +581,7 @@ mod tests {
                 channel: Channel::Release,
                 family: RuntimeFamily::new("gfx120X-all").expect("family"),
                 version: VersionSelector::Latest,
+                install_root: None,
             },
             OperationRequest::RemoveRuntime {
                 key: RuntimeKey::new("k").expect("key"),
@@ -578,6 +598,7 @@ mod tests {
             channel: Channel::Nightly,
             family: RuntimeFamily::new("gfx120X-all").expect("family"),
             version: VersionSelector::Latest,
+            install_root: None,
         };
         let argv = argv_for(&request, Some("7.15.0"));
         // "latest" must never reach the command line: the plan resolved a
@@ -625,14 +646,22 @@ mod tests {
     #[test]
     fn controller_adapter_errors_map_to_actionable_operation_errors() {
         for error in [
-            AdapterError::Network { detail: "dns".to_owned() },
-            AdapterError::Verification { detail: "sig".to_owned() },
-            AdapterError::Process { detail: "exit 1".to_owned() },
+            AdapterError::Network {
+                detail: "dns".to_owned(),
+            },
+            AdapterError::Verification {
+                detail: "sig".to_owned(),
+            },
+            AdapterError::Process {
+                detail: "exit 1".to_owned(),
+            },
             AdapterError::CliMismatch {
                 expected: "1".to_owned(),
                 found: "2".to_owned(),
             },
-            AdapterError::Storage { detail: "full".to_owned() },
+            AdapterError::Storage {
+                detail: "full".to_owned(),
+            },
             AdapterError::Cancelled,
         ] {
             let op = error.to_operation_error();

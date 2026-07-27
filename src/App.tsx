@@ -3,10 +3,14 @@
 // SPDX-License-Identifier: MIT
 
 import { useEffect, useState } from "react";
+import { isTauri } from "@tauri-apps/api/core";
 import { loadSnapshot } from "./lib/backend";
+import { FIXTURES, desktopBackend, fixtureBackend } from "./lib/onboarding";
+import type { FixtureBackendOptions } from "./lib/onboarding";
 import { installAllowed, unsupportedReason } from "./lib/platform";
 import type { FixtureSnapshot, ScenarioName } from "./lib/scenarios";
 import { SCENARIO_NAMES } from "./lib/scenarios";
+import OnboardingFlow from "./onboarding/OnboardingFlow";
 
 /**
  * Fixture mode is opt-in at build time. It exposes the scenario switcher used
@@ -43,6 +47,90 @@ export interface AppProps {
 }
 
 export default function App({ initialScenario = "healthy" }: AppProps) {
+  // A route decision, not state: it is fixed for the life of the window, and
+  // reading it here keeps every hook below unconditional.
+  const fixtureRoute = FIXTURE_MODE ? onboardingRouteFromUrl() : null;
+  if (fixtureRoute) {
+    return <OnboardingFlow backend={fixtureBackend(FIXTURES, fixtureRoute.scenario, fixtureRoute.options)} />;
+  }
+  if (isTauri()) {
+    return <DesktopShell initialScenario={initialScenario} />;
+  }
+  return <FixtureStatusView initialScenario={initialScenario} />;
+}
+
+/**
+ * Screenshot and renderer entry point for a single onboarding fixture.
+ *
+ * `?view=onboarding&scenario=…` only exists in a fixture build; a production
+ * bundle has no way to reach it, so a query string cannot fabricate a screen.
+ */
+function onboardingRouteFromUrl(): {
+  scenario: string;
+  options: FixtureBackendOptions;
+} | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("view") !== "onboarding") {
+    return null;
+  }
+  const stop = params.get("stop");
+  return {
+    scenario: params.get("scenario") ?? "supported",
+    options: {
+      outcome: params.get("outcome") ?? undefined,
+      stopAfter: stop === null ? undefined : Number(stop),
+    },
+  };
+}
+
+/**
+ * The desktop shell.
+ *
+ * Guided setup owns the window when this machine has no ROCm yet, or when
+ * something blocks setup outright. Anything else belongs on the dashboard,
+ * which Phase 6 builds; until then it falls through to the status card.
+ */
+function DesktopShell({ initialScenario }: { readonly initialScenario: ScenarioName }) {
+  const [backend] = useState(desktopBackend);
+  const [needsSetup, setNeedsSetup] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let live = true;
+    void backend
+      .view()
+      .then((view) => {
+        if (live) {
+          setNeedsSetup(view.state === "blocked" || view.recommendation.firstRun);
+        }
+      })
+      .catch(() => {
+        // A backend that cannot answer is not a reason to hide the app; the
+        // status card reports its own failure.
+        if (live) setNeedsSetup(false);
+      });
+    return () => {
+      live = false;
+    };
+  }, [backend]);
+
+  if (needsSetup === null) {
+    return (
+      <main className="app">
+        <p aria-busy="true">Checking&hellip;</p>
+      </main>
+    );
+  }
+  return needsSetup ? (
+    <OnboardingFlow backend={backend} onFinished={() => setNeedsSetup(false)} />
+  ) : (
+    <FixtureStatusView initialScenario={initialScenario} />
+  );
+}
+
+function FixtureStatusView({ initialScenario }: { readonly initialScenario: ScenarioName }) {
   const [name, setName] = useState<ScenarioName>(initialScenario);
   const [result, setResult] = useState<LoadResult | null>(null);
 

@@ -31,6 +31,10 @@ serde_json = "1"
 # the controller needs to detect a returned plan that no longer matches the one
 # it issued.
 sha2 = "0.10"
+# Free space on the drive the user picked. Already in this lockfile via
+# rocm-dash-collectors, and the same version rocm-cli pins, so naming it
+# directly costs nothing and avoids two unsafe platform calls.
+sysinfo = { version = "0.34", default-features = false, features = ["disk"] }
 
 [workspace.lints.rust]
 # `deny`, not `forbid`: a documented `#[allow(unsafe_code)]` stays possible for

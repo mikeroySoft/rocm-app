@@ -127,10 +127,12 @@ impl SnapshotFingerprint {
 
 fn hex(bytes: &[u8]) -> String {
     use std::fmt::Write as _;
-    bytes.iter().fold(String::with_capacity(bytes.len() * 2), |mut out, b| {
-        let _ = write!(out, "{b:02x}");
-        out
-    })
+    bytes
+        .iter()
+        .fold(String::with_capacity(bytes.len() * 2), |mut out, b| {
+            let _ = write!(out, "{b:02x}");
+            out
+        })
 }
 
 /// One reviewable step. Steps are descriptions, not commands: the argv mapping
@@ -216,9 +218,7 @@ impl ChangePlan {
         let mut hasher = Sha256::new();
         hasher.update(id.as_str().as_bytes());
         hasher.update(b"\x1f");
-        hasher.update(
-            serde_json::to_vec(request).expect("an OperationRequest always serializes"),
-        );
+        hasher.update(serde_json::to_vec(request).expect("an OperationRequest always serializes"));
         hasher.update(b"\x1f");
         for step in steps {
             hasher.update(step.stage.as_bytes());
@@ -325,6 +325,7 @@ mod tests {
             channel: Channel::Nightly,
             family: RuntimeFamily::new("gfx120X-all").expect("family"),
             version: VersionSelector::Latest,
+            install_root: None,
         }
     }
 
@@ -383,7 +384,10 @@ mod tests {
     /// invalidate a review screen the user is still reading.
     #[test]
     fn controller_fingerprint_is_stable_across_an_unchanged_refresh() {
-        let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../../fixtures/contract/healthy.json");
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../fixtures/contract/healthy.json"
+        );
         let raw = std::fs::read_to_string(path).expect("fixture");
         let a = crate::contract::decode(&raw).expect("decode");
         let mut b = crate::contract::decode(&raw).expect("decode");
@@ -460,7 +464,11 @@ mod tests {
             60_000,
             SnapshotFingerprint("different".to_owned()),
         );
-        assert_ne!(base.digest(), other_snapshot.digest(), "snapshot fingerprint");
+        assert_ne!(
+            base.digest(),
+            other_snapshot.digest(),
+            "snapshot fingerprint"
+        );
 
         let other_ttl = ChangePlan::seal(
             base.id().clone(),

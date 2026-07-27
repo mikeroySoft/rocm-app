@@ -58,8 +58,14 @@ fn rocm_binary() -> PathBuf {
         .env_remove("RUSTC_WORKSPACE_WRAPPER")
         .status()
         .unwrap_or_else(|e| panic!("failed to build the rocm binary in {}: {e}", repo.display()));
-    assert!(status.success(), "building the rocm binary failed: {status}");
-    assert!(binary.is_file(), "rocm binary missing after a successful build");
+    assert!(
+        status.success(),
+        "building the rocm binary failed: {status}"
+    );
+    assert!(
+        binary.is_file(),
+        "rocm binary missing after a successful build"
+    );
     binary
 }
 
@@ -211,8 +217,7 @@ fn snake_case_keys(value: &serde_json::Value, path: &str, bad: &mut Vec<String>)
 #[test]
 fn contract_live_producer_uses_camel_case_throughout() {
     let state = IsolatedState::new("casing");
-    let value: serde_json::Value =
-        serde_json::from_str(&run_snapshot(&state)).expect("parse");
+    let value: serde_json::Value = serde_json::from_str(&run_snapshot(&state)).expect("parse");
 
     let mut bad = Vec::new();
     snake_case_keys(&value, "$", &mut bad);

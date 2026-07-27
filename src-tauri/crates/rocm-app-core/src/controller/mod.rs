@@ -38,8 +38,8 @@ pub mod progress;
 pub mod request;
 
 use std::collections::BTreeSet;
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
 use crate::contract::AppSnapshot;
 
@@ -96,9 +96,7 @@ impl ControllerError {
     pub fn user_message(&self) -> String {
         match self {
             Self::Request(e) => format!("That request was not valid: {e}"),
-            Self::PlanNotFound => {
-                "That change is no longer available. Review it again.".to_owned()
-            }
+            Self::PlanNotFound => "That change is no longer available. Review it again.".to_owned(),
             Self::PlanAlreadyUsed => {
                 "That change was already applied. Refresh to see the current state.".to_owned()
             }
@@ -244,7 +242,12 @@ impl RocmController {
 
         // Resolve "latest" now so the review screen shows a concrete version.
         let resolved_version = match request {
-            OperationRequest::InstallRuntime { channel, family, version } => match version {
+            OperationRequest::InstallRuntime {
+                channel,
+                family,
+                version,
+                ..
+            } => match version {
                 request::VersionSelector::Exact { version } => Some(version.clone()),
                 request::VersionSelector::Latest => Some(
                     self.adapters

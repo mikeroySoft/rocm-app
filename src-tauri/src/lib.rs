@@ -71,6 +71,7 @@ pub fn run() {
             controller_host::controller_plan,
             controller_host::controller_execute,
             controller_host::controller_cancel,
+            controller_host::onboarding_view,
         ])
         .run(tauri::generate_context!())
         .expect("failed to start ROCm App");

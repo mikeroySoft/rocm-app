@@ -1,0 +1,948 @@
+{
+  "scenarios": [
+    {
+      "name": "supported",
+      "purpose": "fresh supported host: one recommended stable plan",
+      "snapshot": {
+        "schemaVersion": 1,
+        "producer": {
+          "name": "rocm-cli",
+          "version": "0.1.0",
+          "build": "unknown"
+        },
+        "observedAtUnixMs": 1767225600000,
+        "platform": {
+          "os": "linux",
+          "arch": "x86_64",
+          "isWsl": false,
+          "support": {
+            "state": "supported"
+          }
+        },
+        "gpu": {
+          "name": "AMD Radeon AI PRO R9700",
+          "gfxTarget": "gfx1201",
+          "therockFamily": "gfx120X-all"
+        },
+        "health": {
+          "verdict": "setup-required",
+          "reasons": [
+            {
+              "code": "runtime-absent",
+              "detail": "No managed ROCm runtime is installed."
+            }
+          ],
+          "nextAction": "Set up ROCm."
+        },
+        "components": [
+          {
+            "kind": "cli",
+            "name": "rocm",
+            "state": {
+              "state": "installed",
+              "version": "0.1.0"
+            }
+          }
+        ],
+        "runtimes": [],
+        "driver": {
+          "installed": {
+            "state": "detected-without-version",
+            "detail": "amdgpu kernel module is loaded"
+          },
+          "latestKnown": null,
+          "supportLinks": []
+        },
+        "update": {
+          "state": {
+            "state": "not-applicable"
+          },
+          "checkedAtUnixMs": 1767225600000,
+          "trust": {
+            "kind": "signed",
+            "keySource": "pinned"
+          }
+        },
+        "eligibleActions": [
+          "install-runtime"
+        ]
+      },
+      "targetFolder": "/home/rocm-user/ROCm",
+      "availableBytes": 429496729600,
+      "view": {
+        "state": "ready",
+        "recommendation": {
+          "facts": [
+            {
+              "key": "gpu",
+              "label": "Graphics card",
+              "value": "AMD Radeon AI PRO R9700"
+            },
+            {
+              "key": "system",
+              "label": "System",
+              "value": "Linux, 64-bit"
+            },
+            {
+              "key": "driver",
+              "label": "Display driver",
+              "value": "Installed (version not reported)"
+            },
+            {
+              "key": "rocm",
+              "label": "ROCm to install",
+              "value": "Newest stable release"
+            },
+            {
+              "key": "space",
+              "label": "Space needed",
+              "value": "About 12 GB"
+            },
+            {
+              "key": "folder",
+              "label": "Install folder",
+              "value": "/home/rocm-user/ROCm"
+            },
+            {
+              "key": "free-space",
+              "label": "Free space there",
+              "value": "400 GB"
+            }
+          ],
+          "driver": {
+            "summary": "Installed (version not reported)",
+            "note": "ROCm App only reports your display driver. It never installs, updates, or changes it.",
+            "links": []
+          },
+          "firstRun": true,
+          "channel": "release",
+          "family": "gfx120X-all",
+          "targetFolder": "/home/rocm-user/ROCm",
+          "folderChoices": [
+            "/home/rocm-user/ROCm",
+            "/home/rocm-user/AMD/ROCm"
+          ],
+          "estimatedBytes": 12884901888,
+          "availableBytes": 429496729600,
+          "request": {
+            "operation": "install-runtime",
+            "channel": "release",
+            "family": "gfx120X-all",
+            "version": {
+              "kind": "latest"
+            },
+            "installRoot": "/home/rocm-user/ROCm"
+          }
+        }
+      },
+      "plan": {
+        "id": "plan-1767225600000-000000",
+        "request": {
+          "operation": "install-runtime",
+          "channel": "release",
+          "family": "gfx120X-all",
+          "version": {
+            "kind": "latest"
+          },
+          "installRoot": "/home/rocm-user/ROCm"
+        },
+        "steps": [
+          {
+            "stage": "download",
+            "summary": "Download the ROCm runtime",
+            "mutating": false
+          },
+          {
+            "stage": "verify",
+            "summary": "Check the download is genuine",
+            "mutating": false
+          },
+          {
+            "stage": "install",
+            "summary": "Install alongside your existing ROCm versions",
+            "mutating": true
+          },
+          {
+            "stage": "validate",
+            "summary": "Check the new version works",
+            "mutating": false
+          }
+        ],
+        "resolvedVersion": "7.14.1",
+        "createdAtUnixMs": 1767225600000,
+        "expiresAtUnixMs": 1767225900000,
+        "snapshot": "538a251f5818c8d0468544ae23a8ad7185c0c22a8753c209201320310a85465a",
+        "digest": "2c280ff7a3a4050f12d8635f958ca9150f807367a71342be22a4a48283dd3e6a"
+      }
+    },
+    {
+      "name": "unsupported-wsl",
+      "purpose": "WSL: no install action anywhere in the payload",
+      "snapshot": {
+        "schemaVersion": 1,
+        "producer": {
+          "name": "rocm-cli",
+          "version": "0.1.0",
+          "build": "unknown"
+        },
+        "observedAtUnixMs": 1767225600000,
+        "platform": {
+          "os": "linux",
+          "arch": "x86_64",
+          "isWsl": true,
+          "support": {
+            "state": "unsupported",
+            "reason": "platform-wsl"
+          }
+        },
+        "gpu": {
+          "name": "AMD Radeon AI PRO R9700",
+          "gfxTarget": "gfx1201",
+          "therockFamily": "gfx120X-all"
+        },
+        "health": {
+          "verdict": "unsupported",
+          "reasons": [
+            {
+              "code": "platform-wsl",
+              "detail": "Running under WSL. ROCm App manages native Windows and native Linux hosts."
+            }
+          ],
+          "nextAction": "Run ROCm App on your Windows desktop instead."
+        },
+        "components": [
+          {
+            "kind": "cli",
+            "name": "rocm",
+            "state": {
+              "state": "installed",
+              "version": "0.1.0"
+            }
+          }
+        ],
+        "runtimes": [
+          {
+            "key": "nightly-wheel-gfx120x-all-7-14-0",
+            "runtimeId": "therock-nightly:gfx120X-all",
+            "version": "7.14.0",
+            "active": true,
+            "previous": false,
+            "validation": {
+              "state": "ready"
+            },
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installSource": {
+              "kind": "index",
+              "url": "https://example.invalid/simple"
+            },
+            "installRoot": "/tmp/rocm/runtime",
+            "readOnly": false
+          }
+        ],
+        "driver": {
+          "installed": {
+            "state": "detected-without-version",
+            "detail": "amdgpu kernel module is loaded"
+          },
+          "latestKnown": null,
+          "supportLinks": []
+        },
+        "update": {
+          "state": {
+            "state": "no-update",
+            "installed": "7.14.0"
+          },
+          "checkedAtUnixMs": 1767225600000,
+          "trust": {
+            "kind": "signed",
+            "keySource": "pinned"
+          }
+        },
+        "eligibleActions": []
+      },
+      "targetFolder": "/home/rocm-user/ROCm",
+      "availableBytes": 429496729600,
+      "view": {
+        "state": "blocked",
+        "blocker": {
+          "code": "unsupported-wsl",
+          "headline": "ROCm App cannot set up ROCm inside WSL",
+          "detail": "You are running inside Windows Subsystem for Linux, which cannot reach the graphics card the way ROCm App needs. Install and run ROCm App on Windows itself.",
+          "nextAction": {
+            "kind": "nothing",
+            "label": "Close this window and open ROCm App on Windows"
+          }
+        }
+      },
+      "plan": null
+    },
+    {
+      "name": "unknown-hardware",
+      "purpose": "graphics card not matched to a ROCm build",
+      "snapshot": {
+        "schemaVersion": 1,
+        "producer": {
+          "name": "rocm-cli",
+          "version": "0.1.0",
+          "build": "unknown"
+        },
+        "observedAtUnixMs": 1767225600000,
+        "platform": {
+          "os": "linux",
+          "arch": "x86_64",
+          "isWsl": false,
+          "support": {
+            "state": "supported"
+          }
+        },
+        "gpu": {
+          "name": "AMD Radeon AI PRO R9700",
+          "gfxTarget": null,
+          "therockFamily": null
+        },
+        "health": {
+          "verdict": "setup-required",
+          "reasons": [
+            {
+              "code": "runtime-absent",
+              "detail": "No managed ROCm runtime is installed."
+            }
+          ],
+          "nextAction": "Set up ROCm."
+        },
+        "components": [
+          {
+            "kind": "cli",
+            "name": "rocm",
+            "state": {
+              "state": "installed",
+              "version": "0.1.0"
+            }
+          }
+        ],
+        "runtimes": [],
+        "driver": {
+          "installed": {
+            "state": "detected-without-version",
+            "detail": "amdgpu kernel module is loaded"
+          },
+          "latestKnown": null,
+          "supportLinks": []
+        },
+        "update": {
+          "state": {
+            "state": "not-applicable"
+          },
+          "checkedAtUnixMs": 1767225600000,
+          "trust": {
+            "kind": "signed",
+            "keySource": "pinned"
+          }
+        },
+        "eligibleActions": [
+          "install-runtime"
+        ]
+      },
+      "targetFolder": "/home/rocm-user/ROCm",
+      "availableBytes": 429496729600,
+      "view": {
+        "state": "blocked",
+        "blocker": {
+          "code": "unknown-hardware",
+          "headline": "This graphics card is not recognised",
+          "detail": "ROCm App could not match your graphics card to a supported ROCm build, so it will not guess. Check that a supported AMD card is installed and its driver is loaded.",
+          "nextAction": {
+            "kind": "refresh",
+            "label": "Check this computer again"
+          }
+        }
+      },
+      "plan": null
+    },
+    {
+      "name": "incomplete-probe",
+      "purpose": "checks did not finish; refuse to recommend",
+      "snapshot": {
+        "schemaVersion": 1,
+        "producer": {
+          "name": "rocm-cli",
+          "version": "0.1.0",
+          "build": "unknown"
+        },
+        "observedAtUnixMs": 1767225600000,
+        "platform": {
+          "os": "linux",
+          "arch": "x86_64",
+          "isWsl": false,
+          "support": {
+            "state": "supported"
+          }
+        },
+        "gpu": {
+          "name": "AMD Radeon AI PRO R9700",
+          "gfxTarget": "gfx1201",
+          "therockFamily": "gfx120X-all"
+        },
+        "health": {
+          "verdict": "unknown",
+          "reasons": [
+            {
+              "code": "probe-incomplete",
+              "detail": "1 probe(s) did not complete."
+            }
+          ],
+          "nextAction": "Refresh to complete the remaining checks."
+        },
+        "components": [
+          {
+            "kind": "cli",
+            "name": "rocm",
+            "state": {
+              "state": "installed",
+              "version": "0.1.0"
+            }
+          },
+          {
+            "kind": "py-torch",
+            "name": "torch",
+            "state": {
+              "state": "unknown",
+              "reason": "framework probe skipped"
+            }
+          }
+        ],
+        "runtimes": [
+          {
+            "key": "nightly-wheel-gfx120x-all-7-14-0",
+            "runtimeId": "therock-nightly:gfx120X-all",
+            "version": "7.14.0",
+            "active": true,
+            "previous": false,
+            "validation": {
+              "state": "ready"
+            },
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installSource": {
+              "kind": "index",
+              "url": "https://example.invalid/simple"
+            },
+            "installRoot": "/tmp/rocm/runtime",
+            "readOnly": false
+          }
+        ],
+        "driver": {
+          "installed": {
+            "state": "detected-without-version",
+            "detail": "amdgpu kernel module is loaded"
+          },
+          "latestKnown": null,
+          "supportLinks": []
+        },
+        "update": {
+          "state": {
+            "state": "no-update",
+            "installed": "7.14.0"
+          },
+          "checkedAtUnixMs": 1767225600000,
+          "trust": {
+            "kind": "signed",
+            "keySource": "pinned"
+          }
+        },
+        "eligibleActions": [
+          "install-runtime",
+          "validate-runtime"
+        ]
+      },
+      "targetFolder": "/home/rocm-user/ROCm",
+      "availableBytes": 429496729600,
+      "view": {
+        "state": "blocked",
+        "blocker": {
+          "code": "incomplete-probe",
+          "headline": "Some checks did not finish",
+          "detail": "ROCm App could not finish checking this computer, so it will not recommend a setup it is not sure about. Try the check again.",
+          "nextAction": {
+            "kind": "refresh",
+            "label": "Check this computer again"
+          }
+        }
+      },
+      "plan": null
+    },
+    {
+      "name": "offline",
+      "purpose": "download service unreachable",
+      "snapshot": {
+        "schemaVersion": 1,
+        "producer": {
+          "name": "rocm-cli",
+          "version": "0.1.0",
+          "build": "unknown"
+        },
+        "observedAtUnixMs": 1767225600000,
+        "platform": {
+          "os": "linux",
+          "arch": "x86_64",
+          "isWsl": false,
+          "support": {
+            "state": "supported"
+          }
+        },
+        "gpu": {
+          "name": "AMD Radeon AI PRO R9700",
+          "gfxTarget": "gfx1201",
+          "therockFamily": "gfx120X-all"
+        },
+        "health": {
+          "verdict": "unknown",
+          "reasons": [
+            {
+              "code": "update-offline",
+              "detail": "Could not check for updates: update catalog is unreachable"
+            }
+          ],
+          "nextAction": "Reconnect to check for ROCm updates."
+        },
+        "components": [
+          {
+            "kind": "cli",
+            "name": "rocm",
+            "state": {
+              "state": "installed",
+              "version": "0.1.0"
+            }
+          },
+          {
+            "kind": "managed-runtime",
+            "name": "therock",
+            "state": {
+              "state": "stale",
+              "version": "7.14.0",
+              "checkedAtUnixMs": 1767139200000
+            }
+          }
+        ],
+        "runtimes": [
+          {
+            "key": "nightly-wheel-gfx120x-all-7-14-0",
+            "runtimeId": "therock-nightly:gfx120X-all",
+            "version": "7.14.0",
+            "active": true,
+            "previous": false,
+            "validation": {
+              "state": "ready"
+            },
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installSource": {
+              "kind": "index",
+              "url": "https://example.invalid/simple"
+            },
+            "installRoot": "/tmp/rocm/runtime",
+            "readOnly": false
+          }
+        ],
+        "driver": {
+          "installed": {
+            "state": "detected-without-version",
+            "detail": "amdgpu kernel module is loaded"
+          },
+          "latestKnown": null,
+          "supportLinks": []
+        },
+        "update": {
+          "state": {
+            "state": "offline",
+            "detail": "update catalog is unreachable"
+          },
+          "checkedAtUnixMs": null,
+          "trust": {
+            "kind": "untrusted",
+            "reason": "no metadata retrieved"
+          }
+        },
+        "eligibleActions": [
+          "install-runtime",
+          "validate-runtime"
+        ]
+      },
+      "targetFolder": "/home/rocm-user/ROCm",
+      "availableBytes": 429496729600,
+      "view": {
+        "state": "blocked",
+        "blocker": {
+          "code": "offline",
+          "headline": "No internet connection",
+          "detail": "Setting up ROCm downloads files from AMD, and this computer cannot reach them right now. Reconnect and check again.",
+          "nextAction": {
+            "kind": "refresh",
+            "label": "Check again"
+          }
+        }
+      },
+      "plan": null
+    },
+    {
+      "name": "untrusted-metadata",
+      "purpose": "download list failed its signature check",
+      "snapshot": {
+        "schemaVersion": 1,
+        "producer": {
+          "name": "rocm-cli",
+          "version": "0.1.0",
+          "build": "unknown"
+        },
+        "observedAtUnixMs": 1767225600000,
+        "platform": {
+          "os": "linux",
+          "arch": "x86_64",
+          "isWsl": false,
+          "support": {
+            "state": "supported"
+          }
+        },
+        "gpu": {
+          "name": "AMD Radeon AI PRO R9700",
+          "gfxTarget": "gfx1201",
+          "therockFamily": "gfx120X-all"
+        },
+        "health": {
+          "verdict": "setup-required",
+          "reasons": [
+            {
+              "code": "runtime-absent",
+              "detail": "No managed ROCm runtime is installed."
+            }
+          ],
+          "nextAction": "Set up ROCm."
+        },
+        "components": [
+          {
+            "kind": "cli",
+            "name": "rocm",
+            "state": {
+              "state": "installed",
+              "version": "0.1.0"
+            }
+          }
+        ],
+        "runtimes": [],
+        "driver": {
+          "installed": {
+            "state": "detected-without-version",
+            "detail": "amdgpu kernel module is loaded"
+          },
+          "latestKnown": null,
+          "supportLinks": []
+        },
+        "update": {
+          "state": {
+            "state": "untrusted-metadata",
+            "detail": "signature did not verify"
+          },
+          "checkedAtUnixMs": 1767225600000,
+          "trust": {
+            "kind": "untrusted",
+            "reason": "signature did not verify"
+          }
+        },
+        "eligibleActions": [
+          "install-runtime"
+        ]
+      },
+      "targetFolder": "/home/rocm-user/ROCm",
+      "availableBytes": 429496729600,
+      "view": {
+        "state": "blocked",
+        "blocker": {
+          "code": "untrusted-metadata",
+          "headline": "The download list could not be verified",
+          "detail": "ROCm App checks that AMD's download list is genuine before using it, and that check did not pass. Nothing was downloaded or changed. Check again later.",
+          "nextAction": {
+            "kind": "refresh",
+            "label": "Check again"
+          }
+        }
+      },
+      "plan": null
+    },
+    {
+      "name": "insufficient-space",
+      "purpose": "not enough room on the chosen drive",
+      "snapshot": {
+        "schemaVersion": 1,
+        "producer": {
+          "name": "rocm-cli",
+          "version": "0.1.0",
+          "build": "unknown"
+        },
+        "observedAtUnixMs": 1767225600000,
+        "platform": {
+          "os": "linux",
+          "arch": "x86_64",
+          "isWsl": false,
+          "support": {
+            "state": "supported"
+          }
+        },
+        "gpu": {
+          "name": "AMD Radeon AI PRO R9700",
+          "gfxTarget": "gfx1201",
+          "therockFamily": "gfx120X-all"
+        },
+        "health": {
+          "verdict": "setup-required",
+          "reasons": [
+            {
+              "code": "runtime-absent",
+              "detail": "No managed ROCm runtime is installed."
+            }
+          ],
+          "nextAction": "Set up ROCm."
+        },
+        "components": [
+          {
+            "kind": "cli",
+            "name": "rocm",
+            "state": {
+              "state": "installed",
+              "version": "0.1.0"
+            }
+          }
+        ],
+        "runtimes": [],
+        "driver": {
+          "installed": {
+            "state": "detected-without-version",
+            "detail": "amdgpu kernel module is loaded"
+          },
+          "latestKnown": null,
+          "supportLinks": []
+        },
+        "update": {
+          "state": {
+            "state": "not-applicable"
+          },
+          "checkedAtUnixMs": 1767225600000,
+          "trust": {
+            "kind": "signed",
+            "keySource": "pinned"
+          }
+        },
+        "eligibleActions": [
+          "install-runtime"
+        ]
+      },
+      "targetFolder": "/home/rocm-user/ROCm",
+      "availableBytes": 3221225472,
+      "view": {
+        "state": "blocked",
+        "blocker": {
+          "code": "insufficient-space",
+          "headline": "Not enough free space",
+          "detail": "Setting up ROCm needs about 14 GB free, and this drive has 3 GB. Free some space or choose a folder on another drive.",
+          "nextAction": {
+            "kind": "free-space",
+            "label": "Check again",
+            "neededBytes": 15032385536,
+            "availableBytes": 3221225472
+          }
+        }
+      },
+      "plan": null
+    },
+    {
+      "name": "protected-folder",
+      "purpose": "the chosen folder is a system location",
+      "snapshot": {
+        "schemaVersion": 1,
+        "producer": {
+          "name": "rocm-cli",
+          "version": "0.1.0",
+          "build": "unknown"
+        },
+        "observedAtUnixMs": 1767225600000,
+        "platform": {
+          "os": "linux",
+          "arch": "x86_64",
+          "isWsl": false,
+          "support": {
+            "state": "supported"
+          }
+        },
+        "gpu": {
+          "name": "AMD Radeon AI PRO R9700",
+          "gfxTarget": "gfx1201",
+          "therockFamily": "gfx120X-all"
+        },
+        "health": {
+          "verdict": "setup-required",
+          "reasons": [
+            {
+              "code": "runtime-absent",
+              "detail": "No managed ROCm runtime is installed."
+            }
+          ],
+          "nextAction": "Set up ROCm."
+        },
+        "components": [
+          {
+            "kind": "cli",
+            "name": "rocm",
+            "state": {
+              "state": "installed",
+              "version": "0.1.0"
+            }
+          }
+        ],
+        "runtimes": [],
+        "driver": {
+          "installed": {
+            "state": "detected-without-version",
+            "detail": "amdgpu kernel module is loaded"
+          },
+          "latestKnown": null,
+          "supportLinks": []
+        },
+        "update": {
+          "state": {
+            "state": "not-applicable"
+          },
+          "checkedAtUnixMs": 1767225600000,
+          "trust": {
+            "kind": "signed",
+            "keySource": "pinned"
+          }
+        },
+        "eligibleActions": [
+          "install-runtime"
+        ]
+      },
+      "targetFolder": "/usr/local/rocm",
+      "availableBytes": 429496729600,
+      "view": {
+        "state": "blocked",
+        "blocker": {
+          "code": "protected-folder",
+          "headline": "That folder cannot be used",
+          "detail": "The folder you chose is a system folder; choose a folder inside your own home folder.",
+          "nextAction": {
+            "kind": "choose-folder",
+            "label": "Choose another folder"
+          }
+        }
+      },
+      "plan": null
+    }
+  ],
+  "outcomes": [
+    {
+      "name": "success",
+      "events": [
+        {
+          "event": "started",
+          "operationId": "plan-1767225600000-000000",
+          "operation": "install-runtime",
+          "stage": "plan"
+        },
+        {
+          "event": "stage",
+          "operationId": "plan-1767225600000-000000",
+          "stage": "download",
+          "message": "download in progress",
+          "count": null
+        },
+        {
+          "event": "stage",
+          "operationId": "plan-1767225600000-000000",
+          "stage": "verify",
+          "message": "verify in progress",
+          "count": null
+        },
+        {
+          "event": "stage",
+          "operationId": "plan-1767225600000-000000",
+          "stage": "install",
+          "message": "install in progress",
+          "count": null
+        },
+        {
+          "event": "stage",
+          "operationId": "plan-1767225600000-000000",
+          "stage": "validate",
+          "message": "validate in progress",
+          "count": null
+        },
+        {
+          "event": "completed",
+          "operationId": "plan-1767225600000-000000",
+          "message": "install-runtime finished."
+        }
+      ]
+    },
+    {
+      "name": "cancelled",
+      "events": [
+        {
+          "event": "started",
+          "operationId": "plan-1767225600000-000000",
+          "operation": "install-runtime",
+          "stage": "plan"
+        },
+        {
+          "event": "cancelled",
+          "operationId": "plan-1767225600000-000000",
+          "message": "Cancelled before any change was made."
+        }
+      ]
+    },
+    {
+      "name": "validation-failed",
+      "events": [
+        {
+          "event": "started",
+          "operationId": "plan-1767225600000-000000",
+          "operation": "install-runtime",
+          "stage": "plan"
+        },
+        {
+          "event": "stage",
+          "operationId": "plan-1767225600000-000000",
+          "stage": "download",
+          "message": "download in progress",
+          "count": null
+        },
+        {
+          "event": "stage",
+          "operationId": "plan-1767225600000-000000",
+          "stage": "verify",
+          "message": "verify in progress",
+          "count": null
+        },
+        {
+          "event": "stage",
+          "operationId": "plan-1767225600000-000000",
+          "stage": "install",
+          "message": "install in progress",
+          "count": null
+        },
+        {
+          "event": "failed",
+          "operationId": "plan-1767225600000-000000",
+          "error": {
+            "code": "verification",
+            "message": "The downloaded files failed their integrity check. Nothing was installed.",
+            "recoverable": true,
+            "detail": "the installed version did not pass its check"
+          }
+        }
+      ]
+    }
+  ]
+}
