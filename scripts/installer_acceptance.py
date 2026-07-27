@@ -44,6 +44,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tarfile
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -257,22 +258,33 @@ def extract_deb_control(deb: Path, dest: Path) -> Path:
 
 
 def extract_rpm(rpm: Path, dest: Path) -> Path:
+    """Unpack an rpm with `rpm2archive -n`, which emits a plain tar.
+
+    Not `rpm2cpio | cpio`. On this development host `rpm2cpio` is a symlink to
+    `rpm2archive` and emits cpio for compatibility; on the CI runner it is the
+    older standalone script and exited non-zero with nothing on stderr while
+    `rpm -qlp` worked fine. Naming the tool that does what is wanted removes a
+    difference between two hosts that has nothing to do with the package.
+    """
     dest.mkdir(parents=True, exist_ok=True)
-    with rpm.open("rb") as handle:
-        cpio_stream = subprocess.run(
-            ["rpm2cpio", "-"], stdin=handle, capture_output=True, timeout=120
-        )
-    if cpio_stream.returncode != 0:
-        raise HarnessError(f"rpm2cpio failed: {cpio_stream.stderr.decode()[:200]}")
-    unpack = subprocess.run(
-        ["cpio", "-idm", "--quiet"],
-        input=cpio_stream.stdout,
-        capture_output=True,
-        cwd=dest,
-        timeout=120,
-    )
-    if unpack.returncode != 0:
-        raise HarnessError(f"cpio failed: {unpack.stderr.decode()[:200]}")
+    with tempfile.TemporaryDirectory(prefix="rocm-rpm-") as scratch:
+        payload = Path(scratch) / "payload.tar"
+        with payload.open("wb") as sink:
+            unpacked = subprocess.run(
+                ["rpm2archive", "-n", str(rpm)],
+                stdout=sink,
+                stderr=subprocess.PIPE,
+                timeout=120,
+                check=False,
+            )
+        if unpacked.returncode != 0 or payload.stat().st_size == 0:
+            raise HarnessError(
+                f"rpm2archive failed for {rpm.name} "
+                f"(exit {unpacked.returncode}, {payload.stat().st_size} bytes): "
+                f"{unpacked.stderr.decode(errors='replace')[:200]}"
+            )
+        with tarfile.open(payload) as archive:
+            archive.extractall(dest, filter="data")
     return dest
 
 
