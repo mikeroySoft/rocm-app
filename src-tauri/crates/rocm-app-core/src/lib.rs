@@ -13,10 +13,12 @@
 //! of its own.
 
 pub mod contract;
+pub mod controller;
 pub mod fixtures;
 pub mod platform;
 pub mod shared;
 
 pub use contract::{AppSnapshot, ContractError, HealthVerdict, ReasonCode};
+pub use controller::{ControllerError, Freshness, RocmController};
 pub use fixtures::{FixtureSnapshot, Scenario, Verdict};
 pub use platform::HostPlatform;

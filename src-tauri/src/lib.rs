@@ -19,6 +19,8 @@ compile_error!(
      macOS, BSD, and other targets are out of scope."
 );
 
+pub mod controller_host;
+
 use rocm_app_core::fixtures::{self, FixtureSnapshot, Scenario};
 use rocm_app_core::platform::HostPlatform;
 
@@ -48,10 +50,27 @@ fn fixture_snapshot(scenario: &str) -> Result<FixtureSnapshot, String> {
 /// Build and run the desktop application.
 pub fn run() {
     tauri::Builder::default()
+        .setup(|app| {
+            use tauri::Manager as _;
+            let data_dir = app.path().app_data_dir()?;
+            app.manage(controller_host::ControllerState {
+                controller: rocm_app_core::RocmController::new(
+                    controller_host::production_adapters(data_dir),
+                ),
+            });
+            Ok(())
+        })
+        // No shell plugin is registered here, and none may be added: the
+        // controller owns every process invocation, in Rust, from a typed
+        // operation. See capabilities/default.json.
         .invoke_handler(tauri::generate_handler![
             host_platform,
             fixture_scenarios,
-            fixture_snapshot
+            fixture_snapshot,
+            controller_host::controller_snapshot,
+            controller_host::controller_plan,
+            controller_host::controller_execute,
+            controller_host::controller_cancel,
         ])
         .run(tauri::generate_context!())
         .expect("failed to start ROCm App");

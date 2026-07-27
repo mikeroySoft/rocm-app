@@ -27,6 +27,10 @@ rocm-dash-core = { git = "https://github.com/mikeroysoft/rocm-cli", rev = "cae77
 
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+# Plan digests. A change plan round-trips through the webview for display, so
+# the controller needs to detect a returned plan that no longer matches the one
+# it issued.
+sha2 = "0.10"
 
 [workspace.lints.rust]
 # `deny`, not `forbid`: a documented `#[allow(unsafe_code)]` stays possible for
