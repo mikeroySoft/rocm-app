@@ -91,6 +91,25 @@
             },
             "installRoot": "/tmp/rocm/runtime",
             "readOnly": false
+          },
+          {
+            "key": "nightly-wheel-gfx120x-all-7-13-0",
+            "runtimeId": "therock-nightly:gfx120X-all",
+            "version": "7.13.0",
+            "active": false,
+            "previous": true,
+            "validation": {
+              "state": "ready"
+            },
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installSource": {
+              "kind": "index",
+              "url": "https://example.invalid/simple"
+            },
+            "installRoot": "/tmp/rocm/runtime-7-13-0",
+            "readOnly": false
           }
         ],
         "driver": {
@@ -114,6 +133,8 @@
         },
         "eligibleActions": [
           "install-runtime",
+          "activate-runtime",
+          "remove-runtime",
           "validate-runtime"
         ]
       },
@@ -704,6 +725,25 @@
             },
             "installRoot": "/tmp/rocm/runtime",
             "readOnly": false
+          },
+          {
+            "key": "nightly-wheel-gfx120x-all-7-13-0",
+            "runtimeId": "therock-nightly:gfx120X-all",
+            "version": "7.13.0",
+            "active": false,
+            "previous": true,
+            "validation": {
+              "state": "ready"
+            },
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installSource": {
+              "kind": "index",
+              "url": "https://example.invalid/simple"
+            },
+            "installRoot": "/tmp/rocm/runtime-7-13-0",
+            "readOnly": false
           }
         ],
         "driver": {
@@ -729,6 +769,8 @@
         "eligibleActions": [
           "install-runtime",
           "update-runtime",
+          "activate-runtime",
+          "remove-runtime",
           "validate-runtime"
         ]
       },
@@ -1016,6 +1058,25 @@
             },
             "installRoot": "/tmp/rocm/runtime",
             "readOnly": false
+          },
+          {
+            "key": "nightly-wheel-gfx120x-all-7-13-0",
+            "runtimeId": "therock-nightly:gfx120X-all",
+            "version": "7.13.0",
+            "active": false,
+            "previous": true,
+            "validation": {
+              "state": "ready"
+            },
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installSource": {
+              "kind": "index",
+              "url": "https://example.invalid/simple"
+            },
+            "installRoot": "/tmp/rocm/runtime-7-13-0",
+            "readOnly": false
           }
         ],
         "driver": {
@@ -1039,6 +1100,8 @@
         },
         "eligibleActions": [
           "install-runtime",
+          "activate-runtime",
+          "remove-runtime",
           "validate-runtime"
         ]
       },
@@ -1344,6 +1407,25 @@
             },
             "installRoot": "/tmp/rocm/runtime",
             "readOnly": false
+          },
+          {
+            "key": "nightly-wheel-gfx120x-all-7-13-0",
+            "runtimeId": "therock-nightly:gfx120X-all",
+            "version": "7.13.0",
+            "active": false,
+            "previous": true,
+            "validation": {
+              "state": "ready"
+            },
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installSource": {
+              "kind": "index",
+              "url": "https://example.invalid/simple"
+            },
+            "installRoot": "/tmp/rocm/runtime-7-13-0",
+            "readOnly": false
           }
         ],
         "driver": {
@@ -1367,6 +1449,8 @@
         },
         "eligibleActions": [
           "install-runtime",
+          "activate-runtime",
+          "remove-runtime",
           "validate-runtime"
         ]
       },
@@ -1672,6 +1756,25 @@
               "url": "https://example.invalid/simple"
             },
             "installRoot": "/tmp/rocm/runtime",
+            "readOnly": false
+          },
+          {
+            "key": "nightly-wheel-gfx120x-all-7-13-0",
+            "runtimeId": "therock-nightly:gfx120X-all",
+            "version": "7.13.0",
+            "active": false,
+            "previous": true,
+            "validation": {
+              "state": "ready"
+            },
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installSource": {
+              "kind": "index",
+              "url": "https://example.invalid/simple"
+            },
+            "installRoot": "/tmp/rocm/runtime-7-13-0",
             "readOnly": false
           }
         ],
@@ -1999,6 +2102,25 @@
             },
             "installRoot": "/tmp/rocm/runtime",
             "readOnly": false
+          },
+          {
+            "key": "nightly-wheel-gfx120x-all-7-13-0",
+            "runtimeId": "therock-nightly:gfx120X-all",
+            "version": "7.13.0",
+            "active": false,
+            "previous": true,
+            "validation": {
+              "state": "ready"
+            },
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installSource": {
+              "kind": "index",
+              "url": "https://example.invalid/simple"
+            },
+            "installRoot": "/tmp/rocm/runtime-7-13-0",
+            "readOnly": false
           }
         ],
         "driver": {
@@ -2022,6 +2144,8 @@
         },
         "eligibleActions": [
           "install-runtime",
+          "activate-runtime",
+          "remove-runtime",
           "validate-runtime"
         ]
       },
@@ -2326,6 +2450,25 @@
             },
             "installRoot": "/tmp/rocm/runtime",
             "readOnly": false
+          },
+          {
+            "key": "nightly-wheel-gfx120x-all-7-13-0",
+            "runtimeId": "therock-nightly:gfx120X-all",
+            "version": "7.13.0",
+            "active": false,
+            "previous": true,
+            "validation": {
+              "state": "ready"
+            },
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installSource": {
+              "kind": "index",
+              "url": "https://example.invalid/simple"
+            },
+            "installRoot": "/tmp/rocm/runtime-7-13-0",
+            "readOnly": false
           }
         ],
         "driver": {
@@ -2349,6 +2492,8 @@
         },
         "eligibleActions": [
           "install-runtime",
+          "activate-runtime",
+          "remove-runtime",
           "validate-runtime"
         ]
       },
@@ -2889,6 +3034,25 @@
             },
             "installRoot": "/tmp/rocm/runtime",
             "readOnly": false
+          },
+          {
+            "key": "nightly-wheel-gfx120x-all-7-13-0",
+            "runtimeId": "therock-nightly:gfx120X-all",
+            "version": "7.13.0",
+            "active": false,
+            "previous": true,
+            "validation": {
+              "state": "ready"
+            },
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installSource": {
+              "kind": "index",
+              "url": "https://example.invalid/simple"
+            },
+            "installRoot": "/tmp/rocm/runtime-7-13-0",
+            "readOnly": false
           }
         ],
         "driver": {
@@ -2912,6 +3076,8 @@
         },
         "eligibleActions": [
           "install-runtime",
+          "activate-runtime",
+          "remove-runtime",
           "validate-runtime"
         ]
       },
@@ -3161,6 +3327,25 @@
             },
             "installRoot": "/tmp/rocm/runtime",
             "readOnly": false
+          },
+          {
+            "key": "nightly-wheel-gfx120x-all-7-13-0",
+            "runtimeId": "therock-nightly:gfx120X-all",
+            "version": "7.13.0",
+            "active": false,
+            "previous": true,
+            "validation": {
+              "state": "ready"
+            },
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installSource": {
+              "kind": "index",
+              "url": "https://example.invalid/simple"
+            },
+            "installRoot": "/tmp/rocm/runtime-7-13-0",
+            "readOnly": false
           }
         ],
         "driver": {
@@ -3184,6 +3369,8 @@
         },
         "eligibleActions": [
           "install-runtime",
+          "activate-runtime",
+          "remove-runtime",
           "validate-runtime"
         ]
       },

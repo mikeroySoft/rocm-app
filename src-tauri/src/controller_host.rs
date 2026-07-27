@@ -39,6 +39,7 @@ use rocm_app_core::health::{
     GpuSample, HealthOverview, HistoryPoint, TelemetryFailure, TelemetryInput,
 };
 use rocm_app_core::onboarding::{self, Choices, OnboardingView};
+use rocm_app_core::runtimes::{self, RuntimesView};
 use rocm_app_core::shared::{AmdSmiCollector, amd_smi_binary};
 
 /// Locate the bundled `rocm` binary.
@@ -481,6 +482,7 @@ impl From<rocm_app_core::controller::ControllerError> for CommandError {
             E::SnapshotChanged => "snapshot-changed",
             E::OperationMismatch => "operation-mismatch",
             E::Busy { .. } => "busy",
+            E::NotAllowed { .. } => "not-allowed",
             E::Adapter(_) => "adapter",
         };
         Self {
@@ -609,6 +611,64 @@ pub fn health_overview(
         // the only thing that knows it, and the contract says so explicitly.
         Some(env!("CARGO_PKG_VERSION")),
     ))
+}
+
+/// Read the ROCm Installs view.
+///
+/// Disk usage is measured here rather than carried on the contract: the CLI
+/// would have to walk every install root on every snapshot, and a snapshot is
+/// taken whenever the window opens. This route is opened deliberately, so the
+/// walk happens when someone asked to see the numbers.
+#[tauri::command]
+pub fn runtimes_view(
+    state: tauri::State<'_, ControllerState>,
+    refresh: bool,
+) -> Result<RuntimesView, CommandError> {
+    let freshness = if refresh {
+        Freshness::Full
+    } else {
+        Freshness::Cached
+    };
+    let snapshot = state.controller.snapshot(freshness)?.snapshot;
+    let disk = snapshot
+        .runtimes
+        .iter()
+        .filter_map(|runtime| {
+            directory_size(&runtime.install_root)
+                .map(|bytes| (runtime.install_root.display().to_string(), bytes))
+        })
+        .collect();
+    Ok(runtimes::view(&snapshot, &disk))
+}
+
+/// Total size of the files under `root`, or `None` if it cannot be read.
+///
+/// Iterative rather than recursive: an install root is user-supplied, and a
+/// symlink loop or a pathologically deep tree must not blow the stack. Symlinks
+/// are not followed for the same reason — a link into `/` would otherwise make
+/// this walk the whole filesystem.
+fn directory_size(root: &std::path::Path) -> Option<u64> {
+    if !root.is_dir() {
+        return None;
+    }
+    let mut total = 0u64;
+    let mut pending = vec![root.to_path_buf()];
+    while let Some(directory) = pending.pop() {
+        let Ok(entries) = std::fs::read_dir(&directory) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let Ok(metadata) = entry.metadata() else {
+                continue;
+            };
+            if metadata.is_dir() {
+                pending.push(entry.path());
+            } else if metadata.is_file() {
+                total = total.saturating_add(metadata.len());
+            }
+        }
+    }
+    Some(total)
 }
 
 fn now_unix_ms() -> u64 {

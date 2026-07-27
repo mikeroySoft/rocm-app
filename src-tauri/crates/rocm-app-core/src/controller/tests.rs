@@ -22,6 +22,12 @@ use crate::contract::{self, AppSnapshot};
 
 const NOW: u64 = 1_767_225_600_000;
 
+/// The fixture's installed-but-not-active version.
+const INACTIVE_KEY: &str = "nightly-wheel-gfx120x-all-7-13-0";
+
+/// The fixture's active version.
+const ACTIVE_KEY: &str = "nightly-wheel-gfx120x-all-7-14-0";
+
 fn snapshot_named(name: &str) -> AppSnapshot {
     let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../../fixtures/contract/");
     let raw = std::fs::read_to_string(format!("{path}{name}.json"))
@@ -70,10 +76,14 @@ impl Harness {
     }
 
     /// Plan an activation, the smallest mutating operation.
+    ///
+    /// Targets the fixture's *inactive* 7.13.0: activating the version already
+    /// in use is refused by the runtime guards, which is the correct answer
+    /// but not the subject of these tests.
     fn plan_activate(&self) -> ChangePlan {
         self.controller
             .plan(&OperationRequest::ActivateRuntime {
-                key: RuntimeKey::new("nightly-wheel-gfx120x-all-7-14-0").expect("key"),
+                key: RuntimeKey::new(INACTIVE_KEY).expect("key"),
             })
             .expect("plan")
     }
@@ -303,12 +313,17 @@ fn controller_allows_only_one_mutation_at_a_time() {
         notifier: Arc::new(FakeNotifier::new()),
     }));
 
-    let key = || RuntimeKey::new("nightly-wheel-gfx120x-all-7-14-0").expect("key");
     let first = controller
-        .plan(&OperationRequest::ActivateRuntime { key: key() })
+        .plan(&OperationRequest::ActivateRuntime {
+            key: RuntimeKey::new(INACTIVE_KEY).expect("key"),
+        })
         .expect("first plan");
+    // A second *mutating* operation: only mutations contend for the lock, so
+    // a read-only one would pass for the wrong reason.
     let second = controller
-        .plan(&OperationRequest::RemoveRuntime { key: key() })
+        .plan(&OperationRequest::UpdateRuntime {
+            key: RuntimeKey::new(ACTIVE_KEY).expect("key"),
+        })
         .expect("second plan");
 
     let runner = {
@@ -654,7 +669,7 @@ fn controller_argv_reflects_the_approved_operation() {
         vec![
             "runtimes".to_owned(),
             "activate".to_owned(),
-            "nightly-wheel-gfx120x-all-7-14-0".to_owned()
+            INACTIVE_KEY.to_owned()
         ]
     );
 }

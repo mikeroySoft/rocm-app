@@ -566,3 +566,107 @@ body {
   margin: 8px 0 0;
   padding-inline-start: 18px;
 }
+
+/* --------------------------------------------------------------------------
+ * ROCm Installs
+ * ------------------------------------------------------------------------ */
+
+.shell__nav {
+  max-width: 780px;
+  margin: 0 auto 24px;
+  padding: 0 20px;
+}
+
+.shell__nav button {
+  padding: 7px 13px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.runtimes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.runtimes__row {
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.runtimes__headline {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.runtimes__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.runtimes__badge {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #e8f0fe;
+  color: #0b5cd5;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.runtimes__check {
+  margin-inline-start: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.runtimes__check[data-check="passed"] {
+  color: var(--ok);
+}
+.runtimes__check[data-check="failed"] {
+  color: var(--bad);
+}
+.runtimes__check[data-check="not-checked"],
+.runtimes__check[data-check="unrecognised"] {
+  color: var(--warn);
+}
+
+.runtimes__blocked {
+  margin: 0;
+  padding-inline-start: 18px;
+  color: var(--muted);
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.runtimes__row button {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.runtimes__row button:focus-visible,
+.shell__nav button:focus-visible {
+  outline: 2px solid #0b5cd5;
+  outline-offset: 2px;
+}

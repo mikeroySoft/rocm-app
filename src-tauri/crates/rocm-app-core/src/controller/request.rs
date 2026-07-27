@@ -323,6 +323,22 @@ impl OperationRequest {
         }
     }
 
+    /// What finishing this operation means, in a user's words.
+    ///
+    /// `kind()` is the stable machine name and belongs in logs and events;
+    /// putting it on a success screen shows the user "activate-runtime
+    /// finished", which is the app talking to itself.
+    #[must_use]
+    pub const fn completion_summary(&self) -> &'static str {
+        match self {
+            Self::InstallRuntime { .. } => "ROCm is installed.",
+            Self::UpdateRuntime { .. } => "ROCm is updated.",
+            Self::ActivateRuntime { .. } => "ROCm is now using the version you chose.",
+            Self::RemoveRuntime { .. } => "That ROCm version has been removed.",
+            Self::ValidateRuntime { .. } => "That ROCm version works.",
+        }
+    }
+
     /// Whether this operation mutates state. Validation is read-only, so it
     /// does not contend for the single-flight mutation lock.
     #[must_use]

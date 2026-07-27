@@ -1,0 +1,768 @@
+{
+  "states": [
+    {
+      "name": "installed",
+      "purpose": "two versions side by side, one in use",
+      "view": {
+        "rows": [
+          {
+            "title": "ROCm 7.14.0",
+            "version": "7.14.0",
+            "badges": [
+              "In use"
+            ],
+            "compatibility": {
+              "state": "matches"
+            },
+            "check": "passed",
+            "checkLabel": "Working",
+            "disk": "13 GB",
+            "actions": [
+              "validate"
+            ],
+            "blocked": [
+              {
+                "action": "activate",
+                "reason": "active"
+              },
+              {
+                "action": "remove",
+                "reason": "active"
+              }
+            ],
+            "key": "nightly-wheel-gfx120x-all-7-14-0",
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installRoot": "/tmp/rocm/runtime",
+            "source": "Downloaded from https://example.invalid/simple"
+          },
+          {
+            "title": "ROCm 7.13.0",
+            "version": "7.13.0",
+            "badges": [],
+            "compatibility": {
+              "state": "matches"
+            },
+            "check": "passed",
+            "checkLabel": "Working",
+            "disk": null,
+            "actions": [
+              "activate",
+              "remove",
+              "validate"
+            ],
+            "blocked": [],
+            "key": "nightly-wheel-gfx120x-all-7-13-0",
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installRoot": "/tmp/rocm/runtime-7-13-0",
+            "source": "Downloaded from https://example.invalid/simple"
+          }
+        ],
+        "update": {
+          "state": "up-to-date",
+          "installed": "7.14.0"
+        },
+        "updateMessage": "ROCm 7.14.0 is the newest version.",
+        "updateRequest": null,
+        "mutable": true
+      }
+    },
+    {
+      "name": "update-available",
+      "purpose": "a newer version exists",
+      "view": {
+        "rows": [
+          {
+            "title": "ROCm 7.14.0",
+            "version": "7.14.0",
+            "badges": [
+              "In use"
+            ],
+            "compatibility": {
+              "state": "matches"
+            },
+            "check": "passed",
+            "checkLabel": "Working",
+            "disk": "13 GB",
+            "actions": [
+              "validate"
+            ],
+            "blocked": [
+              {
+                "action": "activate",
+                "reason": "active"
+              },
+              {
+                "action": "remove",
+                "reason": "active"
+              }
+            ],
+            "key": "nightly-wheel-gfx120x-all-7-14-0",
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installRoot": "/tmp/rocm/runtime",
+            "source": "Downloaded from https://example.invalid/simple"
+          },
+          {
+            "title": "ROCm 7.13.0",
+            "version": "7.13.0",
+            "badges": [],
+            "compatibility": {
+              "state": "matches"
+            },
+            "check": "passed",
+            "checkLabel": "Working",
+            "disk": null,
+            "actions": [
+              "activate",
+              "remove",
+              "validate"
+            ],
+            "blocked": [],
+            "key": "nightly-wheel-gfx120x-all-7-13-0",
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installRoot": "/tmp/rocm/runtime-7-13-0",
+            "source": "Downloaded from https://example.invalid/simple"
+          }
+        ],
+        "update": {
+          "state": "available",
+          "installed": "7.14.0",
+          "latest": "7.15.0"
+        },
+        "updateMessage": "ROCm 7.15.0 is available. You have 7.14.0.",
+        "updateRequest": {
+          "operation": "update-runtime",
+          "key": "nightly-wheel-gfx120x-all-7-14-0"
+        },
+        "mutable": true
+      }
+    },
+    {
+      "name": "update-incompatible",
+      "purpose": "a newer version exists but not for this card",
+      "view": {
+        "rows": [
+          {
+            "title": "ROCm 7.14.0",
+            "version": "7.14.0",
+            "badges": [
+              "In use"
+            ],
+            "compatibility": {
+              "state": "mismatched",
+              "builtFor": "gfx110X-all"
+            },
+            "check": "passed",
+            "checkLabel": "Working",
+            "disk": "13 GB",
+            "actions": [
+              "validate"
+            ],
+            "blocked": [
+              {
+                "action": "activate",
+                "reason": "active"
+              },
+              {
+                "action": "remove",
+                "reason": "active"
+              }
+            ],
+            "key": "nightly-wheel-gfx120x-all-7-14-0",
+            "channel": "nightly",
+            "family": "gfx110X-all",
+            "format": "wheel",
+            "installRoot": "/tmp/rocm/runtime",
+            "source": "Downloaded from https://example.invalid/simple"
+          },
+          {
+            "title": "ROCm 7.13.0",
+            "version": "7.13.0",
+            "badges": [],
+            "compatibility": {
+              "state": "matches"
+            },
+            "check": "passed",
+            "checkLabel": "Working",
+            "disk": null,
+            "actions": [
+              "activate",
+              "remove",
+              "validate"
+            ],
+            "blocked": [],
+            "key": "nightly-wheel-gfx120x-all-7-13-0",
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installRoot": "/tmp/rocm/runtime-7-13-0",
+            "source": "Downloaded from https://example.invalid/simple"
+          }
+        ],
+        "update": {
+          "state": "incompatible",
+          "latest": "7.15.0",
+          "builtFor": "gfx110X-all"
+        },
+        "updateMessage": "ROCm 7.15.0 is available but is built for gfx110X-all, not your graphics card.",
+        "updateRequest": null,
+        "mutable": true
+      }
+    },
+    {
+      "name": "unvalidated",
+      "purpose": "a side-by-side install that has not passed its check",
+      "view": {
+        "rows": [
+          {
+            "title": "ROCm 7.14.0",
+            "version": "7.14.0",
+            "badges": [
+              "In use"
+            ],
+            "compatibility": {
+              "state": "matches"
+            },
+            "check": "passed",
+            "checkLabel": "Working",
+            "disk": "13 GB",
+            "actions": [
+              "validate"
+            ],
+            "blocked": [
+              {
+                "action": "activate",
+                "reason": "active"
+              },
+              {
+                "action": "remove",
+                "reason": "active"
+              }
+            ],
+            "key": "nightly-wheel-gfx120x-all-7-14-0",
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installRoot": "/tmp/rocm/runtime",
+            "source": "Downloaded from https://example.invalid/simple"
+          },
+          {
+            "title": "ROCm 7.13.0",
+            "version": "7.13.0",
+            "badges": [],
+            "compatibility": {
+              "state": "matches"
+            },
+            "check": "not-checked",
+            "checkLabel": "Not checked yet",
+            "disk": null,
+            "actions": [
+              "remove",
+              "validate"
+            ],
+            "blocked": [
+              {
+                "action": "activate",
+                "reason": "unvalidated"
+              }
+            ],
+            "key": "nightly-wheel-gfx120x-all-7-13-0",
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installRoot": "/tmp/rocm/runtime-7-13-0",
+            "source": "Downloaded from https://example.invalid/simple"
+          }
+        ],
+        "update": {
+          "state": "up-to-date",
+          "installed": "7.14.0"
+        },
+        "updateMessage": "ROCm 7.14.0 is the newest version.",
+        "updateRequest": null,
+        "mutable": true
+      }
+    },
+    {
+      "name": "validation-failed",
+      "purpose": "a version that failed its check",
+      "view": {
+        "rows": [
+          {
+            "title": "ROCm 7.14.0",
+            "version": "7.14.0",
+            "badges": [
+              "In use"
+            ],
+            "compatibility": {
+              "state": "matches"
+            },
+            "check": "passed",
+            "checkLabel": "Working",
+            "disk": "13 GB",
+            "actions": [
+              "validate"
+            ],
+            "blocked": [
+              {
+                "action": "activate",
+                "reason": "active"
+              },
+              {
+                "action": "remove",
+                "reason": "active"
+              }
+            ],
+            "key": "nightly-wheel-gfx120x-all-7-14-0",
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installRoot": "/tmp/rocm/runtime",
+            "source": "Downloaded from https://example.invalid/simple"
+          },
+          {
+            "title": "ROCm 7.13.0",
+            "version": "7.13.0",
+            "badges": [],
+            "compatibility": {
+              "state": "matches"
+            },
+            "check": "failed",
+            "checkLabel": "Failed its check",
+            "disk": null,
+            "actions": [
+              "remove",
+              "validate"
+            ],
+            "blocked": [
+              {
+                "action": "activate",
+                "reason": "unvalidated"
+              }
+            ],
+            "key": "nightly-wheel-gfx120x-all-7-13-0",
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installRoot": "/tmp/rocm/runtime-7-13-0",
+            "source": "Downloaded from https://example.invalid/simple"
+          }
+        ],
+        "update": {
+          "state": "up-to-date",
+          "installed": "7.14.0"
+        },
+        "updateMessage": "ROCm 7.14.0 is the newest version.",
+        "updateRequest": null,
+        "mutable": true
+      }
+    },
+    {
+      "name": "blocked",
+      "purpose": "protected and unknown versions that must not be removed",
+      "view": {
+        "rows": [
+          {
+            "title": "ROCm 7.14.0",
+            "version": "7.14.0",
+            "badges": [
+              "In use"
+            ],
+            "compatibility": {
+              "state": "matches"
+            },
+            "check": "passed",
+            "checkLabel": "Working",
+            "disk": "13 GB",
+            "actions": [
+              "validate"
+            ],
+            "blocked": [
+              {
+                "action": "activate",
+                "reason": "active"
+              },
+              {
+                "action": "remove",
+                "reason": "active"
+              }
+            ],
+            "key": "nightly-wheel-gfx120x-all-7-14-0",
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installRoot": "/tmp/rocm/runtime",
+            "source": "Downloaded from https://example.invalid/simple"
+          },
+          {
+            "title": "ROCm 7.13.0",
+            "version": "7.13.0",
+            "badges": [
+              "Read only"
+            ],
+            "compatibility": {
+              "state": "matches"
+            },
+            "check": "passed",
+            "checkLabel": "Working",
+            "disk": null,
+            "actions": [
+              "activate",
+              "validate"
+            ],
+            "blocked": [
+              {
+                "action": "remove",
+                "reason": "protected"
+              }
+            ],
+            "key": "nightly-wheel-gfx120x-all-7-13-0",
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installRoot": "/tmp/rocm/runtime-7-13-0",
+            "source": "Downloaded from https://example.invalid/simple"
+          },
+          {
+            "title": "ROCm 7.12.0",
+            "version": "7.12.0",
+            "badges": [],
+            "compatibility": {
+              "state": "matches"
+            },
+            "check": "not-checked",
+            "checkLabel": "Not checked yet",
+            "disk": null,
+            "actions": [
+              "validate"
+            ],
+            "blocked": [
+              {
+                "action": "activate",
+                "reason": "unvalidated"
+              },
+              {
+                "action": "remove",
+                "reason": "unknown"
+              }
+            ],
+            "key": "imported-wheel-gfx120x-all-7-12-0",
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installRoot": "/tmp/rocm/runtime-7-13-0",
+            "source": "Source not recorded"
+          }
+        ],
+        "update": {
+          "state": "up-to-date",
+          "installed": "7.14.0"
+        },
+        "updateMessage": "ROCm 7.14.0 is the newest version.",
+        "updateRequest": null,
+        "mutable": true
+      }
+    },
+    {
+      "name": "offline",
+      "purpose": "no answer from AMD",
+      "view": {
+        "rows": [
+          {
+            "title": "ROCm 7.14.0",
+            "version": "7.14.0",
+            "badges": [
+              "In use"
+            ],
+            "compatibility": {
+              "state": "matches"
+            },
+            "check": "passed",
+            "checkLabel": "Working",
+            "disk": "13 GB",
+            "actions": [
+              "validate"
+            ],
+            "blocked": [
+              {
+                "action": "activate",
+                "reason": "active"
+              },
+              {
+                "action": "remove",
+                "reason": "active"
+              }
+            ],
+            "key": "nightly-wheel-gfx120x-all-7-14-0",
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installRoot": "/tmp/rocm/runtime",
+            "source": "Downloaded from https://example.invalid/simple"
+          },
+          {
+            "title": "ROCm 7.13.0",
+            "version": "7.13.0",
+            "badges": [],
+            "compatibility": {
+              "state": "matches"
+            },
+            "check": "passed",
+            "checkLabel": "Working",
+            "disk": null,
+            "actions": [
+              "activate",
+              "remove",
+              "validate"
+            ],
+            "blocked": [],
+            "key": "nightly-wheel-gfx120x-all-7-13-0",
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installRoot": "/tmp/rocm/runtime-7-13-0",
+            "source": "Downloaded from https://example.invalid/simple"
+          }
+        ],
+        "update": {
+          "state": "offline",
+          "detail": "update catalog is unreachable"
+        },
+        "updateMessage": "This computer could not reach AMD to check for a newer version.",
+        "updateRequest": null,
+        "mutable": true
+      }
+    },
+    {
+      "name": "unsupported",
+      "purpose": "read-only host",
+      "view": {
+        "rows": [
+          {
+            "title": "ROCm 7.14.0",
+            "version": "7.14.0",
+            "badges": [
+              "In use"
+            ],
+            "compatibility": {
+              "state": "matches"
+            },
+            "check": "passed",
+            "checkLabel": "Working",
+            "disk": "13 GB",
+            "actions": [],
+            "blocked": [
+              {
+                "action": "activate",
+                "reason": "unsupported-host"
+              },
+              {
+                "action": "remove",
+                "reason": "unsupported-host"
+              },
+              {
+                "action": "validate",
+                "reason": "not-offered"
+              }
+            ],
+            "key": "nightly-wheel-gfx120x-all-7-14-0",
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installRoot": "/tmp/rocm/runtime",
+            "source": "Downloaded from https://example.invalid/simple"
+          },
+          {
+            "title": "ROCm 7.13.0",
+            "version": "7.13.0",
+            "badges": [
+              "Previous"
+            ],
+            "compatibility": {
+              "state": "matches"
+            },
+            "check": "passed",
+            "checkLabel": "Working",
+            "disk": null,
+            "actions": [],
+            "blocked": [
+              {
+                "action": "activate",
+                "reason": "unsupported-host"
+              },
+              {
+                "action": "remove",
+                "reason": "unsupported-host"
+              },
+              {
+                "action": "validate",
+                "reason": "not-offered"
+              }
+            ],
+            "key": "nightly-wheel-gfx120x-all-7-13-0",
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installRoot": "/tmp/rocm/runtime-7-13-0",
+            "source": "Downloaded from https://example.invalid/simple"
+          }
+        ],
+        "update": {
+          "state": "up-to-date",
+          "installed": "7.14.0"
+        },
+        "updateMessage": "ROCm 7.14.0 is the newest version.",
+        "updateRequest": null,
+        "mutable": false
+      }
+    }
+  ],
+  "plan": {
+    "id": "plan-1767225600000-000000",
+    "request": {
+      "operation": "activate-runtime",
+      "key": "nightly-wheel-gfx120x-all-7-13-0"
+    },
+    "steps": [
+      {
+        "stage": "validate",
+        "summary": "Check the selected version works",
+        "mutating": false
+      },
+      {
+        "stage": "activate",
+        "summary": "Make this the version ROCm uses",
+        "mutating": true
+      }
+    ],
+    "resolvedVersion": null,
+    "createdAtUnixMs": 1767225600000,
+    "expiresAtUnixMs": 1767225900000,
+    "snapshot": "2fe9f839071063641a676b2c60eda237e7ad22f34813afbf8ed679ec55b0734c",
+    "digest": "ac32eb4011c529fa3d58d9dc81108816ddacd084dbe055b4c9e411a6e84b8d6e"
+  },
+  "outcomes": [
+    {
+      "name": "success",
+      "events": [
+        {
+          "event": "started",
+          "operationId": "plan-1767225600000-000000",
+          "operation": "activate-runtime",
+          "stage": "plan"
+        },
+        {
+          "event": "stage",
+          "operationId": "plan-1767225600000-000000",
+          "stage": "validate",
+          "message": "validate in progress",
+          "count": null
+        },
+        {
+          "event": "stage",
+          "operationId": "plan-1767225600000-000000",
+          "stage": "activate",
+          "message": "activate in progress",
+          "count": null
+        },
+        {
+          "event": "completed",
+          "operationId": "plan-1767225600000-000000",
+          "message": "ROCm is now using the version you chose."
+        }
+      ]
+    },
+    {
+      "name": "cancelled",
+      "events": [
+        {
+          "event": "started",
+          "operationId": "plan-1767225600000-000000",
+          "operation": "activate-runtime",
+          "stage": "plan"
+        },
+        {
+          "event": "cancelled",
+          "operationId": "plan-1767225600000-000000",
+          "message": "Cancelled before any change was made."
+        }
+      ]
+    },
+    {
+      "name": "failed",
+      "events": [
+        {
+          "event": "started",
+          "operationId": "plan-1767225600000-000000",
+          "operation": "activate-runtime",
+          "stage": "plan"
+        },
+        {
+          "event": "stage",
+          "operationId": "plan-1767225600000-000000",
+          "stage": "validate",
+          "message": "validate in progress",
+          "count": null
+        },
+        {
+          "event": "failed",
+          "operationId": "plan-1767225600000-000000",
+          "error": {
+            "code": "process",
+            "message": "A ROCm command did not finish successfully.",
+            "recoverable": true,
+            "detail": "rocm_sdk could not reach the GPU"
+          }
+        }
+      ]
+    },
+    {
+      "name": "running",
+      "events": [
+        {
+          "event": "started",
+          "operationId": "plan-1767225600000-000000",
+          "operation": "activate-runtime",
+          "stage": "plan"
+        },
+        {
+          "event": "stage",
+          "operationId": "plan-1767225600000-000000",
+          "stage": "validate",
+          "message": "validate in progress",
+          "count": null
+        },
+        {
+          "event": "stage",
+          "operationId": "plan-1767225600000-000000",
+          "stage": "activate",
+          "message": "activate in progress",
+          "count": null
+        }
+      ]
+    }
+  ],
+  "audit": [
+    {
+      "atUnixMs": 1767225600000,
+      "operation": "activate-runtime",
+      "planId": "plan-1767225600000-000000",
+      "outcome": "started",
+      "errorCode": null
+    },
+    {
+      "atUnixMs": 1767225600000,
+      "operation": "activate-runtime",
+      "planId": "plan-1767225600000-000000",
+      "outcome": "completed",
+      "errorCode": null
+    }
+  ]
+}

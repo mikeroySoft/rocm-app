@@ -33,6 +33,7 @@
 //! or interrupting, because a health probe is never worth stalling an install.
 
 pub mod adapters;
+pub mod audit;
 pub mod plan;
 pub mod progress;
 pub mod request;
@@ -83,6 +84,12 @@ pub enum ControllerError {
     SnapshotChanged,
     /// The approval names a different operation than the plan describes.
     OperationMismatch,
+    /// This runtime may not be changed this way: active, in use, protected,
+    /// ambiguous, unknown, or not yet validated. Refused before any plan is
+    /// issued, so nothing reviewable ever describes it.
+    NotAllowed {
+        reason: crate::runtimes::BlockReason,
+    },
     /// Another mutation is already running.
     Busy { running: String },
     /// An adapter failed.
@@ -115,6 +122,7 @@ impl ControllerError {
             Self::Busy { running } => {
                 format!("{running} is already running. Wait for it to finish.")
             }
+            Self::NotAllowed { reason } => reason.message().to_owned(),
             Self::Adapter(e) => e.to_operation_error().message,
         }
     }
@@ -240,6 +248,13 @@ impl RocmController {
             }));
         }
 
+        // Per-runtime guards, also at plan time. "Rejected before mutation"
+        // has to mean before a plan exists at all: a reviewable plan for a
+        // change that will be refused is a promise the app cannot keep.
+        if let Some(reason) = Self::runtime_block(&snapshot, request) {
+            return Err(ControllerError::NotAllowed { reason });
+        }
+
         // Resolve "latest" now so the review screen shows a concrete version.
         let resolved_version = match request {
             OperationRequest::InstallRuntime {
@@ -279,6 +294,45 @@ impl RocmController {
 
         self.issued.lock().expect("poisoned").push(plan.clone());
         Ok(plan)
+    }
+
+    /// The per-runtime refusal for a request, if any.
+    ///
+    /// Delegates to [`crate::runtimes`] so the button the UI decides not to
+    /// draw and the plan the controller decides not to issue are the same
+    /// decision, evaluated by the same function.
+    fn runtime_block(
+        snapshot: &AppSnapshot,
+        request: &OperationRequest,
+    ) -> Option<crate::runtimes::BlockReason> {
+        use crate::runtimes::{self, BlockReason};
+        let resolve = |key: &request::RuntimeKey| match runtimes::find(snapshot, key.as_str()) {
+            Ok(record) => Ok(record),
+            Err(reason) => Err(reason),
+        };
+        match request {
+            // A fresh install has no record to guard yet; the platform check
+            // above and the request's own validation are the whole gate.
+            OperationRequest::InstallRuntime { .. } => None,
+            OperationRequest::ActivateRuntime { key } => match resolve(key) {
+                Err(reason) => Some(reason),
+                Ok(record) => runtimes::activate_block(snapshot, &record),
+            },
+            OperationRequest::RemoveRuntime { key } => match resolve(key) {
+                Err(reason) => Some(reason),
+                Ok(record) => runtimes::remove_block(snapshot, &record),
+            },
+            OperationRequest::ValidateRuntime { key } => match resolve(key) {
+                Err(reason) => Some(reason),
+                Ok(record) => runtimes::validate_block(snapshot, &record),
+            },
+            // An update replaces the active runtime in place; a key that names
+            // something else, or nothing, is not an update.
+            OperationRequest::UpdateRuntime { key } => match resolve(key) {
+                Err(reason) => Some(reason),
+                Ok(record) => (!record.active).then_some(BlockReason::NotOffered),
+            },
+        }
     }
 
     /// Perform a plan the user approved.
@@ -326,12 +380,14 @@ impl RocmController {
             operation: plan.request().kind().to_owned(),
             stage: "plan".to_owned(),
         });
+        self.record(&plan, audit::Outcome::Started, None);
 
         if self.cancel_requested.swap(false, Ordering::SeqCst) {
             progress.emit(ProgressEvent::Cancelled {
                 operation_id: plan.id().clone(),
                 message: "Cancelled before any change was made.".to_owned(),
             });
+            self.record(&plan, audit::Outcome::Cancelled, None);
             return Err(ControllerError::Adapter(AdapterError::Cancelled));
         }
 
@@ -353,11 +409,12 @@ impl RocmController {
 
                 progress.emit(ProgressEvent::Completed {
                     operation_id: plan.id().clone(),
-                    message: format!("{} finished.", plan.request().kind()),
+                    message: plan.request().completion_summary().to_owned(),
                 });
+                self.record(&plan, audit::Outcome::Completed, None);
                 self.adapters
                     .notifier
-                    .notify("ROCm", &format!("{} finished.", plan.request().kind()));
+                    .notify("ROCm", plan.request().completion_summary());
 
                 Ok(OperationOutcome {
                     operation_id: plan.id().clone(),
@@ -371,15 +428,39 @@ impl RocmController {
                     message: "Cancelled. The previously active ROCm version is unchanged."
                         .to_owned(),
                 });
+                self.record(&plan, audit::Outcome::Cancelled, None);
                 Err(ControllerError::Adapter(AdapterError::Cancelled))
             }
             Err(error) => {
+                let operation_error = error.to_operation_error();
                 progress.emit(ProgressEvent::Failed {
                     operation_id: plan.id().clone(),
-                    error: error.to_operation_error(),
+                    error: operation_error.clone(),
                 });
+                self.record(&plan, audit::Outcome::Failed, Some(operation_error.code));
                 Err(ControllerError::Adapter(error))
             }
+        }
+    }
+
+    /// Write one audit record.
+    ///
+    /// Deliberately infallible from the caller's point of view: a full or
+    /// read-only disk must not turn a successful install into a failure, and
+    /// the notifier is the surface that would tell the user anyway. The write
+    /// failure is itself notified, so it does not vanish.
+    fn record(&self, plan: &ChangePlan, outcome: audit::Outcome, error_code: Option<String>) {
+        let record = audit::Record {
+            at_unix_ms: self.adapters.clock.now_unix_ms(),
+            operation: plan.request().kind().to_owned(),
+            plan_id: plan.id().as_str().to_owned(),
+            outcome,
+            error_code,
+        };
+        if audit::append(self.adapters.storage.as_ref(), record).is_err() {
+            self.adapters
+                .notifier
+                .notify("ROCm", "Could not write to the ROCm App activity log.");
         }
     }
 

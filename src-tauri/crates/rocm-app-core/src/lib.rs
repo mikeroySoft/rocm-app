@@ -17,6 +17,7 @@ pub mod controller;
 pub mod health;
 pub mod onboarding;
 pub mod platform;
+pub mod runtimes;
 pub mod shared;
 
 pub use contract::{AppSnapshot, ContractError, HealthVerdict, ReasonCode};
@@ -24,3 +25,4 @@ pub use controller::{ControllerError, Freshness, RocmController};
 pub use health::{HealthOverview, overview};
 pub use onboarding::{OnboardingView, recommend};
 pub use platform::HostPlatform;
+pub use runtimes::RuntimesView;
