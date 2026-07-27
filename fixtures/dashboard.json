@@ -1,0 +1,3392 @@
+{
+  "states": [
+    {
+      "name": "healthy",
+      "purpose": "everything ready, live readings present",
+      "nowUnixMs": 1767225600000,
+      "snapshot": {
+        "schemaVersion": 1,
+        "producer": {
+          "name": "rocm-cli",
+          "version": "0.1.0",
+          "build": "unknown"
+        },
+        "observedAtUnixMs": 1767225600000,
+        "platform": {
+          "os": "linux",
+          "arch": "x86_64",
+          "isWsl": false,
+          "support": {
+            "state": "supported"
+          }
+        },
+        "gpu": {
+          "name": "AMD Radeon AI PRO R9700",
+          "gfxTarget": "gfx1201",
+          "therockFamily": "gfx120X-all"
+        },
+        "health": {
+          "verdict": "healthy",
+          "reasons": [],
+          "nextAction": null
+        },
+        "components": [
+          {
+            "kind": "app",
+            "name": "rocm-app",
+            "state": {
+              "state": "unknown",
+              "reason": "supplied by the desktop app, not the CLI"
+            }
+          },
+          {
+            "kind": "cli",
+            "name": "rocm",
+            "state": {
+              "state": "installed",
+              "version": "0.1.0"
+            }
+          },
+          {
+            "kind": "system-hip-rocm",
+            "name": "system-rocm",
+            "state": {
+              "state": "installed",
+              "version": "6.4.0"
+            }
+          },
+          {
+            "kind": "managed-runtime",
+            "name": "therock",
+            "state": {
+              "state": "installed",
+              "version": "7.14.0"
+            }
+          },
+          {
+            "kind": "py-torch",
+            "name": "torch",
+            "state": {
+              "state": "installed",
+              "version": "2.9.0"
+            }
+          }
+        ],
+        "runtimes": [
+          {
+            "key": "nightly-wheel-gfx120x-all-7-14-0",
+            "runtimeId": "therock-nightly:gfx120X-all",
+            "version": "7.14.0",
+            "active": true,
+            "previous": false,
+            "validation": {
+              "state": "ready"
+            },
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installSource": {
+              "kind": "index",
+              "url": "https://example.invalid/simple"
+            },
+            "installRoot": "/tmp/rocm/runtime",
+            "readOnly": false
+          }
+        ],
+        "driver": {
+          "installed": {
+            "state": "detected-without-version",
+            "detail": "amdgpu kernel module is loaded"
+          },
+          "latestKnown": null,
+          "supportLinks": []
+        },
+        "update": {
+          "state": {
+            "state": "no-update",
+            "installed": "7.14.0"
+          },
+          "checkedAtUnixMs": 1767225600000,
+          "trust": {
+            "kind": "signed",
+            "keySource": "pinned"
+          }
+        },
+        "eligibleActions": [
+          "install-runtime",
+          "validate-runtime"
+        ]
+      },
+      "telemetry": {
+        "sample": {
+          "device": "card0",
+          "utilizationPct": 37.0,
+          "vramUsedMb": 12288,
+          "vramTotalMb": 32768,
+          "temperatureC": 51.0,
+          "powerW": 118.0
+        },
+        "failure": null,
+        "history": [
+          {
+            "atUnixMs": 1767225540000,
+            "utilizationPct": 21.0,
+            "vramUsedMb": 9216
+          },
+          {
+            "atUnixMs": 1767225570000,
+            "utilizationPct": 44.0,
+            "vramUsedMb": 11264
+          },
+          {
+            "atUnixMs": 1767225600000,
+            "utilizationPct": 37.0,
+            "vramUsedMb": 12288
+          }
+        ]
+      },
+      "overview": {
+        "verdict": "healthy",
+        "verdictLabel": "Ready",
+        "summary": "ROCm is set up and working.",
+        "nextStep": {
+          "label": "Check this computer again",
+          "action": null
+        },
+        "firstRun": false,
+        "headlineFacts": [
+          {
+            "key": "gpu",
+            "label": "Graphics card",
+            "value": "AMD Radeon AI PRO R9700"
+          },
+          {
+            "key": "system",
+            "label": "System",
+            "value": "Linux, 64-bit"
+          },
+          {
+            "key": "rocm",
+            "label": "ROCm in use",
+            "value": "7.14.0"
+          }
+        ],
+        "freshness": {
+          "observedAtUnixMs": 1767225600000,
+          "ageMs": 0,
+          "stale": false,
+          "label": "Checked just now"
+        },
+        "components": [
+          {
+            "kind": "app",
+            "label": "ROCm App",
+            "value": "0.1.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "cli",
+            "label": "ROCm command-line tool",
+            "value": "0.1.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "driver",
+            "label": "Display driver",
+            "value": "Installed",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": "amdgpu kernel module is loaded"
+          },
+          {
+            "kind": "system-hip-rocm",
+            "label": "System ROCm",
+            "value": "6.4.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "managed-runtime",
+            "label": "Managed ROCm",
+            "value": "7.14.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "python",
+            "label": "Python",
+            "value": "Not reported",
+            "status": "unknown",
+            "statusLabel": "Unknown",
+            "note": "The ROCm tool did not report this."
+          },
+          {
+            "kind": "py-torch",
+            "label": "PyTorch",
+            "value": "2.9.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "engine",
+            "label": "Model engine",
+            "value": "Not reported",
+            "status": "unknown",
+            "statusLabel": "Unknown",
+            "note": "The ROCm tool did not report this."
+          }
+        ],
+        "driver": {
+          "summary": "Installed (version not reported)",
+          "note": "ROCm App only reports your display driver. It never installs, updates, or changes it.",
+          "links": []
+        },
+        "telemetry": {
+          "device": "card0",
+          "metrics": [
+            {
+              "key": "utilization",
+              "label": "GPU use",
+              "value": {
+                "state": "reading",
+                "text": "37%",
+                "ratio": 0.37
+              }
+            },
+            {
+              "key": "vram",
+              "label": "Memory in use",
+              "value": {
+                "state": "reading",
+                "text": "12 GB of 32 GB",
+                "ratio": 0.375
+              }
+            },
+            {
+              "key": "temperature",
+              "label": "Temperature",
+              "value": {
+                "state": "reading",
+                "text": "51 °C",
+                "ratio": null
+              }
+            },
+            {
+              "key": "power",
+              "label": "Power",
+              "value": {
+                "state": "reading",
+                "text": "118 W",
+                "ratio": null
+              }
+            }
+          ],
+          "history": [
+            {
+              "atUnixMs": 1767225540000,
+              "utilizationPct": 21.0,
+              "vramUsedMb": 9216
+            },
+            {
+              "atUnixMs": 1767225570000,
+              "utilizationPct": 44.0,
+              "vramUsedMb": 11264
+            },
+            {
+              "atUnixMs": 1767225600000,
+              "utilizationPct": 37.0,
+              "vramUsedMb": 12288
+            }
+          ],
+          "failure": null
+        },
+        "notices": []
+      }
+    },
+    {
+      "name": "setup-required",
+      "purpose": "no ROCm yet; the next step is setup",
+      "nowUnixMs": 1767225600000,
+      "snapshot": {
+        "schemaVersion": 1,
+        "producer": {
+          "name": "rocm-cli",
+          "version": "0.1.0",
+          "build": "unknown"
+        },
+        "observedAtUnixMs": 1767225600000,
+        "platform": {
+          "os": "linux",
+          "arch": "x86_64",
+          "isWsl": false,
+          "support": {
+            "state": "supported"
+          }
+        },
+        "gpu": {
+          "name": "AMD Radeon AI PRO R9700",
+          "gfxTarget": "gfx1201",
+          "therockFamily": "gfx120X-all"
+        },
+        "health": {
+          "verdict": "setup-required",
+          "reasons": [
+            {
+              "code": "runtime-absent",
+              "detail": "No managed ROCm runtime is installed."
+            }
+          ],
+          "nextAction": "Set up ROCm."
+        },
+        "components": [
+          {
+            "kind": "app",
+            "name": "rocm-app",
+            "state": {
+              "state": "unknown",
+              "reason": "supplied by the desktop app, not the CLI"
+            }
+          },
+          {
+            "kind": "cli",
+            "name": "rocm",
+            "state": {
+              "state": "installed",
+              "version": "0.1.0"
+            }
+          },
+          {
+            "kind": "system-hip-rocm",
+            "name": "system-rocm",
+            "state": {
+              "state": "installed",
+              "version": "6.4.0"
+            }
+          },
+          {
+            "kind": "managed-runtime",
+            "name": "therock",
+            "state": {
+              "state": "installed",
+              "version": "7.14.0"
+            }
+          },
+          {
+            "kind": "py-torch",
+            "name": "torch",
+            "state": {
+              "state": "installed",
+              "version": "2.9.0"
+            }
+          }
+        ],
+        "runtimes": [],
+        "driver": {
+          "installed": {
+            "state": "detected-without-version",
+            "detail": "amdgpu kernel module is loaded"
+          },
+          "latestKnown": null,
+          "supportLinks": []
+        },
+        "update": {
+          "state": {
+            "state": "not-applicable"
+          },
+          "checkedAtUnixMs": 1767225600000,
+          "trust": {
+            "kind": "signed",
+            "keySource": "pinned"
+          }
+        },
+        "eligibleActions": [
+          "install-runtime"
+        ]
+      },
+      "telemetry": {
+        "sample": {
+          "device": "card0",
+          "utilizationPct": 37.0,
+          "vramUsedMb": 12288,
+          "vramTotalMb": 32768,
+          "temperatureC": 51.0,
+          "powerW": 118.0
+        },
+        "failure": null,
+        "history": [
+          {
+            "atUnixMs": 1767225540000,
+            "utilizationPct": 21.0,
+            "vramUsedMb": 9216
+          },
+          {
+            "atUnixMs": 1767225570000,
+            "utilizationPct": 44.0,
+            "vramUsedMb": 11264
+          },
+          {
+            "atUnixMs": 1767225600000,
+            "utilizationPct": 37.0,
+            "vramUsedMb": 12288
+          }
+        ]
+      },
+      "overview": {
+        "verdict": "setup-required",
+        "verdictLabel": "Setup needed",
+        "summary": "ROCm is not set up on this computer yet.",
+        "nextStep": {
+          "label": "Set up ROCm",
+          "action": "install-runtime"
+        },
+        "firstRun": true,
+        "headlineFacts": [
+          {
+            "key": "gpu",
+            "label": "Graphics card",
+            "value": "AMD Radeon AI PRO R9700"
+          },
+          {
+            "key": "system",
+            "label": "System",
+            "value": "Linux, 64-bit"
+          },
+          {
+            "key": "rocm",
+            "label": "ROCm in use",
+            "value": "None yet"
+          }
+        ],
+        "freshness": {
+          "observedAtUnixMs": 1767225600000,
+          "ageMs": 0,
+          "stale": false,
+          "label": "Checked just now"
+        },
+        "components": [
+          {
+            "kind": "app",
+            "label": "ROCm App",
+            "value": "0.1.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "cli",
+            "label": "ROCm command-line tool",
+            "value": "0.1.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "driver",
+            "label": "Display driver",
+            "value": "Installed",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": "amdgpu kernel module is loaded"
+          },
+          {
+            "kind": "system-hip-rocm",
+            "label": "System ROCm",
+            "value": "6.4.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "managed-runtime",
+            "label": "Managed ROCm",
+            "value": "7.14.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "python",
+            "label": "Python",
+            "value": "Not reported",
+            "status": "unknown",
+            "statusLabel": "Unknown",
+            "note": "The ROCm tool did not report this."
+          },
+          {
+            "kind": "py-torch",
+            "label": "PyTorch",
+            "value": "2.9.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "engine",
+            "label": "Model engine",
+            "value": "Not reported",
+            "status": "unknown",
+            "statusLabel": "Unknown",
+            "note": "The ROCm tool did not report this."
+          }
+        ],
+        "driver": {
+          "summary": "Installed (version not reported)",
+          "note": "ROCm App only reports your display driver. It never installs, updates, or changes it.",
+          "links": []
+        },
+        "telemetry": {
+          "device": "card0",
+          "metrics": [
+            {
+              "key": "utilization",
+              "label": "GPU use",
+              "value": {
+                "state": "reading",
+                "text": "37%",
+                "ratio": 0.37
+              }
+            },
+            {
+              "key": "vram",
+              "label": "Memory in use",
+              "value": {
+                "state": "reading",
+                "text": "12 GB of 32 GB",
+                "ratio": 0.375
+              }
+            },
+            {
+              "key": "temperature",
+              "label": "Temperature",
+              "value": {
+                "state": "reading",
+                "text": "51 °C",
+                "ratio": null
+              }
+            },
+            {
+              "key": "power",
+              "label": "Power",
+              "value": {
+                "state": "reading",
+                "text": "118 W",
+                "ratio": null
+              }
+            }
+          ],
+          "history": [
+            {
+              "atUnixMs": 1767225540000,
+              "utilizationPct": 21.0,
+              "vramUsedMb": 9216
+            },
+            {
+              "atUnixMs": 1767225570000,
+              "utilizationPct": 44.0,
+              "vramUsedMb": 11264
+            },
+            {
+              "atUnixMs": 1767225600000,
+              "utilizationPct": 37.0,
+              "vramUsedMb": 12288
+            }
+          ],
+          "failure": null
+        },
+        "notices": []
+      }
+    },
+    {
+      "name": "attention",
+      "purpose": "active version failed its check and an update exists",
+      "nowUnixMs": 1767225600000,
+      "snapshot": {
+        "schemaVersion": 1,
+        "producer": {
+          "name": "rocm-cli",
+          "version": "0.1.0",
+          "build": "unknown"
+        },
+        "observedAtUnixMs": 1767225600000,
+        "platform": {
+          "os": "linux",
+          "arch": "x86_64",
+          "isWsl": false,
+          "support": {
+            "state": "supported"
+          }
+        },
+        "gpu": {
+          "name": "AMD Radeon AI PRO R9700",
+          "gfxTarget": "gfx1201",
+          "therockFamily": "gfx120X-all"
+        },
+        "health": {
+          "verdict": "attention",
+          "reasons": [
+            {
+              "code": "runtime-validation-failed",
+              "detail": "Active runtime nightly-wheel-gfx120x-all-7-14-0 failed validation: rocm_sdk import failed in the runtime's Python"
+            },
+            {
+              "code": "update-available",
+              "detail": "ROCm 7.15.0 is available; 7.14.0 is installed."
+            }
+          ],
+          "nextAction": "Repair or reinstall the active ROCm runtime."
+        },
+        "components": [
+          {
+            "kind": "app",
+            "name": "rocm-app",
+            "state": {
+              "state": "unknown",
+              "reason": "supplied by the desktop app, not the CLI"
+            }
+          },
+          {
+            "kind": "cli",
+            "name": "rocm",
+            "state": {
+              "state": "installed",
+              "version": "0.1.0"
+            }
+          },
+          {
+            "kind": "system-hip-rocm",
+            "name": "system-rocm",
+            "state": {
+              "state": "installed",
+              "version": "6.4.0"
+            }
+          },
+          {
+            "kind": "managed-runtime",
+            "name": "therock",
+            "state": {
+              "state": "installed",
+              "version": "7.14.0"
+            }
+          },
+          {
+            "kind": "py-torch",
+            "name": "torch",
+            "state": {
+              "state": "installed",
+              "version": "2.9.0"
+            }
+          }
+        ],
+        "runtimes": [
+          {
+            "key": "nightly-wheel-gfx120x-all-7-14-0",
+            "runtimeId": "therock-nightly:gfx120X-all",
+            "version": "7.14.0",
+            "active": true,
+            "previous": false,
+            "validation": {
+              "state": "failed",
+              "detail": "rocm_sdk import failed in the runtime's Python"
+            },
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installSource": {
+              "kind": "index",
+              "url": "https://example.invalid/simple"
+            },
+            "installRoot": "/tmp/rocm/runtime",
+            "readOnly": false
+          }
+        ],
+        "driver": {
+          "installed": {
+            "state": "detected-without-version",
+            "detail": "amdgpu kernel module is loaded"
+          },
+          "latestKnown": null,
+          "supportLinks": []
+        },
+        "update": {
+          "state": {
+            "state": "available",
+            "installed": "7.14.0",
+            "latest": "7.15.0"
+          },
+          "checkedAtUnixMs": 1767225600000,
+          "trust": {
+            "kind": "signed",
+            "keySource": "pinned"
+          }
+        },
+        "eligibleActions": [
+          "install-runtime",
+          "update-runtime",
+          "validate-runtime"
+        ]
+      },
+      "telemetry": {
+        "sample": {
+          "device": "card0",
+          "utilizationPct": 37.0,
+          "vramUsedMb": 12288,
+          "vramTotalMb": 32768,
+          "temperatureC": 51.0,
+          "powerW": 118.0
+        },
+        "failure": null,
+        "history": [
+          {
+            "atUnixMs": 1767225540000,
+            "utilizationPct": 21.0,
+            "vramUsedMb": 9216
+          },
+          {
+            "atUnixMs": 1767225570000,
+            "utilizationPct": 44.0,
+            "vramUsedMb": 11264
+          },
+          {
+            "atUnixMs": 1767225600000,
+            "utilizationPct": 37.0,
+            "vramUsedMb": 12288
+          }
+        ]
+      },
+      "overview": {
+        "verdict": "attention",
+        "verdictLabel": "Needs attention",
+        "summary": "The ROCm version in use did not pass its check.",
+        "nextStep": {
+          "label": "Check the ROCm version in use",
+          "action": "validate-runtime"
+        },
+        "firstRun": false,
+        "headlineFacts": [
+          {
+            "key": "gpu",
+            "label": "Graphics card",
+            "value": "AMD Radeon AI PRO R9700"
+          },
+          {
+            "key": "system",
+            "label": "System",
+            "value": "Linux, 64-bit"
+          },
+          {
+            "key": "rocm",
+            "label": "ROCm in use",
+            "value": "7.14.0 — failed its check"
+          }
+        ],
+        "freshness": {
+          "observedAtUnixMs": 1767225600000,
+          "ageMs": 0,
+          "stale": false,
+          "label": "Checked just now"
+        },
+        "components": [
+          {
+            "kind": "app",
+            "label": "ROCm App",
+            "value": "0.1.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "cli",
+            "label": "ROCm command-line tool",
+            "value": "0.1.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "driver",
+            "label": "Display driver",
+            "value": "Installed",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": "amdgpu kernel module is loaded"
+          },
+          {
+            "kind": "system-hip-rocm",
+            "label": "System ROCm",
+            "value": "6.4.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "managed-runtime",
+            "label": "Managed ROCm",
+            "value": "7.14.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "python",
+            "label": "Python",
+            "value": "Not reported",
+            "status": "unknown",
+            "statusLabel": "Unknown",
+            "note": "The ROCm tool did not report this."
+          },
+          {
+            "kind": "py-torch",
+            "label": "PyTorch",
+            "value": "2.9.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "engine",
+            "label": "Model engine",
+            "value": "Not reported",
+            "status": "unknown",
+            "statusLabel": "Unknown",
+            "note": "The ROCm tool did not report this."
+          }
+        ],
+        "driver": {
+          "summary": "Installed (version not reported)",
+          "note": "ROCm App only reports your display driver. It never installs, updates, or changes it.",
+          "links": []
+        },
+        "telemetry": {
+          "device": "card0",
+          "metrics": [
+            {
+              "key": "utilization",
+              "label": "GPU use",
+              "value": {
+                "state": "reading",
+                "text": "37%",
+                "ratio": 0.37
+              }
+            },
+            {
+              "key": "vram",
+              "label": "Memory in use",
+              "value": {
+                "state": "reading",
+                "text": "12 GB of 32 GB",
+                "ratio": 0.375
+              }
+            },
+            {
+              "key": "temperature",
+              "label": "Temperature",
+              "value": {
+                "state": "reading",
+                "text": "51 °C",
+                "ratio": null
+              }
+            },
+            {
+              "key": "power",
+              "label": "Power",
+              "value": {
+                "state": "reading",
+                "text": "118 W",
+                "ratio": null
+              }
+            }
+          ],
+          "history": [
+            {
+              "atUnixMs": 1767225540000,
+              "utilizationPct": 21.0,
+              "vramUsedMb": 9216
+            },
+            {
+              "atUnixMs": 1767225570000,
+              "utilizationPct": 44.0,
+              "vramUsedMb": 11264
+            },
+            {
+              "atUnixMs": 1767225600000,
+              "utilizationPct": 37.0,
+              "vramUsedMb": 12288
+            }
+          ],
+          "failure": null
+        },
+        "notices": []
+      }
+    },
+    {
+      "name": "stale",
+      "purpose": "the last reading is older than the freshness window",
+      "nowUnixMs": 1767225960000,
+      "snapshot": {
+        "schemaVersion": 1,
+        "producer": {
+          "name": "rocm-cli",
+          "version": "0.1.0",
+          "build": "unknown"
+        },
+        "observedAtUnixMs": 1767225600000,
+        "platform": {
+          "os": "linux",
+          "arch": "x86_64",
+          "isWsl": false,
+          "support": {
+            "state": "supported"
+          }
+        },
+        "gpu": {
+          "name": "AMD Radeon AI PRO R9700",
+          "gfxTarget": "gfx1201",
+          "therockFamily": "gfx120X-all"
+        },
+        "health": {
+          "verdict": "healthy",
+          "reasons": [],
+          "nextAction": null
+        },
+        "components": [
+          {
+            "kind": "app",
+            "name": "rocm-app",
+            "state": {
+              "state": "unknown",
+              "reason": "supplied by the desktop app, not the CLI"
+            }
+          },
+          {
+            "kind": "cli",
+            "name": "rocm",
+            "state": {
+              "state": "installed",
+              "version": "0.1.0"
+            }
+          },
+          {
+            "kind": "system-hip-rocm",
+            "name": "system-rocm",
+            "state": {
+              "state": "installed",
+              "version": "6.4.0"
+            }
+          },
+          {
+            "kind": "managed-runtime",
+            "name": "therock",
+            "state": {
+              "state": "installed",
+              "version": "7.14.0"
+            }
+          },
+          {
+            "kind": "py-torch",
+            "name": "torch",
+            "state": {
+              "state": "installed",
+              "version": "2.9.0"
+            }
+          }
+        ],
+        "runtimes": [
+          {
+            "key": "nightly-wheel-gfx120x-all-7-14-0",
+            "runtimeId": "therock-nightly:gfx120X-all",
+            "version": "7.14.0",
+            "active": true,
+            "previous": false,
+            "validation": {
+              "state": "ready"
+            },
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installSource": {
+              "kind": "index",
+              "url": "https://example.invalid/simple"
+            },
+            "installRoot": "/tmp/rocm/runtime",
+            "readOnly": false
+          }
+        ],
+        "driver": {
+          "installed": {
+            "state": "detected-without-version",
+            "detail": "amdgpu kernel module is loaded"
+          },
+          "latestKnown": null,
+          "supportLinks": []
+        },
+        "update": {
+          "state": {
+            "state": "no-update",
+            "installed": "7.14.0"
+          },
+          "checkedAtUnixMs": 1767225600000,
+          "trust": {
+            "kind": "signed",
+            "keySource": "pinned"
+          }
+        },
+        "eligibleActions": [
+          "install-runtime",
+          "validate-runtime"
+        ]
+      },
+      "telemetry": {
+        "sample": {
+          "device": "card0",
+          "utilizationPct": 37.0,
+          "vramUsedMb": 12288,
+          "vramTotalMb": 32768,
+          "temperatureC": 51.0,
+          "powerW": 118.0
+        },
+        "failure": null,
+        "history": [
+          {
+            "atUnixMs": 1767225540000,
+            "utilizationPct": 21.0,
+            "vramUsedMb": 9216
+          },
+          {
+            "atUnixMs": 1767225570000,
+            "utilizationPct": 44.0,
+            "vramUsedMb": 11264
+          },
+          {
+            "atUnixMs": 1767225600000,
+            "utilizationPct": 37.0,
+            "vramUsedMb": 12288
+          }
+        ]
+      },
+      "overview": {
+        "verdict": "healthy",
+        "verdictLabel": "Ready",
+        "summary": "ROCm is set up and working.",
+        "nextStep": {
+          "label": "Check this computer again",
+          "action": null
+        },
+        "firstRun": false,
+        "headlineFacts": [
+          {
+            "key": "gpu",
+            "label": "Graphics card",
+            "value": "AMD Radeon AI PRO R9700"
+          },
+          {
+            "key": "system",
+            "label": "System",
+            "value": "Linux, 64-bit"
+          },
+          {
+            "key": "rocm",
+            "label": "ROCm in use",
+            "value": "7.14.0"
+          }
+        ],
+        "freshness": {
+          "observedAtUnixMs": 1767225600000,
+          "ageMs": 360000,
+          "stale": true,
+          "label": "Last checked 6 minutes ago"
+        },
+        "components": [
+          {
+            "kind": "app",
+            "label": "ROCm App",
+            "value": "0.1.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "cli",
+            "label": "ROCm command-line tool",
+            "value": "0.1.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "driver",
+            "label": "Display driver",
+            "value": "Installed",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": "amdgpu kernel module is loaded"
+          },
+          {
+            "kind": "system-hip-rocm",
+            "label": "System ROCm",
+            "value": "6.4.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "managed-runtime",
+            "label": "Managed ROCm",
+            "value": "7.14.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "python",
+            "label": "Python",
+            "value": "Not reported",
+            "status": "unknown",
+            "statusLabel": "Unknown",
+            "note": "The ROCm tool did not report this."
+          },
+          {
+            "kind": "py-torch",
+            "label": "PyTorch",
+            "value": "2.9.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "engine",
+            "label": "Model engine",
+            "value": "Not reported",
+            "status": "unknown",
+            "statusLabel": "Unknown",
+            "note": "The ROCm tool did not report this."
+          }
+        ],
+        "driver": {
+          "summary": "Installed (version not reported)",
+          "note": "ROCm App only reports your display driver. It never installs, updates, or changes it.",
+          "links": []
+        },
+        "telemetry": {
+          "device": "card0",
+          "metrics": [
+            {
+              "key": "utilization",
+              "label": "GPU use",
+              "value": {
+                "state": "reading",
+                "text": "37%",
+                "ratio": 0.37
+              }
+            },
+            {
+              "key": "vram",
+              "label": "Memory in use",
+              "value": {
+                "state": "reading",
+                "text": "12 GB of 32 GB",
+                "ratio": 0.375
+              }
+            },
+            {
+              "key": "temperature",
+              "label": "Temperature",
+              "value": {
+                "state": "reading",
+                "text": "51 °C",
+                "ratio": null
+              }
+            },
+            {
+              "key": "power",
+              "label": "Power",
+              "value": {
+                "state": "reading",
+                "text": "118 W",
+                "ratio": null
+              }
+            }
+          ],
+          "history": [
+            {
+              "atUnixMs": 1767225540000,
+              "utilizationPct": 21.0,
+              "vramUsedMb": 9216
+            },
+            {
+              "atUnixMs": 1767225570000,
+              "utilizationPct": 44.0,
+              "vramUsedMb": 11264
+            },
+            {
+              "atUnixMs": 1767225600000,
+              "utilizationPct": 37.0,
+              "vramUsedMb": 12288
+            }
+          ],
+          "failure": null
+        },
+        "notices": [
+          {
+            "code": "stale",
+            "message": "This information is more than a few minutes old."
+          }
+        ]
+      }
+    },
+    {
+      "name": "partial",
+      "purpose": "some checks did not finish",
+      "nowUnixMs": 1767225600000,
+      "snapshot": {
+        "schemaVersion": 1,
+        "producer": {
+          "name": "rocm-cli",
+          "version": "0.1.0",
+          "build": "unknown"
+        },
+        "observedAtUnixMs": 1767225600000,
+        "platform": {
+          "os": "linux",
+          "arch": "x86_64",
+          "isWsl": false,
+          "support": {
+            "state": "supported"
+          }
+        },
+        "gpu": {
+          "name": "AMD Radeon AI PRO R9700",
+          "gfxTarget": "gfx1201",
+          "therockFamily": "gfx120X-all"
+        },
+        "health": {
+          "verdict": "unknown",
+          "reasons": [
+            {
+              "code": "probe-incomplete",
+              "detail": "1 probe(s) did not complete."
+            }
+          ],
+          "nextAction": "Refresh to complete the remaining checks."
+        },
+        "components": [
+          {
+            "kind": "app",
+            "name": "rocm-app",
+            "state": {
+              "state": "unknown",
+              "reason": "supplied by the desktop app, not the CLI"
+            }
+          },
+          {
+            "kind": "cli",
+            "name": "rocm",
+            "state": {
+              "state": "installed",
+              "version": "0.1.0"
+            }
+          },
+          {
+            "kind": "system-hip-rocm",
+            "name": "system-rocm",
+            "state": {
+              "state": "installed",
+              "version": "6.4.0"
+            }
+          },
+          {
+            "kind": "managed-runtime",
+            "name": "therock",
+            "state": {
+              "state": "installed",
+              "version": "7.14.0"
+            }
+          },
+          {
+            "kind": "py-torch",
+            "name": "torch",
+            "state": {
+              "state": "installed",
+              "version": "2.9.0"
+            }
+          },
+          {
+            "kind": "py-torch",
+            "name": "torch",
+            "state": {
+              "state": "unknown",
+              "reason": "framework probe skipped"
+            }
+          }
+        ],
+        "runtimes": [
+          {
+            "key": "nightly-wheel-gfx120x-all-7-14-0",
+            "runtimeId": "therock-nightly:gfx120X-all",
+            "version": "7.14.0",
+            "active": true,
+            "previous": false,
+            "validation": {
+              "state": "ready"
+            },
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installSource": {
+              "kind": "index",
+              "url": "https://example.invalid/simple"
+            },
+            "installRoot": "/tmp/rocm/runtime",
+            "readOnly": false
+          }
+        ],
+        "driver": {
+          "installed": {
+            "state": "detected-without-version",
+            "detail": "amdgpu kernel module is loaded"
+          },
+          "latestKnown": null,
+          "supportLinks": []
+        },
+        "update": {
+          "state": {
+            "state": "no-update",
+            "installed": "7.14.0"
+          },
+          "checkedAtUnixMs": 1767225600000,
+          "trust": {
+            "kind": "signed",
+            "keySource": "pinned"
+          }
+        },
+        "eligibleActions": [
+          "install-runtime",
+          "validate-runtime"
+        ]
+      },
+      "telemetry": {
+        "sample": {
+          "device": "card0",
+          "utilizationPct": 37.0,
+          "vramUsedMb": 12288,
+          "vramTotalMb": 32768,
+          "temperatureC": 51.0,
+          "powerW": 118.0
+        },
+        "failure": null,
+        "history": [
+          {
+            "atUnixMs": 1767225540000,
+            "utilizationPct": 21.0,
+            "vramUsedMb": 9216
+          },
+          {
+            "atUnixMs": 1767225570000,
+            "utilizationPct": 44.0,
+            "vramUsedMb": 11264
+          },
+          {
+            "atUnixMs": 1767225600000,
+            "utilizationPct": 37.0,
+            "vramUsedMb": 12288
+          }
+        ]
+      },
+      "overview": {
+        "verdict": "unknown",
+        "verdictLabel": "Not sure",
+        "summary": "Some checks did not finish, so this view is incomplete.",
+        "nextStep": {
+          "label": "Check this computer again",
+          "action": null
+        },
+        "firstRun": false,
+        "headlineFacts": [
+          {
+            "key": "gpu",
+            "label": "Graphics card",
+            "value": "AMD Radeon AI PRO R9700"
+          },
+          {
+            "key": "system",
+            "label": "System",
+            "value": "Linux, 64-bit"
+          },
+          {
+            "key": "rocm",
+            "label": "ROCm in use",
+            "value": "7.14.0"
+          }
+        ],
+        "freshness": {
+          "observedAtUnixMs": 1767225600000,
+          "ageMs": 0,
+          "stale": false,
+          "label": "Checked just now"
+        },
+        "components": [
+          {
+            "kind": "app",
+            "label": "ROCm App",
+            "value": "0.1.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "cli",
+            "label": "ROCm command-line tool",
+            "value": "0.1.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "driver",
+            "label": "Display driver",
+            "value": "Installed",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": "amdgpu kernel module is loaded"
+          },
+          {
+            "kind": "system-hip-rocm",
+            "label": "System ROCm",
+            "value": "6.4.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "managed-runtime",
+            "label": "Managed ROCm",
+            "value": "7.14.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "python",
+            "label": "Python",
+            "value": "Not reported",
+            "status": "unknown",
+            "statusLabel": "Unknown",
+            "note": "The ROCm tool did not report this."
+          },
+          {
+            "kind": "py-torch",
+            "label": "PyTorch",
+            "value": "2.9.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "engine",
+            "label": "Model engine",
+            "value": "Not reported",
+            "status": "unknown",
+            "statusLabel": "Unknown",
+            "note": "The ROCm tool did not report this."
+          },
+          {
+            "kind": "py-torch",
+            "label": "PyTorch",
+            "value": "Could not be checked",
+            "status": "unknown",
+            "statusLabel": "Unknown",
+            "note": "framework probe skipped"
+          }
+        ],
+        "driver": {
+          "summary": "Installed (version not reported)",
+          "note": "ROCm App only reports your display driver. It never installs, updates, or changes it.",
+          "links": []
+        },
+        "telemetry": {
+          "device": "card0",
+          "metrics": [
+            {
+              "key": "utilization",
+              "label": "GPU use",
+              "value": {
+                "state": "reading",
+                "text": "37%",
+                "ratio": 0.37
+              }
+            },
+            {
+              "key": "vram",
+              "label": "Memory in use",
+              "value": {
+                "state": "reading",
+                "text": "12 GB of 32 GB",
+                "ratio": 0.375
+              }
+            },
+            {
+              "key": "temperature",
+              "label": "Temperature",
+              "value": {
+                "state": "reading",
+                "text": "51 °C",
+                "ratio": null
+              }
+            },
+            {
+              "key": "power",
+              "label": "Power",
+              "value": {
+                "state": "reading",
+                "text": "118 W",
+                "ratio": null
+              }
+            }
+          ],
+          "history": [
+            {
+              "atUnixMs": 1767225540000,
+              "utilizationPct": 21.0,
+              "vramUsedMb": 9216
+            },
+            {
+              "atUnixMs": 1767225570000,
+              "utilizationPct": 44.0,
+              "vramUsedMb": 11264
+            },
+            {
+              "atUnixMs": 1767225600000,
+              "utilizationPct": 37.0,
+              "vramUsedMb": 12288
+            }
+          ],
+          "failure": null
+        },
+        "notices": [
+          {
+            "code": "partial-probe",
+            "message": "Some checks did not finish, so parts of this page may be missing."
+          }
+        ]
+      }
+    },
+    {
+      "name": "unsupported",
+      "purpose": "WSL: read-only, no action anywhere",
+      "nowUnixMs": 1767225600000,
+      "snapshot": {
+        "schemaVersion": 1,
+        "producer": {
+          "name": "rocm-cli",
+          "version": "0.1.0",
+          "build": "unknown"
+        },
+        "observedAtUnixMs": 1767225600000,
+        "platform": {
+          "os": "linux",
+          "arch": "x86_64",
+          "isWsl": true,
+          "support": {
+            "state": "unsupported",
+            "reason": "platform-wsl"
+          }
+        },
+        "gpu": {
+          "name": "AMD Radeon AI PRO R9700",
+          "gfxTarget": "gfx1201",
+          "therockFamily": "gfx120X-all"
+        },
+        "health": {
+          "verdict": "unsupported",
+          "reasons": [
+            {
+              "code": "platform-wsl",
+              "detail": "Running under WSL. ROCm App manages native Windows and native Linux hosts."
+            }
+          ],
+          "nextAction": "Run ROCm App on your Windows desktop instead."
+        },
+        "components": [
+          {
+            "kind": "app",
+            "name": "rocm-app",
+            "state": {
+              "state": "unknown",
+              "reason": "supplied by the desktop app, not the CLI"
+            }
+          },
+          {
+            "kind": "cli",
+            "name": "rocm",
+            "state": {
+              "state": "installed",
+              "version": "0.1.0"
+            }
+          },
+          {
+            "kind": "system-hip-rocm",
+            "name": "system-rocm",
+            "state": {
+              "state": "installed",
+              "version": "6.4.0"
+            }
+          },
+          {
+            "kind": "managed-runtime",
+            "name": "therock",
+            "state": {
+              "state": "installed",
+              "version": "7.14.0"
+            }
+          },
+          {
+            "kind": "py-torch",
+            "name": "torch",
+            "state": {
+              "state": "installed",
+              "version": "2.9.0"
+            }
+          }
+        ],
+        "runtimes": [
+          {
+            "key": "nightly-wheel-gfx120x-all-7-14-0",
+            "runtimeId": "therock-nightly:gfx120X-all",
+            "version": "7.14.0",
+            "active": true,
+            "previous": false,
+            "validation": {
+              "state": "ready"
+            },
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installSource": {
+              "kind": "index",
+              "url": "https://example.invalid/simple"
+            },
+            "installRoot": "/tmp/rocm/runtime",
+            "readOnly": false
+          }
+        ],
+        "driver": {
+          "installed": {
+            "state": "detected-without-version",
+            "detail": "amdgpu kernel module is loaded"
+          },
+          "latestKnown": null,
+          "supportLinks": []
+        },
+        "update": {
+          "state": {
+            "state": "no-update",
+            "installed": "7.14.0"
+          },
+          "checkedAtUnixMs": 1767225600000,
+          "trust": {
+            "kind": "signed",
+            "keySource": "pinned"
+          }
+        },
+        "eligibleActions": []
+      },
+      "telemetry": {
+        "sample": {
+          "device": "card0",
+          "utilizationPct": 37.0,
+          "vramUsedMb": 12288,
+          "vramTotalMb": 32768,
+          "temperatureC": 51.0,
+          "powerW": 118.0
+        },
+        "failure": null,
+        "history": [
+          {
+            "atUnixMs": 1767225540000,
+            "utilizationPct": 21.0,
+            "vramUsedMb": 9216
+          },
+          {
+            "atUnixMs": 1767225570000,
+            "utilizationPct": 44.0,
+            "vramUsedMb": 11264
+          },
+          {
+            "atUnixMs": 1767225600000,
+            "utilizationPct": 37.0,
+            "vramUsedMb": 12288
+          }
+        ]
+      },
+      "overview": {
+        "verdict": "unsupported",
+        "verdictLabel": "Not supported",
+        "summary": "This is running inside WSL, which cannot reach the graphics card the way ROCm App needs.",
+        "nextStep": {
+          "label": "No setup is available on this system",
+          "action": null
+        },
+        "firstRun": false,
+        "headlineFacts": [
+          {
+            "key": "gpu",
+            "label": "Graphics card",
+            "value": "AMD Radeon AI PRO R9700"
+          },
+          {
+            "key": "system",
+            "label": "System",
+            "value": "Linux, 64-bit (WSL)"
+          },
+          {
+            "key": "rocm",
+            "label": "ROCm in use",
+            "value": "7.14.0"
+          }
+        ],
+        "freshness": {
+          "observedAtUnixMs": 1767225600000,
+          "ageMs": 0,
+          "stale": false,
+          "label": "Checked just now"
+        },
+        "components": [
+          {
+            "kind": "app",
+            "label": "ROCm App",
+            "value": "0.1.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "cli",
+            "label": "ROCm command-line tool",
+            "value": "0.1.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "driver",
+            "label": "Display driver",
+            "value": "Installed",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": "amdgpu kernel module is loaded"
+          },
+          {
+            "kind": "system-hip-rocm",
+            "label": "System ROCm",
+            "value": "6.4.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "managed-runtime",
+            "label": "Managed ROCm",
+            "value": "7.14.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "python",
+            "label": "Python",
+            "value": "Not reported",
+            "status": "unknown",
+            "statusLabel": "Unknown",
+            "note": "The ROCm tool did not report this."
+          },
+          {
+            "kind": "py-torch",
+            "label": "PyTorch",
+            "value": "2.9.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "engine",
+            "label": "Model engine",
+            "value": "Not reported",
+            "status": "unknown",
+            "statusLabel": "Unknown",
+            "note": "The ROCm tool did not report this."
+          }
+        ],
+        "driver": {
+          "summary": "Installed (version not reported)",
+          "note": "ROCm App only reports your display driver. It never installs, updates, or changes it.",
+          "links": []
+        },
+        "telemetry": {
+          "device": "card0",
+          "metrics": [
+            {
+              "key": "utilization",
+              "label": "GPU use",
+              "value": {
+                "state": "reading",
+                "text": "37%",
+                "ratio": 0.37
+              }
+            },
+            {
+              "key": "vram",
+              "label": "Memory in use",
+              "value": {
+                "state": "reading",
+                "text": "12 GB of 32 GB",
+                "ratio": 0.375
+              }
+            },
+            {
+              "key": "temperature",
+              "label": "Temperature",
+              "value": {
+                "state": "reading",
+                "text": "51 °C",
+                "ratio": null
+              }
+            },
+            {
+              "key": "power",
+              "label": "Power",
+              "value": {
+                "state": "reading",
+                "text": "118 W",
+                "ratio": null
+              }
+            }
+          ],
+          "history": [
+            {
+              "atUnixMs": 1767225540000,
+              "utilizationPct": 21.0,
+              "vramUsedMb": 9216
+            },
+            {
+              "atUnixMs": 1767225570000,
+              "utilizationPct": 44.0,
+              "vramUsedMb": 11264
+            },
+            {
+              "atUnixMs": 1767225600000,
+              "utilizationPct": 37.0,
+              "vramUsedMb": 12288
+            }
+          ],
+          "failure": null
+        },
+        "notices": [
+          {
+            "code": "unsupported",
+            "message": "ROCm App cannot change anything on this computer. Everything below is read-only."
+          }
+        ]
+      }
+    },
+    {
+      "name": "offline",
+      "purpose": "AMD unreachable; update information may be out of date",
+      "nowUnixMs": 1767225600000,
+      "snapshot": {
+        "schemaVersion": 1,
+        "producer": {
+          "name": "rocm-cli",
+          "version": "0.1.0",
+          "build": "unknown"
+        },
+        "observedAtUnixMs": 1767225600000,
+        "platform": {
+          "os": "linux",
+          "arch": "x86_64",
+          "isWsl": false,
+          "support": {
+            "state": "supported"
+          }
+        },
+        "gpu": {
+          "name": "AMD Radeon AI PRO R9700",
+          "gfxTarget": "gfx1201",
+          "therockFamily": "gfx120X-all"
+        },
+        "health": {
+          "verdict": "unknown",
+          "reasons": [
+            {
+              "code": "update-offline",
+              "detail": "Could not check for updates: update catalog is unreachable"
+            }
+          ],
+          "nextAction": "Reconnect to check for ROCm updates."
+        },
+        "components": [
+          {
+            "kind": "app",
+            "name": "rocm-app",
+            "state": {
+              "state": "unknown",
+              "reason": "supplied by the desktop app, not the CLI"
+            }
+          },
+          {
+            "kind": "cli",
+            "name": "rocm",
+            "state": {
+              "state": "installed",
+              "version": "0.1.0"
+            }
+          },
+          {
+            "kind": "system-hip-rocm",
+            "name": "system-rocm",
+            "state": {
+              "state": "installed",
+              "version": "6.4.0"
+            }
+          },
+          {
+            "kind": "managed-runtime",
+            "name": "therock",
+            "state": {
+              "state": "installed",
+              "version": "7.14.0"
+            }
+          },
+          {
+            "kind": "py-torch",
+            "name": "torch",
+            "state": {
+              "state": "installed",
+              "version": "2.9.0"
+            }
+          },
+          {
+            "kind": "managed-runtime",
+            "name": "therock",
+            "state": {
+              "state": "stale",
+              "version": "7.14.0",
+              "checkedAtUnixMs": 1767139200000
+            }
+          }
+        ],
+        "runtimes": [
+          {
+            "key": "nightly-wheel-gfx120x-all-7-14-0",
+            "runtimeId": "therock-nightly:gfx120X-all",
+            "version": "7.14.0",
+            "active": true,
+            "previous": false,
+            "validation": {
+              "state": "ready"
+            },
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installSource": {
+              "kind": "index",
+              "url": "https://example.invalid/simple"
+            },
+            "installRoot": "/tmp/rocm/runtime",
+            "readOnly": false
+          }
+        ],
+        "driver": {
+          "installed": {
+            "state": "detected-without-version",
+            "detail": "amdgpu kernel module is loaded"
+          },
+          "latestKnown": null,
+          "supportLinks": []
+        },
+        "update": {
+          "state": {
+            "state": "offline",
+            "detail": "update catalog is unreachable"
+          },
+          "checkedAtUnixMs": null,
+          "trust": {
+            "kind": "untrusted",
+            "reason": "no metadata retrieved"
+          }
+        },
+        "eligibleActions": [
+          "install-runtime",
+          "validate-runtime"
+        ]
+      },
+      "telemetry": {
+        "sample": {
+          "device": "card0",
+          "utilizationPct": 37.0,
+          "vramUsedMb": 12288,
+          "vramTotalMb": 32768,
+          "temperatureC": 51.0,
+          "powerW": 118.0
+        },
+        "failure": null,
+        "history": [
+          {
+            "atUnixMs": 1767225540000,
+            "utilizationPct": 21.0,
+            "vramUsedMb": 9216
+          },
+          {
+            "atUnixMs": 1767225570000,
+            "utilizationPct": 44.0,
+            "vramUsedMb": 11264
+          },
+          {
+            "atUnixMs": 1767225600000,
+            "utilizationPct": 37.0,
+            "vramUsedMb": 12288
+          }
+        ]
+      },
+      "overview": {
+        "verdict": "unknown",
+        "verdictLabel": "Not sure",
+        "summary": "This computer could not reach AMD to check for updates.",
+        "nextStep": {
+          "label": "Check again",
+          "action": null
+        },
+        "firstRun": false,
+        "headlineFacts": [
+          {
+            "key": "gpu",
+            "label": "Graphics card",
+            "value": "AMD Radeon AI PRO R9700"
+          },
+          {
+            "key": "system",
+            "label": "System",
+            "value": "Linux, 64-bit"
+          },
+          {
+            "key": "rocm",
+            "label": "ROCm in use",
+            "value": "7.14.0"
+          }
+        ],
+        "freshness": {
+          "observedAtUnixMs": 1767225600000,
+          "ageMs": 0,
+          "stale": false,
+          "label": "Checked just now"
+        },
+        "components": [
+          {
+            "kind": "app",
+            "label": "ROCm App",
+            "value": "0.1.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "cli",
+            "label": "ROCm command-line tool",
+            "value": "0.1.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "driver",
+            "label": "Display driver",
+            "value": "Installed",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": "amdgpu kernel module is loaded"
+          },
+          {
+            "kind": "system-hip-rocm",
+            "label": "System ROCm",
+            "value": "6.4.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "managed-runtime",
+            "label": "Managed ROCm",
+            "value": "7.14.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "python",
+            "label": "Python",
+            "value": "Not reported",
+            "status": "unknown",
+            "statusLabel": "Unknown",
+            "note": "The ROCm tool did not report this."
+          },
+          {
+            "kind": "py-torch",
+            "label": "PyTorch",
+            "value": "2.9.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "engine",
+            "label": "Model engine",
+            "value": "Not reported",
+            "status": "unknown",
+            "statusLabel": "Unknown",
+            "note": "The ROCm tool did not report this."
+          },
+          {
+            "kind": "managed-runtime",
+            "label": "Managed ROCm",
+            "value": "7.14.0",
+            "status": "stale",
+            "statusLabel": "Last known",
+            "note": "Last read at 1767139200000 and not re-checked since."
+          }
+        ],
+        "driver": {
+          "summary": "Installed (version not reported)",
+          "note": "ROCm App only reports your display driver. It never installs, updates, or changes it.",
+          "links": []
+        },
+        "telemetry": {
+          "device": "card0",
+          "metrics": [
+            {
+              "key": "utilization",
+              "label": "GPU use",
+              "value": {
+                "state": "reading",
+                "text": "37%",
+                "ratio": 0.37
+              }
+            },
+            {
+              "key": "vram",
+              "label": "Memory in use",
+              "value": {
+                "state": "reading",
+                "text": "12 GB of 32 GB",
+                "ratio": 0.375
+              }
+            },
+            {
+              "key": "temperature",
+              "label": "Temperature",
+              "value": {
+                "state": "reading",
+                "text": "51 °C",
+                "ratio": null
+              }
+            },
+            {
+              "key": "power",
+              "label": "Power",
+              "value": {
+                "state": "reading",
+                "text": "118 W",
+                "ratio": null
+              }
+            }
+          ],
+          "history": [
+            {
+              "atUnixMs": 1767225540000,
+              "utilizationPct": 21.0,
+              "vramUsedMb": 9216
+            },
+            {
+              "atUnixMs": 1767225570000,
+              "utilizationPct": 44.0,
+              "vramUsedMb": 11264
+            },
+            {
+              "atUnixMs": 1767225600000,
+              "utilizationPct": 37.0,
+              "vramUsedMb": 12288
+            }
+          ],
+          "failure": null
+        },
+        "notices": [
+          {
+            "code": "offline",
+            "message": "This computer could not reach AMD, so update information may be out of date."
+          },
+          {
+            "code": "untrusted-metadata",
+            "message": "AMD's download list could not be verified, so it was not used."
+          }
+        ]
+      }
+    },
+    {
+      "name": "untrusted-metadata",
+      "purpose": "the download list failed its signature check",
+      "nowUnixMs": 1767225600000,
+      "snapshot": {
+        "schemaVersion": 1,
+        "producer": {
+          "name": "rocm-cli",
+          "version": "0.1.0",
+          "build": "unknown"
+        },
+        "observedAtUnixMs": 1767225600000,
+        "platform": {
+          "os": "linux",
+          "arch": "x86_64",
+          "isWsl": false,
+          "support": {
+            "state": "supported"
+          }
+        },
+        "gpu": {
+          "name": "AMD Radeon AI PRO R9700",
+          "gfxTarget": "gfx1201",
+          "therockFamily": "gfx120X-all"
+        },
+        "health": {
+          "verdict": "healthy",
+          "reasons": [],
+          "nextAction": null
+        },
+        "components": [
+          {
+            "kind": "app",
+            "name": "rocm-app",
+            "state": {
+              "state": "unknown",
+              "reason": "supplied by the desktop app, not the CLI"
+            }
+          },
+          {
+            "kind": "cli",
+            "name": "rocm",
+            "state": {
+              "state": "installed",
+              "version": "0.1.0"
+            }
+          },
+          {
+            "kind": "system-hip-rocm",
+            "name": "system-rocm",
+            "state": {
+              "state": "installed",
+              "version": "6.4.0"
+            }
+          },
+          {
+            "kind": "managed-runtime",
+            "name": "therock",
+            "state": {
+              "state": "installed",
+              "version": "7.14.0"
+            }
+          },
+          {
+            "kind": "py-torch",
+            "name": "torch",
+            "state": {
+              "state": "installed",
+              "version": "2.9.0"
+            }
+          }
+        ],
+        "runtimes": [
+          {
+            "key": "nightly-wheel-gfx120x-all-7-14-0",
+            "runtimeId": "therock-nightly:gfx120X-all",
+            "version": "7.14.0",
+            "active": true,
+            "previous": false,
+            "validation": {
+              "state": "ready"
+            },
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installSource": {
+              "kind": "index",
+              "url": "https://example.invalid/simple"
+            },
+            "installRoot": "/tmp/rocm/runtime",
+            "readOnly": false
+          }
+        ],
+        "driver": {
+          "installed": {
+            "state": "detected-without-version",
+            "detail": "amdgpu kernel module is loaded"
+          },
+          "latestKnown": null,
+          "supportLinks": []
+        },
+        "update": {
+          "state": {
+            "state": "untrusted-metadata",
+            "detail": "signature did not verify"
+          },
+          "checkedAtUnixMs": 1767225600000,
+          "trust": {
+            "kind": "untrusted",
+            "reason": "signature did not verify"
+          }
+        },
+        "eligibleActions": [
+          "install-runtime",
+          "validate-runtime"
+        ]
+      },
+      "telemetry": {
+        "sample": {
+          "device": "card0",
+          "utilizationPct": 37.0,
+          "vramUsedMb": 12288,
+          "vramTotalMb": 32768,
+          "temperatureC": 51.0,
+          "powerW": 118.0
+        },
+        "failure": null,
+        "history": [
+          {
+            "atUnixMs": 1767225540000,
+            "utilizationPct": 21.0,
+            "vramUsedMb": 9216
+          },
+          {
+            "atUnixMs": 1767225570000,
+            "utilizationPct": 44.0,
+            "vramUsedMb": 11264
+          },
+          {
+            "atUnixMs": 1767225600000,
+            "utilizationPct": 37.0,
+            "vramUsedMb": 12288
+          }
+        ]
+      },
+      "overview": {
+        "verdict": "healthy",
+        "verdictLabel": "Ready",
+        "summary": "ROCm is set up and working.",
+        "nextStep": {
+          "label": "Check this computer again",
+          "action": null
+        },
+        "firstRun": false,
+        "headlineFacts": [
+          {
+            "key": "gpu",
+            "label": "Graphics card",
+            "value": "AMD Radeon AI PRO R9700"
+          },
+          {
+            "key": "system",
+            "label": "System",
+            "value": "Linux, 64-bit"
+          },
+          {
+            "key": "rocm",
+            "label": "ROCm in use",
+            "value": "7.14.0"
+          }
+        ],
+        "freshness": {
+          "observedAtUnixMs": 1767225600000,
+          "ageMs": 0,
+          "stale": false,
+          "label": "Checked just now"
+        },
+        "components": [
+          {
+            "kind": "app",
+            "label": "ROCm App",
+            "value": "0.1.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "cli",
+            "label": "ROCm command-line tool",
+            "value": "0.1.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "driver",
+            "label": "Display driver",
+            "value": "Installed",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": "amdgpu kernel module is loaded"
+          },
+          {
+            "kind": "system-hip-rocm",
+            "label": "System ROCm",
+            "value": "6.4.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "managed-runtime",
+            "label": "Managed ROCm",
+            "value": "7.14.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "python",
+            "label": "Python",
+            "value": "Not reported",
+            "status": "unknown",
+            "statusLabel": "Unknown",
+            "note": "The ROCm tool did not report this."
+          },
+          {
+            "kind": "py-torch",
+            "label": "PyTorch",
+            "value": "2.9.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "engine",
+            "label": "Model engine",
+            "value": "Not reported",
+            "status": "unknown",
+            "statusLabel": "Unknown",
+            "note": "The ROCm tool did not report this."
+          }
+        ],
+        "driver": {
+          "summary": "Installed (version not reported)",
+          "note": "ROCm App only reports your display driver. It never installs, updates, or changes it.",
+          "links": []
+        },
+        "telemetry": {
+          "device": "card0",
+          "metrics": [
+            {
+              "key": "utilization",
+              "label": "GPU use",
+              "value": {
+                "state": "reading",
+                "text": "37%",
+                "ratio": 0.37
+              }
+            },
+            {
+              "key": "vram",
+              "label": "Memory in use",
+              "value": {
+                "state": "reading",
+                "text": "12 GB of 32 GB",
+                "ratio": 0.375
+              }
+            },
+            {
+              "key": "temperature",
+              "label": "Temperature",
+              "value": {
+                "state": "reading",
+                "text": "51 °C",
+                "ratio": null
+              }
+            },
+            {
+              "key": "power",
+              "label": "Power",
+              "value": {
+                "state": "reading",
+                "text": "118 W",
+                "ratio": null
+              }
+            }
+          ],
+          "history": [
+            {
+              "atUnixMs": 1767225540000,
+              "utilizationPct": 21.0,
+              "vramUsedMb": 9216
+            },
+            {
+              "atUnixMs": 1767225570000,
+              "utilizationPct": 44.0,
+              "vramUsedMb": 11264
+            },
+            {
+              "atUnixMs": 1767225600000,
+              "utilizationPct": 37.0,
+              "vramUsedMb": 12288
+            }
+          ],
+          "failure": null
+        },
+        "notices": [
+          {
+            "code": "untrusted-metadata",
+            "message": "AMD's download list could not be verified, so it was not used."
+          }
+        ]
+      }
+    },
+    {
+      "name": "no-gpu",
+      "purpose": "no AMD graphics card on this computer",
+      "nowUnixMs": 1767225600000,
+      "snapshot": {
+        "schemaVersion": 1,
+        "producer": {
+          "name": "rocm-cli",
+          "version": "0.1.0",
+          "build": "unknown"
+        },
+        "observedAtUnixMs": 1767225600000,
+        "platform": {
+          "os": "linux",
+          "arch": "x86_64",
+          "isWsl": false,
+          "support": {
+            "state": "supported"
+          }
+        },
+        "gpu": {
+          "name": null,
+          "gfxTarget": null,
+          "therockFamily": null
+        },
+        "health": {
+          "verdict": "setup-required",
+          "reasons": [
+            {
+              "code": "gpu-absent",
+              "detail": "no AMD graphics device was found"
+            }
+          ],
+          "nextAction": "Set up ROCm."
+        },
+        "components": [
+          {
+            "kind": "app",
+            "name": "rocm-app",
+            "state": {
+              "state": "unknown",
+              "reason": "supplied by the desktop app, not the CLI"
+            }
+          },
+          {
+            "kind": "cli",
+            "name": "rocm",
+            "state": {
+              "state": "installed",
+              "version": "0.1.0"
+            }
+          },
+          {
+            "kind": "system-hip-rocm",
+            "name": "system-rocm",
+            "state": {
+              "state": "installed",
+              "version": "6.4.0"
+            }
+          },
+          {
+            "kind": "managed-runtime",
+            "name": "therock",
+            "state": {
+              "state": "installed",
+              "version": "7.14.0"
+            }
+          },
+          {
+            "kind": "py-torch",
+            "name": "torch",
+            "state": {
+              "state": "installed",
+              "version": "2.9.0"
+            }
+          }
+        ],
+        "runtimes": [],
+        "driver": {
+          "installed": {
+            "state": "detected-without-version",
+            "detail": "amdgpu kernel module is loaded"
+          },
+          "latestKnown": null,
+          "supportLinks": []
+        },
+        "update": {
+          "state": {
+            "state": "not-applicable"
+          },
+          "checkedAtUnixMs": 1767225600000,
+          "trust": {
+            "kind": "signed",
+            "keySource": "pinned"
+          }
+        },
+        "eligibleActions": []
+      },
+      "telemetry": {
+        "sample": null,
+        "failure": "no-device",
+        "history": []
+      },
+      "overview": {
+        "verdict": "setup-required",
+        "verdictLabel": "Setup needed",
+        "summary": "No AMD graphics card was found on this computer.",
+        "nextStep": {
+          "label": "Check this computer again",
+          "action": null
+        },
+        "firstRun": true,
+        "headlineFacts": [
+          {
+            "key": "gpu",
+            "label": "Graphics card",
+            "value": "No AMD graphics card found"
+          },
+          {
+            "key": "system",
+            "label": "System",
+            "value": "Linux, 64-bit"
+          },
+          {
+            "key": "rocm",
+            "label": "ROCm in use",
+            "value": "None yet"
+          }
+        ],
+        "freshness": {
+          "observedAtUnixMs": 1767225600000,
+          "ageMs": 0,
+          "stale": false,
+          "label": "Checked just now"
+        },
+        "components": [
+          {
+            "kind": "app",
+            "label": "ROCm App",
+            "value": "0.1.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "cli",
+            "label": "ROCm command-line tool",
+            "value": "0.1.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "driver",
+            "label": "Display driver",
+            "value": "Installed",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": "amdgpu kernel module is loaded"
+          },
+          {
+            "kind": "system-hip-rocm",
+            "label": "System ROCm",
+            "value": "6.4.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "managed-runtime",
+            "label": "Managed ROCm",
+            "value": "7.14.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "python",
+            "label": "Python",
+            "value": "Not reported",
+            "status": "unknown",
+            "statusLabel": "Unknown",
+            "note": "The ROCm tool did not report this."
+          },
+          {
+            "kind": "py-torch",
+            "label": "PyTorch",
+            "value": "2.9.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "engine",
+            "label": "Model engine",
+            "value": "Not reported",
+            "status": "unknown",
+            "statusLabel": "Unknown",
+            "note": "The ROCm tool did not report this."
+          }
+        ],
+        "driver": {
+          "summary": "Installed (version not reported)",
+          "note": "ROCm App only reports your display driver. It never installs, updates, or changes it.",
+          "links": []
+        },
+        "telemetry": {
+          "device": null,
+          "metrics": [
+            {
+              "key": "utilization",
+              "label": "GPU use",
+              "value": {
+                "state": "unavailable",
+                "reason": "No AMD graphics card to read."
+              }
+            },
+            {
+              "key": "vram",
+              "label": "Memory in use",
+              "value": {
+                "state": "unavailable",
+                "reason": "No AMD graphics card to read."
+              }
+            },
+            {
+              "key": "temperature",
+              "label": "Temperature",
+              "value": {
+                "state": "unavailable",
+                "reason": "No AMD graphics card to read."
+              }
+            },
+            {
+              "key": "power",
+              "label": "Power",
+              "value": {
+                "state": "unavailable",
+                "reason": "No AMD graphics card to read."
+              }
+            }
+          ],
+          "history": [],
+          "failure": "No AMD graphics card to read."
+        },
+        "notices": []
+      }
+    },
+    {
+      "name": "telemetry-permission",
+      "purpose": "health intact, live readings refused for permission",
+      "nowUnixMs": 1767225600000,
+      "snapshot": {
+        "schemaVersion": 1,
+        "producer": {
+          "name": "rocm-cli",
+          "version": "0.1.0",
+          "build": "unknown"
+        },
+        "observedAtUnixMs": 1767225600000,
+        "platform": {
+          "os": "linux",
+          "arch": "x86_64",
+          "isWsl": false,
+          "support": {
+            "state": "supported"
+          }
+        },
+        "gpu": {
+          "name": "AMD Radeon AI PRO R9700",
+          "gfxTarget": "gfx1201",
+          "therockFamily": "gfx120X-all"
+        },
+        "health": {
+          "verdict": "healthy",
+          "reasons": [],
+          "nextAction": null
+        },
+        "components": [
+          {
+            "kind": "app",
+            "name": "rocm-app",
+            "state": {
+              "state": "unknown",
+              "reason": "supplied by the desktop app, not the CLI"
+            }
+          },
+          {
+            "kind": "cli",
+            "name": "rocm",
+            "state": {
+              "state": "installed",
+              "version": "0.1.0"
+            }
+          },
+          {
+            "kind": "system-hip-rocm",
+            "name": "system-rocm",
+            "state": {
+              "state": "installed",
+              "version": "6.4.0"
+            }
+          },
+          {
+            "kind": "managed-runtime",
+            "name": "therock",
+            "state": {
+              "state": "installed",
+              "version": "7.14.0"
+            }
+          },
+          {
+            "kind": "py-torch",
+            "name": "torch",
+            "state": {
+              "state": "installed",
+              "version": "2.9.0"
+            }
+          }
+        ],
+        "runtimes": [
+          {
+            "key": "nightly-wheel-gfx120x-all-7-14-0",
+            "runtimeId": "therock-nightly:gfx120X-all",
+            "version": "7.14.0",
+            "active": true,
+            "previous": false,
+            "validation": {
+              "state": "ready"
+            },
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installSource": {
+              "kind": "index",
+              "url": "https://example.invalid/simple"
+            },
+            "installRoot": "/tmp/rocm/runtime",
+            "readOnly": false
+          }
+        ],
+        "driver": {
+          "installed": {
+            "state": "detected-without-version",
+            "detail": "amdgpu kernel module is loaded"
+          },
+          "latestKnown": null,
+          "supportLinks": []
+        },
+        "update": {
+          "state": {
+            "state": "no-update",
+            "installed": "7.14.0"
+          },
+          "checkedAtUnixMs": 1767225600000,
+          "trust": {
+            "kind": "signed",
+            "keySource": "pinned"
+          }
+        },
+        "eligibleActions": [
+          "install-runtime",
+          "validate-runtime"
+        ]
+      },
+      "telemetry": {
+        "sample": null,
+        "failure": "permission",
+        "history": []
+      },
+      "overview": {
+        "verdict": "healthy",
+        "verdictLabel": "Ready",
+        "summary": "ROCm is set up and working.",
+        "nextStep": {
+          "label": "Check this computer again",
+          "action": null
+        },
+        "firstRun": false,
+        "headlineFacts": [
+          {
+            "key": "gpu",
+            "label": "Graphics card",
+            "value": "AMD Radeon AI PRO R9700"
+          },
+          {
+            "key": "system",
+            "label": "System",
+            "value": "Linux, 64-bit"
+          },
+          {
+            "key": "rocm",
+            "label": "ROCm in use",
+            "value": "7.14.0"
+          }
+        ],
+        "freshness": {
+          "observedAtUnixMs": 1767225600000,
+          "ageMs": 0,
+          "stale": false,
+          "label": "Checked just now"
+        },
+        "components": [
+          {
+            "kind": "app",
+            "label": "ROCm App",
+            "value": "0.1.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "cli",
+            "label": "ROCm command-line tool",
+            "value": "0.1.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "driver",
+            "label": "Display driver",
+            "value": "Installed",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": "amdgpu kernel module is loaded"
+          },
+          {
+            "kind": "system-hip-rocm",
+            "label": "System ROCm",
+            "value": "6.4.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "managed-runtime",
+            "label": "Managed ROCm",
+            "value": "7.14.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "python",
+            "label": "Python",
+            "value": "Not reported",
+            "status": "unknown",
+            "statusLabel": "Unknown",
+            "note": "The ROCm tool did not report this."
+          },
+          {
+            "kind": "py-torch",
+            "label": "PyTorch",
+            "value": "2.9.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "engine",
+            "label": "Model engine",
+            "value": "Not reported",
+            "status": "unknown",
+            "statusLabel": "Unknown",
+            "note": "The ROCm tool did not report this."
+          }
+        ],
+        "driver": {
+          "summary": "Installed (version not reported)",
+          "note": "ROCm App only reports your display driver. It never installs, updates, or changes it.",
+          "links": []
+        },
+        "telemetry": {
+          "device": null,
+          "metrics": [
+            {
+              "key": "utilization",
+              "label": "GPU use",
+              "value": {
+                "state": "unavailable",
+                "reason": "ROCm App is not allowed to read the graphics card on this computer."
+              }
+            },
+            {
+              "key": "vram",
+              "label": "Memory in use",
+              "value": {
+                "state": "unavailable",
+                "reason": "ROCm App is not allowed to read the graphics card on this computer."
+              }
+            },
+            {
+              "key": "temperature",
+              "label": "Temperature",
+              "value": {
+                "state": "unavailable",
+                "reason": "ROCm App is not allowed to read the graphics card on this computer."
+              }
+            },
+            {
+              "key": "power",
+              "label": "Power",
+              "value": {
+                "state": "unavailable",
+                "reason": "ROCm App is not allowed to read the graphics card on this computer."
+              }
+            }
+          ],
+          "history": [],
+          "failure": "ROCm App is not allowed to read the graphics card on this computer."
+        },
+        "notices": [
+          {
+            "code": "telemetry-permission",
+            "message": "Live graphics readings need permission to read the GPU device on this computer."
+          }
+        ]
+      }
+    },
+    {
+      "name": "telemetry-partial",
+      "purpose": "some readings present, others not reported",
+      "nowUnixMs": 1767225600000,
+      "snapshot": {
+        "schemaVersion": 1,
+        "producer": {
+          "name": "rocm-cli",
+          "version": "0.1.0",
+          "build": "unknown"
+        },
+        "observedAtUnixMs": 1767225600000,
+        "platform": {
+          "os": "linux",
+          "arch": "x86_64",
+          "isWsl": false,
+          "support": {
+            "state": "supported"
+          }
+        },
+        "gpu": {
+          "name": "AMD Radeon AI PRO R9700",
+          "gfxTarget": "gfx1201",
+          "therockFamily": "gfx120X-all"
+        },
+        "health": {
+          "verdict": "healthy",
+          "reasons": [],
+          "nextAction": null
+        },
+        "components": [
+          {
+            "kind": "app",
+            "name": "rocm-app",
+            "state": {
+              "state": "unknown",
+              "reason": "supplied by the desktop app, not the CLI"
+            }
+          },
+          {
+            "kind": "cli",
+            "name": "rocm",
+            "state": {
+              "state": "installed",
+              "version": "0.1.0"
+            }
+          },
+          {
+            "kind": "system-hip-rocm",
+            "name": "system-rocm",
+            "state": {
+              "state": "installed",
+              "version": "6.4.0"
+            }
+          },
+          {
+            "kind": "managed-runtime",
+            "name": "therock",
+            "state": {
+              "state": "installed",
+              "version": "7.14.0"
+            }
+          },
+          {
+            "kind": "py-torch",
+            "name": "torch",
+            "state": {
+              "state": "installed",
+              "version": "2.9.0"
+            }
+          }
+        ],
+        "runtimes": [
+          {
+            "key": "nightly-wheel-gfx120x-all-7-14-0",
+            "runtimeId": "therock-nightly:gfx120X-all",
+            "version": "7.14.0",
+            "active": true,
+            "previous": false,
+            "validation": {
+              "state": "ready"
+            },
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installSource": {
+              "kind": "index",
+              "url": "https://example.invalid/simple"
+            },
+            "installRoot": "/tmp/rocm/runtime",
+            "readOnly": false
+          }
+        ],
+        "driver": {
+          "installed": {
+            "state": "detected-without-version",
+            "detail": "amdgpu kernel module is loaded"
+          },
+          "latestKnown": null,
+          "supportLinks": []
+        },
+        "update": {
+          "state": {
+            "state": "no-update",
+            "installed": "7.14.0"
+          },
+          "checkedAtUnixMs": 1767225600000,
+          "trust": {
+            "kind": "signed",
+            "keySource": "pinned"
+          }
+        },
+        "eligibleActions": [
+          "install-runtime",
+          "validate-runtime"
+        ]
+      },
+      "telemetry": {
+        "sample": {
+          "device": "card0",
+          "utilizationPct": 37.0,
+          "vramUsedMb": 12288,
+          "vramTotalMb": 32768,
+          "temperatureC": null,
+          "powerW": null
+        },
+        "failure": null,
+        "history": [
+          {
+            "atUnixMs": 1767225540000,
+            "utilizationPct": 21.0,
+            "vramUsedMb": 9216
+          },
+          {
+            "atUnixMs": 1767225570000,
+            "utilizationPct": 44.0,
+            "vramUsedMb": 11264
+          },
+          {
+            "atUnixMs": 1767225600000,
+            "utilizationPct": 37.0,
+            "vramUsedMb": 12288
+          }
+        ]
+      },
+      "overview": {
+        "verdict": "healthy",
+        "verdictLabel": "Ready",
+        "summary": "ROCm is set up and working.",
+        "nextStep": {
+          "label": "Check this computer again",
+          "action": null
+        },
+        "firstRun": false,
+        "headlineFacts": [
+          {
+            "key": "gpu",
+            "label": "Graphics card",
+            "value": "AMD Radeon AI PRO R9700"
+          },
+          {
+            "key": "system",
+            "label": "System",
+            "value": "Linux, 64-bit"
+          },
+          {
+            "key": "rocm",
+            "label": "ROCm in use",
+            "value": "7.14.0"
+          }
+        ],
+        "freshness": {
+          "observedAtUnixMs": 1767225600000,
+          "ageMs": 0,
+          "stale": false,
+          "label": "Checked just now"
+        },
+        "components": [
+          {
+            "kind": "app",
+            "label": "ROCm App",
+            "value": "0.1.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "cli",
+            "label": "ROCm command-line tool",
+            "value": "0.1.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "driver",
+            "label": "Display driver",
+            "value": "Installed",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": "amdgpu kernel module is loaded"
+          },
+          {
+            "kind": "system-hip-rocm",
+            "label": "System ROCm",
+            "value": "6.4.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "managed-runtime",
+            "label": "Managed ROCm",
+            "value": "7.14.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "python",
+            "label": "Python",
+            "value": "Not reported",
+            "status": "unknown",
+            "statusLabel": "Unknown",
+            "note": "The ROCm tool did not report this."
+          },
+          {
+            "kind": "py-torch",
+            "label": "PyTorch",
+            "value": "2.9.0",
+            "status": "ready",
+            "statusLabel": "Ready",
+            "note": null
+          },
+          {
+            "kind": "engine",
+            "label": "Model engine",
+            "value": "Not reported",
+            "status": "unknown",
+            "statusLabel": "Unknown",
+            "note": "The ROCm tool did not report this."
+          }
+        ],
+        "driver": {
+          "summary": "Installed (version not reported)",
+          "note": "ROCm App only reports your display driver. It never installs, updates, or changes it.",
+          "links": []
+        },
+        "telemetry": {
+          "device": "card0",
+          "metrics": [
+            {
+              "key": "utilization",
+              "label": "GPU use",
+              "value": {
+                "state": "reading",
+                "text": "37%",
+                "ratio": 0.37
+              }
+            },
+            {
+              "key": "vram",
+              "label": "Memory in use",
+              "value": {
+                "state": "reading",
+                "text": "12 GB of 32 GB",
+                "ratio": 0.375
+              }
+            },
+            {
+              "key": "temperature",
+              "label": "Temperature",
+              "value": {
+                "state": "unavailable",
+                "reason": "Not reported by this graphics card."
+              }
+            },
+            {
+              "key": "power",
+              "label": "Power",
+              "value": {
+                "state": "unavailable",
+                "reason": "Not reported by this graphics card."
+              }
+            }
+          ],
+          "history": [
+            {
+              "atUnixMs": 1767225540000,
+              "utilizationPct": 21.0,
+              "vramUsedMb": 9216
+            },
+            {
+              "atUnixMs": 1767225570000,
+              "utilizationPct": 44.0,
+              "vramUsedMb": 11264
+            },
+            {
+              "atUnixMs": 1767225600000,
+              "utilizationPct": 37.0,
+              "vramUsedMb": 12288
+            }
+          ],
+          "failure": null
+        },
+        "notices": []
+      }
+    }
+  ],
+  "fatal": [
+    {
+      "name": "contract-unreadable",
+      "purpose": "the backend could not produce a snapshot at all",
+      "error": {
+        "code": "inspection",
+        "message": "The ROCm command-line tool speaks version 99; this app understands version 1. Update ROCm App."
+      }
+    }
+  ]
+}

@@ -2,224 +2,130 @@
 //
 // SPDX-License-Identifier: MIT
 
-import { useEffect, useState } from "react";
-import { isTauri } from "@tauri-apps/api/core";
-import { loadSnapshot } from "./lib/backend";
-import { FIXTURES, desktopBackend, fixtureBackend } from "./lib/onboarding";
-import type { FixtureBackendOptions } from "./lib/onboarding";
-import { installAllowed, unsupportedReason } from "./lib/platform";
-import type { FixtureSnapshot, ScenarioName } from "./lib/scenarios";
-import { SCENARIO_NAMES } from "./lib/scenarios";
+/**
+ * The application shell.
+ *
+ * Two surfaces, one rule for choosing between them: a machine with no ROCm on
+ * it yet goes straight to guided setup; everything else — including a machine
+ * this app cannot change at all — lands on the Overview, which is read-only by
+ * construction and explains its own limits.
+ *
+ * The shell owns routing and nothing else. Both surfaces derive their content
+ * in Rust.
+ */
+
+import { useCallback, useEffect, useState } from "react";
+import Dashboard from "./dashboard/Dashboard";
+import {
+  desktopSource,
+  fixtureSource,
+  failingSource,
+  FIXTURES as DASH_FIXTURES,
+} from "./lib/dashboard";
+import type { DashboardSource } from "./lib/dashboard";
+import { FIXTURES as ONBOARD_FIXTURES, desktopBackend, fixtureBackend } from "./lib/onboarding";
+import type { FixtureBackendOptions, OnboardingBackend } from "./lib/onboarding";
 import OnboardingFlow from "./onboarding/OnboardingFlow";
 
 /**
- * Fixture mode is opt-in at build time. It exposes the scenario switcher used
- * by renderer tests and screenshot runs; a production bundle has no switcher
- * and no way to fabricate a health state.
+ * Fixture mode is opt-in at build time. It is what lets renderer tests and
+ * screenshot runs address a single state by URL; a production bundle has no
+ * way to reach one, so a query string cannot fabricate a screen.
  */
 const FIXTURE_MODE = import.meta.env.ROCM_APP_FIXTURE === "1" || import.meta.env.MODE === "test";
 
-const VERDICT_LABEL: Record<FixtureSnapshot["verdict"], string> = {
-  healthy: "Ready",
-  "setup-required": "Setup needed",
-  attention: "Needs attention",
-  unsupported: "Not supported",
-  unknown: "Unknown",
-};
-
-/**
- * A settled load, tagged with the scenario it answers.
- *
- * Tagging is what removes the need to blank the state when `name` changes: a
- * result for a previous scenario is simply not the current one, so the view
- * reads as loading without a synchronous `setState` inside the effect and the
- * cascading render that comes with it.
- */
-interface LoadResult {
-  readonly name: ScenarioName;
-  readonly snapshot?: FixtureSnapshot;
-  readonly error?: string;
-}
+type Surface = "dashboard" | "onboarding";
 
 export interface AppProps {
-  /** Initial fixture scenario. Tests drive this directly. */
-  readonly initialScenario?: ScenarioName;
+  /** Force a surface. Tests drive this directly. */
+  readonly initialSurface?: Surface;
 }
 
-export default function App({ initialScenario = "healthy" }: AppProps) {
-  // A route decision, not state: it is fixed for the life of the window, and
-  // reading it here keeps every hook below unconditional.
-  const fixtureRoute = FIXTURE_MODE ? onboardingRouteFromUrl() : null;
-  if (fixtureRoute) {
-    return <OnboardingFlow backend={fixtureBackend(FIXTURES, fixtureRoute.scenario, fixtureRoute.options)} />;
+export default function App({ initialSurface }: AppProps = {}) {
+  const route = FIXTURE_MODE ? fixtureRoute() : null;
+  if (route) {
+    return route;
   }
-  if (isTauri()) {
-    return <DesktopShell initialScenario={initialScenario} />;
-  }
-  return <FixtureStatusView initialScenario={initialScenario} />;
+  return <DesktopShell initialSurface={initialSurface} />;
 }
 
 /**
- * Screenshot and renderer entry point for a single onboarding fixture.
- *
- * `?view=onboarding&scenario=…` only exists in a fixture build; a production
- * bundle has no way to reach it, so a query string cannot fabricate a screen.
+ * `?view=dashboard&scenario=…` / `?view=onboarding&scenario=…`, fixture builds
+ * only.
  */
-function onboardingRouteFromUrl(): {
-  scenario: string;
-  options: FixtureBackendOptions;
-} | null {
+function fixtureRoute(): React.ReactElement | null {
   if (typeof window === "undefined") {
     return null;
   }
   const params = new URLSearchParams(window.location.search);
-  if (params.get("view") !== "onboarding") {
-    return null;
+  const view = params.get("view");
+  if (view === "dashboard") {
+    const scenario = params.get("scenario") ?? "healthy";
+    const fatal = DASH_FIXTURES.fatal.find((f) => f.name === scenario);
+    return <Dashboard source={fatal ? failingSource(fatal.error) : fixtureSource(scenario)} />;
   }
-  const stop = params.get("stop");
-  return {
-    scenario: params.get("scenario") ?? "supported",
-    options: {
+  if (view === "onboarding") {
+    const stop = params.get("stop");
+    const options: FixtureBackendOptions = {
       outcome: params.get("outcome") ?? undefined,
       stopAfter: stop === null ? undefined : Number(stop),
-    },
-  };
+    };
+    return (
+      <OnboardingFlow
+        backend={fixtureBackend(ONBOARD_FIXTURES, params.get("scenario") ?? "supported", options)}
+      />
+    );
+  }
+  return null;
 }
 
-/**
- * The desktop shell.
- *
- * Guided setup owns the window when this machine has no ROCm yet, or when
- * something blocks setup outright. Anything else belongs on the dashboard,
- * which Phase 6 builds; until then it falls through to the status card.
- */
-function DesktopShell({ initialScenario }: { readonly initialScenario: ScenarioName }) {
-  const [backend] = useState(desktopBackend);
-  const [needsSetup, setNeedsSetup] = useState<boolean | null>(null);
+function DesktopShell({ initialSurface }: { readonly initialSurface?: Surface | undefined }) {
+  const [dashboard] = useState<DashboardSource>(desktopSource);
+  const [onboarding] = useState<OnboardingBackend>(desktopBackend);
+  const [surface, setSurface] = useState<Surface | null>(initialSurface ?? null);
 
+  // One read decides the landing surface. It is the Overview's own answer, so
+  // the shell does not need a second opinion about what "set up" means.
   useEffect(() => {
+    if (initialSurface) {
+      return;
+    }
     let live = true;
-    void backend
-      .view()
-      .then((view) => {
+    void dashboard
+      .overview(false)
+      .then((overview) => {
         if (live) {
-          setNeedsSetup(view.state === "blocked" || view.recommendation.firstRun);
+          setSurface(overview.firstRun ? "onboarding" : "dashboard");
         }
       })
       .catch(() => {
-        // A backend that cannot answer is not a reason to hide the app; the
-        // status card reports its own failure.
-        if (live) setNeedsSetup(false);
+        // A backend that cannot answer still gets the Overview: it renders the
+        // refusal with a retry, which is more useful than a blank shell.
+        if (live) {
+          setSurface("dashboard");
+        }
       });
     return () => {
       live = false;
     };
-  }, [backend]);
+  }, [dashboard, initialSurface]);
 
-  if (needsSetup === null) {
+  const toDashboard = useCallback(() => {
+    setSurface("dashboard");
+  }, []);
+  const toOnboarding = useCallback(() => {
+    setSurface("onboarding");
+  }, []);
+
+  if (surface === null) {
     return (
-      <main className="app">
-        <p aria-busy="true">Checking&hellip;</p>
+      <main className="dash">
+        <p aria-busy="true">Checking this computer&hellip;</p>
       </main>
     );
   }
-  return needsSetup ? (
-    <OnboardingFlow backend={backend} onFinished={() => setNeedsSetup(false)} />
-  ) : (
-    <FixtureStatusView initialScenario={initialScenario} />
-  );
-}
-
-function FixtureStatusView({ initialScenario }: { readonly initialScenario: ScenarioName }) {
-  const [name, setName] = useState<ScenarioName>(initialScenario);
-  const [result, setResult] = useState<LoadResult | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    loadSnapshot(name)
-      .then((snapshot) => {
-        if (!cancelled) setResult({ name, snapshot });
-      })
-      .catch((cause: unknown) => {
-        if (!cancelled) {
-          setResult({ name, error: cause instanceof Error ? cause.message : String(cause) });
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [name]);
-
-  const current = result?.name === name ? result : null;
-
-  return (
-    <main className="app">
-      <h1 className="app__title">ROCm</h1>
-
-      {FIXTURE_MODE && (
-        <label className="app__scenario">
-          Fixture scenario
-          <select
-            value={name}
-            aria-label="Fixture scenario"
-            onChange={(e) => {
-              setName(e.target.value as ScenarioName);
-            }}
-          >
-            {SCENARIO_NAMES.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
-
-      {current === null && <p aria-busy="true">Checking&hellip;</p>}
-
-      {current?.error !== undefined && (
-        <p role="alert" className="app__error">
-          Could not read this computer&rsquo;s status. {current.error}
-        </p>
-      )}
-
-      {current?.snapshot !== undefined && <StatusCard snapshot={current.snapshot} />}
-    </main>
-  );
-}
-
-function StatusCard({ snapshot }: { readonly snapshot: FixtureSnapshot }) {
-  const blocked = unsupportedReason(snapshot.platform);
-  // The platform gate wins over the snapshot's own flag. A fixture — or a
-  // future backend bug — must not be able to surface an install action on a
-  // host that cannot support one.
-  const canInstall = snapshot.installAvailable && installAllowed(snapshot.platform);
-
-  return (
-    <section className={`card card--${snapshot.verdict}`} aria-labelledby="verdict">
-      {/* Status is carried by text, not only by the colour of the card. */}
-      <p className="card__verdict" data-testid="verdict">
-        {VERDICT_LABEL[snapshot.verdict]}
-      </p>
-      <h2 id="verdict" className="card__headline">
-        {snapshot.headline}
-      </h2>
-      {/*
-        The platform refusal is authoritative and already carries its own next
-        action, so it replaces the snapshot's detail rather than stacking a
-        second, near-identical sentence beneath it.
-      */}
-      <p className="card__detail">{blocked ?? snapshot.detail}</p>
-
-      {canInstall && (
-        <button type="button" className="card__action">
-          Set up ROCm
-        </button>
-      )}
-
-      <p className="card__checked">
-        Last checked <time dateTime={snapshot.checkedAt}>{snapshot.checkedAt}</time>
-      </p>
-    </section>
-  );
+  if (surface === "onboarding") {
+    return <OnboardingFlow backend={onboarding} onFinished={toDashboard} />;
+  }
+  return <Dashboard source={dashboard} onStartSetup={toOnboarding} />;
 }

@@ -142,7 +142,9 @@ describe("onboarding progress", () => {
     expect(screen.queryByTestId("details")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /show details/i }));
-    expect(within(screen.getByTestId("details")).getAllByRole("listitem").length).toBeGreaterThan(1);
+    expect(within(screen.getByTestId("details")).getAllByRole("listitem").length).toBeGreaterThan(
+      1,
+    );
   });
 
   it("reports a cancelled run as cancelled, not as a failure", async () => {

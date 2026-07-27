@@ -26,6 +26,17 @@ pub use rocm_dash_core::{GpuMetrics, Snapshot};
 /// sysfs/hwmon GPU collector.
 pub use rocm_dash_collectors::sysfs::SysfsGpuCollector;
 
+/// `amd-smi` subprocess collector — the one that reports real numbers.
+///
+/// [`SysfsGpuCollector`] is a stub at the pinned revision: every method
+/// answers `Unsupported`. The dashboard therefore reads through `amd-smi`,
+/// which ships inside the managed runtime rather than on `PATH`; resolve it
+/// with [`amd_smi_binary`].
+pub use rocm_dash_collectors::amd_smi::AmdSmiCollector;
+
+/// Locate the `amd-smi` that belongs to the managed runtime.
+pub use rocm_core::resolve_amd_smi_binary as amd_smi_binary;
+
 #[cfg(test)]
 mod tests {
     use super::*;

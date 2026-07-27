@@ -549,7 +549,8 @@ fn version_label(choices: &Choices) -> String {
     }
 }
 
-fn driver_advice(snapshot: &AppSnapshot) -> DriverAdvice {
+#[must_use]
+pub fn driver_advice(snapshot: &AppSnapshot) -> DriverAdvice {
     DriverAdvice {
         summary: driver_summary(snapshot),
         note: DRIVER_READ_ONLY_NOTE.to_owned(),

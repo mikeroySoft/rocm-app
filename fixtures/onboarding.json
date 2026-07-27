@@ -36,11 +36,43 @@
         },
         "components": [
           {
+            "kind": "app",
+            "name": "rocm-app",
+            "state": {
+              "state": "unknown",
+              "reason": "supplied by the desktop app, not the CLI"
+            }
+          },
+          {
             "kind": "cli",
             "name": "rocm",
             "state": {
               "state": "installed",
               "version": "0.1.0"
+            }
+          },
+          {
+            "kind": "system-hip-rocm",
+            "name": "system-rocm",
+            "state": {
+              "state": "installed",
+              "version": "6.4.0"
+            }
+          },
+          {
+            "kind": "managed-runtime",
+            "name": "therock",
+            "state": {
+              "state": "installed",
+              "version": "7.14.0"
+            }
+          },
+          {
+            "kind": "py-torch",
+            "name": "torch",
+            "state": {
+              "state": "installed",
+              "version": "2.9.0"
             }
           }
         ],
@@ -212,11 +244,43 @@
         },
         "components": [
           {
+            "kind": "app",
+            "name": "rocm-app",
+            "state": {
+              "state": "unknown",
+              "reason": "supplied by the desktop app, not the CLI"
+            }
+          },
+          {
             "kind": "cli",
             "name": "rocm",
             "state": {
               "state": "installed",
               "version": "0.1.0"
+            }
+          },
+          {
+            "kind": "system-hip-rocm",
+            "name": "system-rocm",
+            "state": {
+              "state": "installed",
+              "version": "6.4.0"
+            }
+          },
+          {
+            "kind": "managed-runtime",
+            "name": "therock",
+            "state": {
+              "state": "installed",
+              "version": "7.14.0"
+            }
+          },
+          {
+            "kind": "py-torch",
+            "name": "torch",
+            "state": {
+              "state": "installed",
+              "version": "2.9.0"
             }
           }
         ],
@@ -314,11 +378,43 @@
         },
         "components": [
           {
+            "kind": "app",
+            "name": "rocm-app",
+            "state": {
+              "state": "unknown",
+              "reason": "supplied by the desktop app, not the CLI"
+            }
+          },
+          {
             "kind": "cli",
             "name": "rocm",
             "state": {
               "state": "installed",
               "version": "0.1.0"
+            }
+          },
+          {
+            "kind": "system-hip-rocm",
+            "name": "system-rocm",
+            "state": {
+              "state": "installed",
+              "version": "6.4.0"
+            }
+          },
+          {
+            "kind": "managed-runtime",
+            "name": "therock",
+            "state": {
+              "state": "installed",
+              "version": "7.14.0"
+            }
+          },
+          {
+            "kind": "py-torch",
+            "name": "torch",
+            "state": {
+              "state": "installed",
+              "version": "2.9.0"
             }
           }
         ],
@@ -397,11 +493,43 @@
         },
         "components": [
           {
+            "kind": "app",
+            "name": "rocm-app",
+            "state": {
+              "state": "unknown",
+              "reason": "supplied by the desktop app, not the CLI"
+            }
+          },
+          {
             "kind": "cli",
             "name": "rocm",
             "state": {
               "state": "installed",
               "version": "0.1.0"
+            }
+          },
+          {
+            "kind": "system-hip-rocm",
+            "name": "system-rocm",
+            "state": {
+              "state": "installed",
+              "version": "6.4.0"
+            }
+          },
+          {
+            "kind": "managed-runtime",
+            "name": "therock",
+            "state": {
+              "state": "installed",
+              "version": "7.14.0"
+            }
+          },
+          {
+            "kind": "py-torch",
+            "name": "torch",
+            "state": {
+              "state": "installed",
+              "version": "2.9.0"
             }
           },
           {
@@ -510,11 +638,43 @@
         },
         "components": [
           {
+            "kind": "app",
+            "name": "rocm-app",
+            "state": {
+              "state": "unknown",
+              "reason": "supplied by the desktop app, not the CLI"
+            }
+          },
+          {
             "kind": "cli",
             "name": "rocm",
             "state": {
               "state": "installed",
               "version": "0.1.0"
+            }
+          },
+          {
+            "kind": "system-hip-rocm",
+            "name": "system-rocm",
+            "state": {
+              "state": "installed",
+              "version": "6.4.0"
+            }
+          },
+          {
+            "kind": "managed-runtime",
+            "name": "therock",
+            "state": {
+              "state": "installed",
+              "version": "7.14.0"
+            }
+          },
+          {
+            "kind": "py-torch",
+            "name": "torch",
+            "state": {
+              "state": "installed",
+              "version": "2.9.0"
             }
           },
           {
@@ -624,11 +784,43 @@
         },
         "components": [
           {
+            "kind": "app",
+            "name": "rocm-app",
+            "state": {
+              "state": "unknown",
+              "reason": "supplied by the desktop app, not the CLI"
+            }
+          },
+          {
             "kind": "cli",
             "name": "rocm",
             "state": {
               "state": "installed",
               "version": "0.1.0"
+            }
+          },
+          {
+            "kind": "system-hip-rocm",
+            "name": "system-rocm",
+            "state": {
+              "state": "installed",
+              "version": "6.4.0"
+            }
+          },
+          {
+            "kind": "managed-runtime",
+            "name": "therock",
+            "state": {
+              "state": "installed",
+              "version": "7.14.0"
+            }
+          },
+          {
+            "kind": "py-torch",
+            "name": "torch",
+            "state": {
+              "state": "installed",
+              "version": "2.9.0"
             }
           }
         ],
@@ -708,11 +900,43 @@
         },
         "components": [
           {
+            "kind": "app",
+            "name": "rocm-app",
+            "state": {
+              "state": "unknown",
+              "reason": "supplied by the desktop app, not the CLI"
+            }
+          },
+          {
             "kind": "cli",
             "name": "rocm",
             "state": {
               "state": "installed",
               "version": "0.1.0"
+            }
+          },
+          {
+            "kind": "system-hip-rocm",
+            "name": "system-rocm",
+            "state": {
+              "state": "installed",
+              "version": "6.4.0"
+            }
+          },
+          {
+            "kind": "managed-runtime",
+            "name": "therock",
+            "state": {
+              "state": "installed",
+              "version": "7.14.0"
+            }
+          },
+          {
+            "kind": "py-torch",
+            "name": "torch",
+            "state": {
+              "state": "installed",
+              "version": "2.9.0"
             }
           }
         ],
@@ -793,11 +1017,43 @@
         },
         "components": [
           {
+            "kind": "app",
+            "name": "rocm-app",
+            "state": {
+              "state": "unknown",
+              "reason": "supplied by the desktop app, not the CLI"
+            }
+          },
+          {
             "kind": "cli",
             "name": "rocm",
             "state": {
               "state": "installed",
               "version": "0.1.0"
+            }
+          },
+          {
+            "kind": "system-hip-rocm",
+            "name": "system-rocm",
+            "state": {
+              "state": "installed",
+              "version": "6.4.0"
+            }
+          },
+          {
+            "kind": "managed-runtime",
+            "name": "therock",
+            "state": {
+              "state": "installed",
+              "version": "7.14.0"
+            }
+          },
+          {
+            "kind": "py-torch",
+            "name": "torch",
+            "state": {
+              "state": "installed",
+              "version": "2.9.0"
             }
           }
         ],

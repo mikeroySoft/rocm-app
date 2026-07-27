@@ -16,9 +16,7 @@ export const SUPPORTED_SCHEMA_VERSION = 1;
 export type OsFamily = "windows" | "linux" | "other";
 
 export type SupportStatus =
-  | { state: "supported" }
-  | { state: "unsupported"; reason: ReasonCode }
-  | { state: "unrecognised" };
+  { state: "supported" } | { state: "unsupported"; reason: ReasonCode } | { state: "unrecognised" };
 
 export type HealthVerdict = "healthy" | "unknown" | "setup-required" | "attention" | "unsupported";
 

@@ -75,7 +75,13 @@ export interface OperationFailure {
 
 export type ProgressEvent =
   | { event: "started"; operationId: string; operation: string; stage: string }
-  | { event: "stage"; operationId: string; stage: string; message: string; count: ProgressCount | null }
+  | {
+      event: "stage";
+      operationId: string;
+      stage: string;
+      message: string;
+      count: ProgressCount | null;
+    }
   | { event: "completed"; operationId: string; message: string }
   | { event: "failed"; operationId: string; error: OperationFailure }
   | { event: "cancelled"; operationId: string; message: string };

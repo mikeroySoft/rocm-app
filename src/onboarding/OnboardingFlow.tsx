@@ -189,7 +189,11 @@ export default function OnboardingFlow({ backend, onFinished }: OnboardingFlowPr
       )}
 
       {step === "blocked" && view?.state === "blocked" && (
-        <BlockedCard blocker={view.blocker} onRecheck={recheck} onChooseFolder={() => setStep("location")} />
+        <BlockedCard
+          blocker={view.blocker}
+          onRecheck={recheck}
+          onChooseFolder={() => setStep("location")}
+        />
       )}
 
       {step === "recommend" && recommendation && (

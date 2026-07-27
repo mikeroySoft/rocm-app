@@ -21,9 +21,11 @@
 // every one of them, and taking references instead simply does not compile.
 #![allow(clippy::needless_pass_by_value)]
 
+use std::collections::VecDeque;
+use std::io::ErrorKind;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock, Mutex};
 
 use rocm_app_core::contract::{self, AppSnapshot, UpdateState};
 use rocm_app_core::controller::adapters::{
@@ -33,7 +35,11 @@ use rocm_app_core::controller::plan::{Approval, ChangePlan};
 use rocm_app_core::controller::progress::{ProgressEvent, ProgressSink};
 use rocm_app_core::controller::request::OperationRequest;
 use rocm_app_core::controller::{Freshness, RocmController};
+use rocm_app_core::health::{
+    GpuSample, HealthOverview, HistoryPoint, TelemetryFailure, TelemetryInput,
+};
 use rocm_app_core::onboarding::{self, Choices, OnboardingView};
+use rocm_app_core::shared::{AmdSmiCollector, amd_smi_binary};
 
 /// Locate the bundled `rocm` binary.
 ///
@@ -332,12 +338,124 @@ pub fn production_adapters(data_dir: PathBuf) -> Adapters {
 }
 
 // ---------------------------------------------------------------------------
+// Telemetry
+// ---------------------------------------------------------------------------
+
+/// How many samples of local history the Overview keeps.
+///
+/// Two minutes at one sample per second, or an hour at one per thirty. It is
+/// a display aid, not a metrics store: anything longer belongs in a real time
+/// series, and an unbounded `Vec` in a tray app that runs for weeks is a leak.
+const HISTORY_CAPACITY: usize = 120;
+
+/// Resolve the `amd-smi` that belongs to the managed runtime, once.
+///
+/// `AmdSmiCollector::detect_with_binary` runs a subprocess and a `/dev/kfd`
+/// pre-flight, which is far too expensive to repeat on every refresh.
+fn detect_collector() -> Option<AmdSmiCollector> {
+    tauri::async_runtime::block_on(AmdSmiCollector::detect_with_binary(amd_smi_binary()))
+}
+
+/// Live GPU readings plus a bounded ring of recent ones.
+pub struct TelemetryStore {
+    // The initializer is fixed at declaration, so `LazyLock` keeps it beside
+    // the field instead of hiding it in an accessor.
+    collector: LazyLock<Option<AmdSmiCollector>, fn() -> Option<AmdSmiCollector>>,
+    history: Mutex<VecDeque<HistoryPoint>>,
+}
+
+impl Default for TelemetryStore {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl TelemetryStore {
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            collector: LazyLock::new(detect_collector),
+            history: Mutex::new(VecDeque::new()),
+        }
+    }
+
+    /// Read the GPU, or say precisely why not.
+    ///
+    /// Every failure path yields a [`TelemetryFailure`] rather than an error:
+    /// the dashboard must still render its health verdict, inventory, and
+    /// driver row when the GPU cannot be read at all.
+    pub fn read(&self, now_unix_ms: u64) -> TelemetryInput {
+        let Some(collector) = self.collector.as_ref() else {
+            // `detect` fails closed for both "no readable /dev/kfd" and "no
+            // amd-smi". Reporting the device case is the more useful of the
+            // two: a machine with a GPU whose device node is unreadable is a
+            // permissions problem the user can fix.
+            return self.without_sample(if std::path::Path::new("/dev/kfd").exists() {
+                TelemetryFailure::Permission
+            } else {
+                TelemetryFailure::NoDevice
+            });
+        };
+
+        match tauri::async_runtime::block_on(collector.metrics()) {
+            Ok(metrics) => match metrics.first() {
+                Some(first) => {
+                    let sample = GpuSample::from_metrics(first);
+                    let history = self.push(now_unix_ms, &sample);
+                    TelemetryInput {
+                        sample: Some(sample),
+                        failure: None,
+                        history,
+                    }
+                }
+                None => self.without_sample(TelemetryFailure::NoDevice),
+            },
+            Err(error) => self.without_sample(if error.kind() == ErrorKind::TimedOut {
+                TelemetryFailure::Timeout
+            } else {
+                TelemetryFailure::Error
+            }),
+        }
+    }
+
+    /// A failure keeps whatever history was already collected: the last known
+    /// readings are still true, and blanking the chart hides that.
+    fn without_sample(&self, failure: TelemetryFailure) -> TelemetryInput {
+        TelemetryInput {
+            sample: None,
+            failure: Some(failure),
+            history: self
+                .history
+                .lock()
+                .expect("poisoned")
+                .iter()
+                .copied()
+                .collect(),
+        }
+    }
+
+    fn push(&self, at_unix_ms: u64, sample: &GpuSample) -> Vec<HistoryPoint> {
+        let mut history = self.history.lock().expect("poisoned");
+        if history.len() == HISTORY_CAPACITY {
+            history.pop_front();
+        }
+        history.push_back(HistoryPoint {
+            at_unix_ms,
+            utilization_pct: sample.utilization_pct,
+            vram_used_mb: sample.vram_used_mb,
+        });
+        history.iter().copied().collect()
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Tauri command surface
 // ---------------------------------------------------------------------------
 
 /// Shared controller state.
 pub struct ControllerState {
     pub controller: RocmController,
+    pub telemetry: TelemetryStore,
 }
 
 /// A refusal, shaped for the renderer.
@@ -462,6 +580,41 @@ pub fn onboarding_view(
         available,
         &onboarding::folder_choices(),
     ))
+}
+
+/// Read the Overview.
+///
+/// `refresh: false` serves the cached snapshot so the window paints
+/// immediately; the renderer then asks again with `true`. Telemetry is read
+/// on both paths because it is cheap relative to a full probe and is the part
+/// most visibly wrong when stale.
+#[tauri::command]
+pub fn health_overview(
+    state: tauri::State<'_, ControllerState>,
+    refresh: bool,
+) -> Result<HealthOverview, CommandError> {
+    let freshness = if refresh {
+        Freshness::Full
+    } else {
+        Freshness::Cached
+    };
+    let snapshot = state.controller.snapshot(freshness)?.snapshot;
+    let now = now_unix_ms();
+    let telemetry = state.telemetry.read(now);
+    Ok(rocm_app_core::health::overview(
+        &snapshot,
+        &telemetry,
+        now,
+        // The CLI cannot observe the desktop app's version; this process is
+        // the only thing that knows it, and the contract says so explicitly.
+        Some(env!("CARGO_PKG_VERSION")),
+    ))
+}
+
+fn now_unix_ms() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| u64::try_from(d.as_millis()).unwrap_or(u64::MAX))
 }
 
 #[cfg(test)]

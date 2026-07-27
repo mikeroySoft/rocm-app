@@ -21,30 +21,16 @@ compile_error!(
 
 pub mod controller_host;
 
-use rocm_app_core::fixtures::{self, FixtureSnapshot, Scenario};
 use rocm_app_core::platform::HostPlatform;
 
 /// Report the host this process is running on.
+///
+/// An in-process second opinion on the contract's own `platform` block: it
+/// needs no CLI, so the shell can refuse to offer changes even when the
+/// snapshot cannot be read at all.
 #[tauri::command]
 fn host_platform() -> HostPlatform {
     HostPlatform::detect()
-}
-
-/// List the available fixture scenario identifiers.
-#[tauri::command]
-fn fixture_scenarios() -> Vec<&'static str> {
-    Scenario::ALL.iter().map(|s| s.as_str()).collect()
-}
-
-/// Read one deterministic fixture snapshot.
-///
-/// Unknown identifiers are rejected rather than defaulted: silently returning
-/// `healthy` for a typo would let a broken caller render a reassuring screen.
-#[tauri::command]
-fn fixture_snapshot(scenario: &str) -> Result<FixtureSnapshot, String> {
-    Scenario::from_wire(scenario)
-        .map(|s| fixtures::snapshot(s).clone())
-        .ok_or_else(|| format!("unknown fixture scenario: {scenario}"))
 }
 
 /// Build and run the desktop application.
@@ -57,6 +43,7 @@ pub fn run() {
                 controller: rocm_app_core::RocmController::new(
                     controller_host::production_adapters(data_dir),
                 ),
+                telemetry: controller_host::TelemetryStore::new(),
             });
             Ok(())
         })
@@ -65,13 +52,12 @@ pub fn run() {
         // operation. See capabilities/default.json.
         .invoke_handler(tauri::generate_handler![
             host_platform,
-            fixture_scenarios,
-            fixture_snapshot,
             controller_host::controller_snapshot,
             controller_host::controller_plan,
             controller_host::controller_execute,
             controller_host::controller_cancel,
             controller_host::onboarding_view,
+            controller_host::health_overview,
         ])
         .run(tauri::generate_context!())
         .expect("failed to start ROCm App");
@@ -82,35 +68,20 @@ mod tests {
     use super::*;
 
     #[test]
-    fn every_scenario_is_reachable_by_wire_name() {
-        for name in fixture_scenarios() {
-            let snap = fixture_snapshot(name).expect("known scenario must resolve");
-            assert_eq!(snap.scenario.as_str(), name);
-        }
-    }
-
-    #[test]
-    fn unknown_scenario_is_rejected() {
-        let err = fixture_snapshot("healthy; drop table").expect_err("must reject");
-        assert!(err.contains("unknown fixture scenario"));
-    }
-
-    /// The command layer must not widen what the domain layer allows: a WSL
-    /// snapshot has to arrive at the renderer still carrying no install offer.
-    #[test]
-    fn wsl_snapshot_crosses_the_boundary_with_no_install() {
-        let snap = fixture_snapshot("unsupported-wsl").expect("wsl fixture");
-        assert!(!snap.install_available);
-        assert!(!snap.platform.install_allowed());
-        assert!(snap.platform.unsupported_reason().is_some());
-    }
-
-    #[test]
     fn detect_reports_a_supported_host_here() {
         // This suite runs on native Linux and Windows only; both are supported.
         assert!(matches!(
             host_platform(),
             HostPlatform::Linux | HostPlatform::Windows | HostPlatform::Wsl
         ));
+    }
+
+    /// WSL is classified as its own thing, never folded into Windows. It is
+    /// the one unsupported host a user is likely to be sitting in front of by
+    /// accident, and the shell refuses changes on it.
+    #[test]
+    fn wsl_is_never_reported_as_a_supported_host() {
+        assert!(!HostPlatform::Wsl.install_allowed());
+        assert!(HostPlatform::Wsl.unsupported_reason().is_some());
     }
 }

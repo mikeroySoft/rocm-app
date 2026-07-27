@@ -15,7 +15,14 @@
 import rawFixtures from "../../fixtures/onboarding.json";
 import { invoke } from "@tauri-apps/api/core";
 import type { SupportLink } from "./contract";
-import type { Approval, ChangePlan, Channel, OperationRequest, ProgressEvent, VersionSelector } from "./controller";
+import type {
+  Approval,
+  ChangePlan,
+  Channel,
+  OperationRequest,
+  ProgressEvent,
+  VersionSelector,
+} from "./controller";
 import * as controller from "./controller";
 
 export interface Fact {
@@ -69,8 +76,7 @@ export interface Recommendation {
 }
 
 export type OnboardingView =
-  | { state: "ready"; recommendation: Recommendation }
-  | { state: "blocked"; blocker: Blocker };
+  { state: "ready"; recommendation: Recommendation } | { state: "blocked"; blocker: Blocker };
 
 export interface Choices {
   readonly channel: Channel;

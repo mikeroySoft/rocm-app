@@ -51,7 +51,13 @@ describe("controller request vocabulary", () => {
   // request could carry a command. The runtime check guards the wire shape.
   it("expresses operations as names, never commands", () => {
     const requests: OperationRequest[] = [
-      { operation: "install-runtime", channel: "nightly", family: "gfx120X-all", version: { kind: "latest" }, installRoot: null },
+      {
+        operation: "install-runtime",
+        channel: "nightly",
+        family: "gfx120X-all",
+        version: { kind: "latest" },
+        installRoot: null,
+      },
       { operation: "update-runtime", key: "k" },
       { operation: "activate-runtime", key: "k" },
       { operation: "remove-runtime", key: "k" },
@@ -60,7 +66,16 @@ describe("controller request vocabulary", () => {
 
     for (const request of requests) {
       const keys = Object.keys(request);
-      for (const forbidden of ["command", "argv", "args", "program", "exe", "shell", "env", "cwd"]) {
+      for (const forbidden of [
+        "command",
+        "argv",
+        "args",
+        "program",
+        "exe",
+        "shell",
+        "env",
+        "cwd",
+      ]) {
         expect(keys).not.toContain(forbidden);
       }
       expect(JSON.stringify(request)).not.toContain("driver");
