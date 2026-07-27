@@ -99,6 +99,7 @@ cannot pass against a screen the backend would never draw.
 | `fixtures/dashboard.json` | `health_dashboard_fixtures_match_the_committed_file` | `ROCM_APP_WRITE_FIXTURES=1 cargo test -p rocm-app-core dashboard_fixtures` |
 | `fixtures/runtimes.json` | `runtimes_fixtures_match_the_committed_file` | `ROCM_APP_WRITE_FIXTURES=1 cargo test -p rocm-app-core runtimes_fixtures` |
 | `fixtures/tray.json` | `tray_fixtures_match_the_committed_file` | `ROCM_APP_WRITE_FIXTURES=1 cargo test -p rocm-app-core tray_fixtures` |
+| `fixtures/diagnostics.json` | `diagnostics_fixtures_match_the_committed_file` | `ROCM_APP_WRITE_FIXTURES=1 cargo test -p rocm-app-core diagnostics_fixtures` |
 
 Without `ROCM_APP_WRITE_FIXTURES` each of those tests **asserts equality**
 against the committed file, so a change to a derivation that the renderer tests

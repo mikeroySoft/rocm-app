@@ -144,6 +144,29 @@ pub trait Notifier: Send + Sync {
     fn notify(&self, title: &str, body: &str);
 }
 
+/// Reads logs, runs the diagnosis, and writes a support bundle.
+///
+/// A seam of its own rather than three more methods on [`Inspector`]: these
+/// three commands read files the snapshot never touches, and a diagnosis is
+/// far too expensive to run on every status refresh. Keeping them apart is
+/// what lets `plan` consult a diagnosis only for the one request that needs
+/// one.
+pub trait Diagnostics: Send + Sync {
+    fn logs(
+        &self,
+        query: &crate::diagnostics::LogQuery,
+    ) -> Result<crate::diagnostics::LogPage, AdapterError>;
+    fn diagnose(
+        &self,
+        symptom: Option<&str>,
+    ) -> Result<crate::diagnostics::DiagnosisReport, AdapterError>;
+    fn export_bundle(
+        &self,
+        destination: &std::path::Path,
+        symptom: Option<&str>,
+    ) -> Result<crate::diagnostics::BundleReceipt, AdapterError>;
+}
+
 /// The complete set of seams the controller depends on.
 pub struct Adapters {
     pub inspector: Arc<dyn Inspector>,
@@ -152,6 +175,7 @@ pub struct Adapters {
     pub clock: Arc<dyn Clock>,
     pub storage: Arc<dyn Storage>,
     pub notifier: Arc<dyn Notifier>,
+    pub diagnostics: Arc<dyn Diagnostics>,
 }
 
 // ---------------------------------------------------------------------------
@@ -223,6 +247,11 @@ pub fn argv_for(request: &OperationRequest, resolved_version: Option<&str>) -> V
                 owned("--runtime"),
                 owned(key.as_str()),
             ]
+        }
+        // No `--json`: the runner reads exit status, and the flag would only
+        // add output nothing consumes.
+        OperationRequest::ApplyFix { fix_id } => {
+            vec![owned("fix"), owned(fix_id.as_str()), owned("--yes")]
         }
     }
 }
@@ -535,6 +564,168 @@ impl Notifier for FakeNotifier {
             .lock()
             .expect("poisoned")
             .push((title.to_owned(), body.to_owned()));
+    }
+}
+
+/// Diagnostics with scripted answers, and a record of what was exported.
+///
+/// Defaults to the shape a machine that has never run anything produces —
+/// empty logs, no findings — so a test that cares about one of the three
+/// commands does not have to invent the other two.
+pub struct FakeDiagnostics {
+    logs: Mutex<Result<crate::diagnostics::LogPage, AdapterError>>,
+    report: Mutex<Result<crate::diagnostics::DiagnosisReport, AdapterError>>,
+    receipt: Mutex<Result<crate::diagnostics::BundleReceipt, AdapterError>>,
+    exported: Mutex<Vec<std::path::PathBuf>>,
+}
+
+impl FakeDiagnostics {
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            logs: Mutex::new(Ok(empty_log_page())),
+            report: Mutex::new(Ok(no_match_report())),
+            receipt: Mutex::new(Ok(scripted_receipt())),
+            exported: Mutex::new(Vec::new()),
+        }
+    }
+
+    /// Answer `logs` with this page.
+    #[must_use]
+    pub fn with_logs(self, page: crate::diagnostics::LogPage) -> Self {
+        *self.logs.lock().expect("poisoned") = Ok(page);
+        self
+    }
+
+    /// Answer `diagnose` with this report.
+    #[must_use]
+    pub fn with_report(self, report: crate::diagnostics::DiagnosisReport) -> Self {
+        *self.report.lock().expect("poisoned") = Ok(report);
+        self
+    }
+
+    /// Fail every command with the same error.
+    #[must_use]
+    pub fn failing(error: AdapterError) -> Self {
+        let fake = Self::new();
+        *fake.logs.lock().expect("poisoned") = Err(error.clone());
+        *fake.report.lock().expect("poisoned") = Err(error.clone());
+        *fake.receipt.lock().expect("poisoned") = Err(error);
+        fake
+    }
+
+    /// Every destination `export_bundle` was asked for, in order.
+    #[must_use]
+    pub fn exported(&self) -> Vec<std::path::PathBuf> {
+        self.exported.lock().expect("poisoned").clone()
+    }
+}
+
+impl Default for FakeDiagnostics {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Diagnostics for FakeDiagnostics {
+    fn logs(
+        &self,
+        _query: &crate::diagnostics::LogQuery,
+    ) -> Result<crate::diagnostics::LogPage, AdapterError> {
+        self.logs.lock().expect("poisoned").clone()
+    }
+
+    fn diagnose(
+        &self,
+        _symptom: Option<&str>,
+    ) -> Result<crate::diagnostics::DiagnosisReport, AdapterError> {
+        self.report.lock().expect("poisoned").clone()
+    }
+
+    fn export_bundle(
+        &self,
+        destination: &std::path::Path,
+        _symptom: Option<&str>,
+    ) -> Result<crate::diagnostics::BundleReceipt, AdapterError> {
+        self.exported
+            .lock()
+            .expect("poisoned")
+            .push(destination.to_path_buf());
+        self.receipt.lock().expect("poisoned").clone()
+    }
+}
+
+/// The answer a machine with no data directory produces.
+const fn empty_log_page() -> crate::diagnostics::LogPage {
+    use crate::diagnostics::{LogPage, PageInfo, ReadBounds, SCHEMA_VERSION};
+    LogPage {
+        schema_version: SCHEMA_VERSION,
+        generated_at_unix_ms: 0,
+        first_run: true,
+        sources: Vec::new(),
+        records: Vec::new(),
+        page: PageInfo {
+            index: 0,
+            size: 200,
+            returned: 0,
+            has_more: false,
+        },
+        bounds: ReadBounds {
+            max_bytes_per_file: 262_144,
+            max_lines_per_file: 2_000,
+            max_records_per_request: 200,
+            truncated: Vec::new(),
+        },
+        locations: None,
+    }
+}
+
+/// A diagnosis that found nothing, which is what an unconfigured fake should
+/// say: a fake that invents a finding would let a fix be planned by accident.
+fn no_match_report() -> crate::diagnostics::DiagnosisReport {
+    use crate::diagnostics::{DiagnosisReport, MatchState, Route, SCHEMA_VERSION, Thresholds};
+    DiagnosisReport {
+        schema_version: SCHEMA_VERSION,
+        generated_at_unix_ms: 0,
+        match_state: MatchState::NoMatch,
+        findings: Vec::new(),
+        route_when_no_match: Route {
+            target: "rocm-core".to_owned(),
+            url: "https://github.com/ROCm/ROCm/issues".to_owned(),
+        },
+        thresholds: Thresholds {
+            matched: 50,
+            high_confidence: 75,
+        },
+    }
+}
+
+fn scripted_receipt() -> crate::diagnostics::BundleReceipt {
+    use crate::diagnostics::{
+        BundleFile, BundleManifest, BundleReceipt, RedactionSummary, SCHEMA_VERSION,
+    };
+    BundleReceipt {
+        schema_version: SCHEMA_VERSION,
+        bundle: BundleFile {
+            path: "rocm-support.tar.gz".to_owned(),
+            bytes: 0,
+            sha256: String::new(),
+        },
+        manifest: BundleManifest {
+            schema_version: SCHEMA_VERSION,
+            generated_at_unix_ms: 0,
+            producer: crate::contract::ProducerIdentity {
+                name: "rocm-cli".to_owned(),
+                version: "0.1.0".to_owned(),
+                build: "test".to_owned(),
+            },
+            entries: Vec::new(),
+            redaction: RedactionSummary {
+                placeholder: "[redacted]".to_owned(),
+                identity_skipped: Vec::new(),
+            },
+            omitted: Vec::new(),
+        },
     }
 }
 

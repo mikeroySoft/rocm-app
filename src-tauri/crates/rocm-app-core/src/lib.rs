@@ -14,6 +14,7 @@
 
 pub mod contract;
 pub mod controller;
+pub mod diagnostics;
 pub mod health;
 pub mod onboarding;
 pub mod platform;
@@ -23,6 +24,7 @@ pub mod tray;
 
 pub use contract::{AppSnapshot, ContractError, HealthVerdict, ReasonCode};
 pub use controller::{ControllerError, Freshness, RocmController};
+pub use diagnostics::{DiagnosisView, LogQuery, LogsView, diagnosis_view, fix_block, logs_view};
 pub use health::{HealthOverview, overview};
 pub use onboarding::{OnboardingView, recommend};
 pub use platform::HostPlatform;

@@ -817,3 +817,353 @@ body {
   color: var(--muted);
   font-size: 13px;
 }
+
+/* --------------------------------------------------------------------------
+ * Activity
+ *
+ * Structural only; Phase 12 owns the visual system. The rule that matters
+ * here is the same one the rest of the file follows: the severity accent only
+ * tints a word the row already spells out, so a colour-blind reader loses
+ * nothing. The record rows are buttons, so they carry their own reset.
+ * ------------------------------------------------------------------------ */
+
+.logs {
+  padding: 20px;
+  max-width: 780px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.logs__filters {
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.logs__sources {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+
+.logs__sources legend {
+  padding: 0 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.logs__source-choice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* A source the app could not read is dimmed rather than hidden: its reason
+ * rides along in the label, and a missing checkbox reads as "no such log". */
+.logs__source-choice:has(input:disabled) {
+  color: var(--muted);
+  cursor: default;
+}
+
+.logs__field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.logs__field label {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.logs__field input,
+.logs__field select {
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+}
+
+.logs__records {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Each row is one button so the whole line is the target, not a link buried
+ * in the summary text. */
+.logs__record {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: minmax(0, 10rem) minmax(0, 12rem) minmax(0, 7rem) minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+}
+
+.logs__record:hover {
+  border-color: var(--border);
+}
+
+.logs__record[aria-pressed="true"] {
+  border-color: var(--fg);
+}
+
+.logs__record:focus-visible {
+  outline: 2px solid #0b5cd5;
+  outline-offset: 2px;
+}
+
+.logs__source,
+.logs__time {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.logs__severity {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--unknown);
+}
+
+.logs__severity[data-severity="info"],
+.logs__severity[data-severity="debug"],
+.logs__severity[data-severity="trace"] {
+  color: var(--muted);
+}
+.logs__severity[data-severity="warn"] {
+  color: var(--warn);
+}
+.logs__severity[data-severity="error"] {
+  color: var(--bad);
+}
+
+.logs__summary {
+  min-width: 0;
+}
+
+.logs__empty,
+.logs__detail,
+.logs__export {
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.logs__pager {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logs__pager p {
+  margin: 0;
+}
+
+.logs__locations {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.logs__receipt,
+.logs__refused {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.logs__refused {
+  border-left: 3px solid var(--bad);
+  padding-left: 10px;
+}
+
+.logs button {
+  padding: 7px 13px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+/* Written as `.logs button.dash__primary` so it outranks the `.logs button`
+ * reset above; the single-class form loses on specificity. */
+.logs button.dash__primary {
+  border-color: var(--fg);
+  font-weight: 600;
+}
+
+.logs button:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.logs button:focus-visible,
+.logs input:focus-visible,
+.logs select:focus-visible,
+.logs summary:focus-visible {
+  outline: 2px solid #0b5cd5;
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+ * Diagnose
+ *
+ * Same rule as everywhere else: the confidence accent tints the reviewed
+ * wording the backend already sent, and never replaces it. A blocked fix
+ * reads as a sentence, so it is styled as prose rather than as a dead
+ * control.
+ * ------------------------------------------------------------------------ */
+
+.diagnostics {
+  padding: 20px;
+  max-width: 780px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.diagnostics__symptom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.diagnostics__symptom label {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.diagnostics__symptom input {
+  flex: 1 1 16rem;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+}
+
+.diagnostics__verdict {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.diagnostics__findings {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.diagnostics__finding {
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.diagnostics__confidence {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--unknown);
+}
+
+.diagnostics__confidence[data-confidence="high"] {
+  color: var(--bad);
+}
+.diagnostics__confidence[data-confidence="likely"] {
+  color: var(--warn);
+}
+.diagnostics__confidence[data-confidence="weak"] {
+  color: var(--muted);
+}
+
+.diagnostics__evidence {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.diagnostics__fix {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.diagnostics__blocked {
+  margin: 0;
+  padding-left: 10px;
+  border-left: 3px solid var(--warn);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.diagnostics button {
+  padding: 7px 13px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.diagnostics button.dash__primary {
+  border-color: var(--fg);
+  font-weight: 600;
+}
+
+.diagnostics button:focus-visible,
+.diagnostics input:focus-visible,
+.diagnostics a:focus-visible {
+  outline: 2px solid #0b5cd5;
+  outline-offset: 2px;
+}

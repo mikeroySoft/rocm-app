@@ -66,6 +66,7 @@ pub fn run() {
             let data_dir = app.path().app_data_dir()?;
             let mut adapters = controller_host::production_adapters(data_dir);
             let storage = adapters.storage.clone();
+            let diagnostics = adapters.diagnostics.clone();
             // Operation outcomes now reach the desktop as well as the log the
             // Phase 9 diagnostics view reads.
             adapters.notifier = std::sync::Arc::new(tray_host::DesktopNotifier::new(
@@ -76,6 +77,7 @@ pub fn run() {
                 controller: rocm_app_core::RocmController::new(adapters),
                 telemetry: controller_host::TelemetryStore::new(),
                 storage,
+                diagnostics,
             });
             // The tray is created before the first probe runs, so a boot launch
             // shows an icon while the snapshot is still being taken.
@@ -96,6 +98,10 @@ pub fn run() {
             controller_host::onboarding_view,
             controller_host::health_overview,
             controller_host::runtimes_view,
+            controller_host::diagnostics_logs,
+            controller_host::diagnostics_diagnose,
+            controller_host::diagnostics_export,
+            controller_host::diagnostics_fix_plan,
             tray_host::tray_quick_status,
             tray_host::tray_model,
             tray_host::tray_check_now,

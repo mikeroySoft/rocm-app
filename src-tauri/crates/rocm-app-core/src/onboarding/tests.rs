@@ -20,8 +20,8 @@ use super::{
 };
 use crate::contract::{self, AppSnapshot, SourceTrust, SupportLink, UpdateState};
 use crate::controller::adapters::{
-    AdapterError, Adapters, FakeCatalog, FakeCliRunner, FakeClock, FakeInspector, FakeNotifier,
-    FakeStorage,
+    AdapterError, Adapters, FakeCatalog, FakeCliRunner, FakeClock, FakeDiagnostics, FakeInspector,
+    FakeNotifier, FakeStorage,
 };
 use crate::controller::plan::{Approval, ChangePlan};
 use crate::controller::progress::{ProgressEvent, RecordingSink};
@@ -496,6 +496,7 @@ impl Spy {
             clock: Arc::new(FakeClock::new(NOW)),
             storage: storage.clone(),
             notifier: notifier.clone(),
+            diagnostics: Arc::new(FakeDiagnostics::new()),
         });
         Self {
             controller,
@@ -701,6 +702,7 @@ fn scenario_in(
             clock: Arc::new(FakeClock::new(NOW)),
             storage: Arc::new(FakeStorage::new()),
             notifier: Arc::new(FakeNotifier::new()),
+            diagnostics: Arc::new(FakeDiagnostics::new()),
         });
         controller.plan(&rec.request).ok()
     });

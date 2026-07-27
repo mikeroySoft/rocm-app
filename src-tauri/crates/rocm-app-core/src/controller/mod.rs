@@ -90,6 +90,13 @@ pub enum ControllerError {
     NotAllowed {
         reason: crate::runtimes::BlockReason,
     },
+    /// This fix may not be applied: not in the current diagnosis, below the
+    /// match threshold, manual-only, or needing privilege this app does not
+    /// have. Refused before a plan exists, so a caller that skipped the UI
+    /// gets the same answer the UI would have shown.
+    FixNotAllowed {
+        reason: crate::diagnostics::FixBlockReason,
+    },
     /// Another mutation is already running.
     Busy { running: String },
     /// An adapter failed.
@@ -123,6 +130,7 @@ impl ControllerError {
                 format!("{running} is already running. Wait for it to finish.")
             }
             Self::NotAllowed { reason } => reason.message().to_owned(),
+            Self::FixNotAllowed { reason } => reason.message().to_owned(),
             Self::Adapter(e) => e.to_operation_error().message,
         }
     }
@@ -255,6 +263,14 @@ impl RocmController {
             return Err(ControllerError::NotAllowed { reason });
         }
 
+        // The same predicate the Diagnose screen consults, re-evaluated
+        // against a diagnosis taken now. A `fix_id` that never appeared on
+        // screen, or one whose finding has since dropped below threshold, is
+        // refused here even though no UI would have offered it.
+        if let Some(reason) = self.fix_block(request)? {
+            return Err(ControllerError::FixNotAllowed { reason });
+        }
+
         // Resolve "latest" now so the review screen shows a concrete version.
         let resolved_version = match request {
             OperationRequest::InstallRuntime {
@@ -311,9 +327,10 @@ impl RocmController {
             Err(reason) => Err(reason),
         };
         match request {
-            // A fresh install has no record to guard yet; the platform check
-            // above and the request's own validation are the whole gate.
-            OperationRequest::InstallRuntime { .. } => None,
+            // A fresh install has no record to guard yet, and a fix targets no
+            // runtime at all; the platform check above, the request's own
+            // validation, and `fix_block` are the whole gate.
+            OperationRequest::InstallRuntime { .. } | OperationRequest::ApplyFix { .. } => None,
             OperationRequest::ActivateRuntime { key } => match resolve(key) {
                 Err(reason) => Some(reason),
                 Ok(record) => runtimes::activate_block(snapshot, &record),
@@ -333,6 +350,22 @@ impl RocmController {
                 Ok(record) => (!record.active).then_some(BlockReason::NotOffered),
             },
         }
+    }
+
+    /// The diagnosis-derived refusal for a fix request, if any.
+    ///
+    /// Runs the diagnosis only for [`OperationRequest::ApplyFix`]: it is a
+    /// subprocess, and paying for one on every plan would make reviewing an
+    /// unrelated change slower for no gain.
+    fn fix_block(
+        &self,
+        request: &OperationRequest,
+    ) -> Result<Option<crate::diagnostics::FixBlockReason>, ControllerError> {
+        let OperationRequest::ApplyFix { fix_id } = request else {
+            return Ok(None);
+        };
+        let report = self.adapters.diagnostics.diagnose(None)?;
+        Ok(crate::diagnostics::fix_block(&report, fix_id.as_str()))
     }
 
     /// Perform a plan the user approved.
@@ -425,14 +458,13 @@ impl RocmController {
                 };
                 *self.cached.lock().expect("poisoned") = Some(snapshot.clone());
 
+                let summary = plan.request().completion_summary();
                 progress.emit(ProgressEvent::Completed {
                     operation_id: plan.id().clone(),
-                    message: plan.request().completion_summary().to_owned(),
+                    message: summary.clone(),
                 });
                 self.record(&plan, audit::Outcome::Completed, None);
-                self.adapters
-                    .notifier
-                    .notify("ROCm", plan.request().completion_summary());
+                self.adapters.notifier.notify("ROCm", &summary);
 
                 Ok(OperationOutcome {
                     operation_id: plan.id().clone(),
@@ -600,6 +632,10 @@ fn steps_for(request: &OperationRequest) -> Vec<PlanStep> {
         OperationRequest::ValidateRuntime { .. } => {
             vec![step("validate", "Check this version works", false)]
         }
+        OperationRequest::ApplyFix { .. } => vec![
+            step("apply", "Apply the fix ROCm suggested", true),
+            step("verify", "Check the problem is gone", false),
+        ],
     }
 }
 

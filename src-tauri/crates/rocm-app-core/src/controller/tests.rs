@@ -10,8 +10,8 @@
 use std::sync::Arc;
 
 use super::adapters::{
-    AdapterError, Adapters, FakeCatalog, FakeCliRunner, FakeClock, FakeInspector, FakeNotifier,
-    FakeStorage,
+    AdapterError, Adapters, FakeCatalog, FakeCliRunner, FakeClock, FakeDiagnostics, FakeInspector,
+    FakeNotifier, FakeStorage,
 };
 use super::plan::{Approval, ChangePlan};
 use super::progress::{ProgressEvent, RecordingSink};
@@ -58,6 +58,7 @@ impl Harness {
             clock: clock.clone(),
             storage,
             notifier: notifier.clone(),
+            diagnostics: Arc::new(FakeDiagnostics::new()),
         });
         Self {
             controller,
@@ -311,6 +312,7 @@ fn controller_allows_only_one_mutation_at_a_time() {
         clock: Arc::new(FakeClock::new(NOW)),
         storage: Arc::new(FakeStorage::new()),
         notifier: Arc::new(FakeNotifier::new()),
+        diagnostics: Arc::new(FakeDiagnostics::new()),
     }));
 
     let first = controller
@@ -598,6 +600,7 @@ fn controller_surfaces_an_inspection_failure() {
         clock: Arc::new(FakeClock::new(NOW)),
         storage: Arc::new(FakeStorage::new()),
         notifier: Arc::new(FakeNotifier::new()),
+        diagnostics: Arc::new(FakeDiagnostics::new()),
     });
     assert!(controller.snapshot(Freshness::Full).is_err());
 }
@@ -613,6 +616,7 @@ fn controller_surfaces_a_catalog_failure_at_plan_time() {
         clock: Arc::new(FakeClock::new(NOW)),
         storage: Arc::new(FakeStorage::new()),
         notifier: Arc::new(FakeNotifier::new()),
+        diagnostics: Arc::new(FakeDiagnostics::new()),
     });
 
     // Failing at plan time is the point: the user never sees a review screen

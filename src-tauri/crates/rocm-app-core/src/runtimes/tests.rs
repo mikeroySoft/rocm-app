@@ -21,8 +21,8 @@ use crate::contract::{
     self, AppSnapshot, RuntimeRecord, RuntimeValidation, SourceTrust, UpdateState,
 };
 use crate::controller::adapters::{
-    AdapterError, Adapters, FakeCatalog, FakeCliRunner, FakeClock, FakeInspector, FakeNotifier,
-    FakeStorage,
+    AdapterError, Adapters, FakeCatalog, FakeCliRunner, FakeClock, FakeDiagnostics, FakeInspector,
+    FakeNotifier, FakeStorage,
 };
 use crate::controller::audit;
 use crate::controller::plan::{Approval, ChangePlan};
@@ -290,6 +290,7 @@ impl Harness {
                 clock: Arc::new(FakeClock::new(NOW)),
                 storage: storage.clone(),
                 notifier: Arc::new(FakeNotifier::new()),
+                diagnostics: Arc::new(FakeDiagnostics::new()),
             }),
             cli,
             storage,

@@ -1,0 +1,604 @@
+{
+  "logs": [
+    {
+      "name": "first-run",
+      "purpose": "nothing has run yet, so there is nothing to show",
+      "query": {
+        "sources": [],
+        "minSeverity": null,
+        "sinceUnixMs": null,
+        "search": null,
+        "page": 0,
+        "pageSize": null,
+        "revealLocations": false
+      },
+      "view": {
+        "records": [],
+        "sources": [
+          {
+            "id": "app-audit",
+            "label": "ROCm App activity",
+            "available": true,
+            "matched": 0
+          },
+          {
+            "id": "app-notifications",
+            "label": "ROCm App notifications",
+            "available": true,
+            "matched": 0
+          }
+        ],
+        "page": {
+          "index": 0,
+          "size": 200,
+          "returned": 0,
+          "hasMore": false
+        },
+        "bounds": {
+          "maxBytesPerFile": 262144,
+          "maxLinesPerFile": 2000,
+          "maxRecordsPerRequest": 200,
+          "truncated": []
+        },
+        "empty": {
+          "state": "first-run"
+        },
+        "locations": null
+      }
+    },
+    {
+      "name": "populated",
+      "purpose": "the CLI's records and the app's own, on one timeline",
+      "query": {
+        "sources": [],
+        "minSeverity": null,
+        "sinceUnixMs": null,
+        "search": null,
+        "page": 0,
+        "pageSize": null,
+        "revealLocations": false
+      },
+      "view": {
+        "records": [
+          {
+            "id": "app-audit:0",
+            "source": "app-audit",
+            "atUnixMs": 1767225599500,
+            "severity": "info",
+            "category": "app",
+            "action": "activate-runtime",
+            "summary": "activate-runtime completed",
+            "detail": null
+          },
+          {
+            "id": "cli-lifecycle:41",
+            "source": "cli-lifecycle",
+            "atUnixMs": 1767225599000,
+            "severity": "info",
+            "category": "runtime",
+            "action": "activate",
+            "summary": "activated nightly-wheel-gfx120x-all-7-14-0",
+            "detail": null
+          },
+          {
+            "id": "app-notifications:0",
+            "source": "app-notifications",
+            "atUnixMs": 1767225570000,
+            "severity": "info",
+            "category": "notification",
+            "action": null,
+            "summary": "ROCm",
+            "detail": "ROCm is now using the version you chose."
+          },
+          {
+            "id": "cli-audit:12",
+            "source": "cli-audit",
+            "atUnixMs": 1767225540000,
+            "severity": "warn",
+            "category": "runtime",
+            "action": "activate",
+            "summary": "runtime check reported a warning",
+            "detail": null
+          }
+        ],
+        "sources": [
+          {
+            "id": "cli-audit",
+            "label": "ROCm command history",
+            "available": true,
+            "matched": 1
+          },
+          {
+            "id": "cli-lifecycle",
+            "label": "ROCm runtime changes",
+            "available": true,
+            "matched": 1
+          },
+          {
+            "id": "cli-client",
+            "label": "ROCm tool output",
+            "available": true,
+            "matched": 0
+          },
+          {
+            "id": "app-audit",
+            "label": "ROCm App activity",
+            "available": true,
+            "matched": 1
+          },
+          {
+            "id": "app-notifications",
+            "label": "ROCm App notifications",
+            "available": true,
+            "matched": 1
+          }
+        ],
+        "page": {
+          "index": 0,
+          "size": 200,
+          "returned": 4,
+          "hasMore": false
+        },
+        "bounds": {
+          "maxBytesPerFile": 262144,
+          "maxLinesPerFile": 2000,
+          "maxRecordsPerRequest": 200,
+          "truncated": []
+        },
+        "empty": null,
+        "locations": null
+      }
+    },
+    {
+      "name": "filtered-no-match",
+      "purpose": "a filter excluded everything; one button restores the list",
+      "query": {
+        "sources": [],
+        "minSeverity": "error",
+        "sinceUnixMs": null,
+        "search": "gfx908",
+        "page": 0,
+        "pageSize": null,
+        "revealLocations": false
+      },
+      "view": {
+        "records": [],
+        "sources": [
+          {
+            "id": "cli-audit",
+            "label": "ROCm command history",
+            "available": true,
+            "matched": 1
+          },
+          {
+            "id": "cli-lifecycle",
+            "label": "ROCm runtime changes",
+            "available": true,
+            "matched": 1
+          },
+          {
+            "id": "cli-client",
+            "label": "ROCm tool output",
+            "available": true,
+            "matched": 0
+          },
+          {
+            "id": "app-audit",
+            "label": "ROCm App activity",
+            "available": true,
+            "matched": 0
+          },
+          {
+            "id": "app-notifications",
+            "label": "ROCm App notifications",
+            "available": true,
+            "matched": 0
+          }
+        ],
+        "page": {
+          "index": 0,
+          "size": 200,
+          "returned": 0,
+          "hasMore": false
+        },
+        "bounds": {
+          "maxBytesPerFile": 262144,
+          "maxLinesPerFile": 2000,
+          "maxRecordsPerRequest": 200,
+          "truncated": []
+        },
+        "empty": {
+          "state": "no-match",
+          "clearedQuery": {
+            "sources": [],
+            "minSeverity": null,
+            "sinceUnixMs": null,
+            "search": null,
+            "page": 0,
+            "pageSize": null,
+            "revealLocations": false
+          }
+        },
+        "locations": null
+      }
+    },
+    {
+      "name": "unavailable",
+      "purpose": "the log files exist but could not be read",
+      "query": {
+        "sources": [],
+        "minSeverity": null,
+        "sinceUnixMs": null,
+        "search": null,
+        "page": 0,
+        "pageSize": null,
+        "revealLocations": false
+      },
+      "view": {
+        "records": [],
+        "sources": [
+          {
+            "id": "cli-audit",
+            "label": "ROCm command history",
+            "available": false,
+            "matched": 0
+          },
+          {
+            "id": "cli-lifecycle",
+            "label": "ROCm runtime changes",
+            "available": false,
+            "matched": 0
+          },
+          {
+            "id": "app-audit",
+            "label": "ROCm App activity",
+            "available": true,
+            "matched": 0
+          },
+          {
+            "id": "app-notifications",
+            "label": "ROCm App notifications",
+            "available": true,
+            "matched": 0
+          }
+        ],
+        "page": {
+          "index": 0,
+          "size": 200,
+          "returned": 0,
+          "hasMore": false
+        },
+        "bounds": {
+          "maxBytesPerFile": 262144,
+          "maxLinesPerFile": 2000,
+          "maxRecordsPerRequest": 200,
+          "truncated": []
+        },
+        "empty": {
+          "state": "unavailable",
+          "detail": "could not read: ROCm command history, ROCm runtime changes"
+        },
+        "locations": null
+      }
+    },
+    {
+      "name": "revealed",
+      "purpose": "the same records with file locations shown on request",
+      "query": {
+        "sources": [],
+        "minSeverity": null,
+        "sinceUnixMs": null,
+        "search": null,
+        "page": 0,
+        "pageSize": null,
+        "revealLocations": true
+      },
+      "view": {
+        "records": [
+          {
+            "id": "app-audit:0",
+            "source": "app-audit",
+            "atUnixMs": 1767225599500,
+            "severity": "info",
+            "category": "app",
+            "action": "activate-runtime",
+            "summary": "activate-runtime completed",
+            "detail": null
+          },
+          {
+            "id": "cli-lifecycle:41",
+            "source": "cli-lifecycle",
+            "atUnixMs": 1767225599000,
+            "severity": "info",
+            "category": "runtime",
+            "action": "activate",
+            "summary": "activated nightly-wheel-gfx120x-all-7-14-0",
+            "detail": null
+          },
+          {
+            "id": "app-notifications:0",
+            "source": "app-notifications",
+            "atUnixMs": 1767225570000,
+            "severity": "info",
+            "category": "notification",
+            "action": null,
+            "summary": "ROCm",
+            "detail": "ROCm is now using the version you chose."
+          },
+          {
+            "id": "cli-audit:12",
+            "source": "cli-audit",
+            "atUnixMs": 1767225540000,
+            "severity": "warn",
+            "category": "runtime",
+            "action": "activate",
+            "summary": "runtime check reported a warning",
+            "detail": null
+          }
+        ],
+        "sources": [
+          {
+            "id": "cli-audit",
+            "label": "ROCm command history",
+            "available": true,
+            "matched": 1
+          },
+          {
+            "id": "cli-lifecycle",
+            "label": "ROCm runtime changes",
+            "available": true,
+            "matched": 1
+          },
+          {
+            "id": "cli-client",
+            "label": "ROCm tool output",
+            "available": true,
+            "matched": 0
+          },
+          {
+            "id": "app-audit",
+            "label": "ROCm App activity",
+            "available": true,
+            "matched": 1
+          },
+          {
+            "id": "app-notifications",
+            "label": "ROCm App notifications",
+            "available": true,
+            "matched": 1
+          }
+        ],
+        "page": {
+          "index": 0,
+          "size": 200,
+          "returned": 4,
+          "hasMore": false
+        },
+        "bounds": {
+          "maxBytesPerFile": 262144,
+          "maxLinesPerFile": 2000,
+          "maxRecordsPerRequest": 200,
+          "truncated": []
+        },
+        "empty": null,
+        "locations": [
+          {
+            "source": "cli-audit",
+            "path": "~/.rocm/audit/events.jsonl"
+          },
+          {
+            "source": "cli-lifecycle",
+            "path": "~/.rocm/state/lifecycle.jsonl"
+          }
+        ]
+      }
+    }
+  ],
+  "diagnoses": [
+    {
+      "name": "matched",
+      "purpose": "a cause above the match threshold, but not conclusive",
+      "view": {
+        "headline": "ROCm App found a possible cause.",
+        "state": {
+          "state": "matched",
+          "top": "fix-4-render-group",
+          "score": 60,
+          "highConfidence": false,
+          "count": 1
+        },
+        "detail": null,
+        "findings": [
+          {
+            "id": "fix-4-render-group",
+            "title": "User not in the render group",
+            "evidence": [
+              "user [redacted] is not in group render"
+            ],
+            "cleared": true,
+            "confidence": "likely",
+            "confidenceLabel": "Possibly the cause",
+            "fix": {
+              "fixId": "fix-4-render-group",
+              "summary": "Add your user to the render and video groups",
+              "autoApplicable": true,
+              "needsSudo": false,
+              "needsReboot": false,
+              "needsRelogin": false,
+              "verify": "id -nG | grep render",
+              "notes": []
+            },
+            "blocked": null
+          }
+        ],
+        "route": null,
+        "thresholds": {
+          "match": 50,
+          "highConfidence": 75
+        }
+      }
+    },
+    {
+      "name": "high-confidence",
+      "purpose": "a cause the app is confident enough to offer a fix for",
+      "view": {
+        "headline": "ROCm App found what is very likely the cause.",
+        "state": {
+          "state": "matched",
+          "top": "fix-4-render-group",
+          "score": 80,
+          "highConfidence": true,
+          "count": 1
+        },
+        "detail": null,
+        "findings": [
+          {
+            "id": "fix-4-render-group",
+            "title": "User not in the render group",
+            "evidence": [
+              "user [redacted] is not in group render"
+            ],
+            "cleared": true,
+            "confidence": "high",
+            "confidenceLabel": "Very likely the cause",
+            "fix": {
+              "fixId": "fix-4-render-group",
+              "summary": "Add your user to the render and video groups",
+              "autoApplicable": true,
+              "needsSudo": false,
+              "needsReboot": false,
+              "needsRelogin": false,
+              "verify": "id -nG | grep render",
+              "notes": []
+            },
+            "blocked": null
+          }
+        ],
+        "route": null,
+        "thresholds": {
+          "match": 50,
+          "highConfidence": 75
+        }
+      }
+    },
+    {
+      "name": "no-match",
+      "purpose": "ROCm looked and found nothing; the report route is offered",
+      "view": {
+        "headline": "ROCm App could not identify the cause.",
+        "state": {
+          "state": "no-match"
+        },
+        "detail": null,
+        "findings": [],
+        "route": {
+          "target": "rocm-core",
+          "url": "https://github.com/ROCm/ROCm/issues"
+        },
+        "thresholds": {
+          "match": 50,
+          "highConfidence": 75
+        }
+      }
+    },
+    {
+      "name": "out-of-scope",
+      "purpose": "not a ROCm problem; the producer's words shown as detail",
+      "view": {
+        "headline": "This does not look like a ROCm problem.",
+        "state": {
+          "state": "out-of-scope",
+          "reason": "the symptom describes a display cable, not ROCm"
+        },
+        "detail": "the symptom describes a display cable, not ROCm",
+        "findings": [],
+        "route": null,
+        "thresholds": {
+          "match": 50,
+          "highConfidence": 75
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "name": "export-ok",
+      "purpose": "a written bundle, with the manifest the user can inspect",
+      "outcome": {
+        "state": "ok",
+        "receipt": {
+          "schemaVersion": 1,
+          "bundle": {
+            "path": "~/rocm-support-20260101-000000.tar.gz",
+            "bytes": 20481,
+            "sha256": "9f8e7d6c5b4a39281706f5e4d3c2b1a09f8e7d6c5b4a39281706f5e4d3c2b1a0"
+          },
+          "manifest": {
+            "schemaVersion": 1,
+            "generatedAtUnixMs": 1767225600000,
+            "producer": {
+              "name": "rocm-cli",
+              "version": "0.1.0",
+              "build": "fixture"
+            },
+            "entries": [
+              {
+                "name": "versions.json",
+                "bytes": 512,
+                "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+              },
+              {
+                "name": "diagnosis.json",
+                "bytes": 2048,
+                "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+              },
+              {
+                "name": "logs/cli-audit.log",
+                "bytes": 4096,
+                "sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+              }
+            ],
+            "redaction": {
+              "placeholder": "[redacted]",
+              "identitySkipped": []
+            },
+            "omitted": [
+              {
+                "name": "config.json",
+                "field": "dashboard.tui.chatAuthHeader",
+                "reason": "credential"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "export-failed",
+      "purpose": "a refused write that hands the query and selection back",
+      "outcome": {
+        "state": "failed",
+        "failure": {
+          "query": {
+            "sources": [
+              "cli-audit"
+            ],
+            "minSeverity": "warn",
+            "sinceUnixMs": null,
+            "search": null,
+            "page": 0,
+            "pageSize": null,
+            "revealLocations": false
+          },
+          "selected": "cli-audit:12",
+          "message": "ROCm App could not write the support bundle.",
+          "detail": "permission denied writing to that folder",
+          "recovery": {
+            "id": "choose-another-folder",
+            "label": "Choose a different folder"
+          }
+        }
+      }
+    }
+  ]
+}

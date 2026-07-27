@@ -29,12 +29,17 @@ use std::sync::{Arc, LazyLock, Mutex};
 
 use rocm_app_core::contract::{self, AppSnapshot, UpdateState};
 use rocm_app_core::controller::adapters::{
-    AdapterError, Adapters, Catalog, CliRunner, Clock, Inspector, Notifier, Storage, argv_for,
+    AdapterError, Adapters, Catalog, CliRunner, Clock, Diagnostics, Inspector, Notifier, Storage,
+    argv_for,
 };
 use rocm_app_core::controller::plan::{Approval, ChangePlan};
 use rocm_app_core::controller::progress::{ProgressEvent, ProgressSink};
-use rocm_app_core::controller::request::OperationRequest;
+use rocm_app_core::controller::request::{FixId, OperationRequest};
 use rocm_app_core::controller::{Freshness, RocmController};
+use rocm_app_core::diagnostics::{
+    self, BundleReceipt, DiagnosisReport, DiagnosisView, LogPage, LogQuery, LogRecord, LogsView,
+    Severity,
+};
 use rocm_app_core::health::{
     GpuSample, HealthOverview, HistoryPoint, TelemetryFailure, TelemetryInput,
 };
@@ -151,6 +156,170 @@ fn missing_cli(binary: &std::path::Path) -> AdapterError {
     AdapterError::CliMismatch {
         expected: "a rocm command-line tool that supports app-snapshot".to_owned(),
         found: format!("no executable at {}", binary.display()),
+    }
+}
+
+/// Runs the bundled CLI's three diagnostics subcommands.
+///
+/// Deliberately a separate adapter from [`BundledCliInspector`] rather than
+/// three more methods on it: an `app-diagnose` run is expensive, and folding
+/// it into the snapshot path would make every status refresh pay for one.
+/// Every invocation goes through the same `Command` shape — explicit program,
+/// separate arguments, null stdin, no shell — so nothing here can word-split
+/// or glob a producer-supplied string.
+pub struct BundledCliDiagnostics {
+    binary: PathBuf,
+}
+
+impl BundledCliDiagnostics {
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            binary: bundled_cli_path(),
+        }
+    }
+
+    /// Run one subcommand and decode its JSON.
+    ///
+    /// Failures route through [`classify_failure`] so a CLI that predates
+    /// these subcommands is still reported as a pairing problem rather than as
+    /// "a ROCm command did not finish".
+    fn run_json<T: serde::de::DeserializeOwned>(
+        &self,
+        args: &[String],
+        decode: impl FnOnce(&str) -> Result<T, contract::ContractError>,
+    ) -> Result<T, AdapterError> {
+        let output = match Command::new(&self.binary)
+            .args(args)
+            .stdin(Stdio::null())
+            .output()
+        {
+            Ok(output) => output,
+            Err(error) if error.kind() == ErrorKind::NotFound => {
+                return Err(missing_cli(&self.binary));
+            }
+            Err(error) => {
+                return Err(AdapterError::Process {
+                    detail: format!("could not run {}: {error}", self.binary.display()),
+                });
+            }
+        };
+
+        if !output.status.success() {
+            return Err(classify_failure(
+                &self.binary,
+                output.status.code(),
+                output.stdout.len(),
+                String::from_utf8_lossy(&output.stderr).trim(),
+                || self.responds_to_version(),
+            ));
+        }
+
+        let stdout = String::from_utf8(output.stdout).map_err(|e| AdapterError::Process {
+            detail: format!("rocm {} produced invalid UTF-8: {e}", args[0]),
+        })?;
+
+        decode(&stdout).map_err(|e| match e {
+            contract::ContractError::UnsupportedSchemaVersion { found, supported } => {
+                AdapterError::CliMismatch {
+                    expected: format!("schema {supported}"),
+                    found: format!("schema {found}"),
+                }
+            }
+            other => AdapterError::Verification {
+                detail: other.detail(),
+            },
+        })
+    }
+
+    /// Same probe [`BundledCliInspector`] uses, for the same reason.
+    fn responds_to_version(&self) -> bool {
+        Command::new(&self.binary)
+            .arg("--version")
+            .stdin(Stdio::null())
+            .output()
+            .is_ok_and(|output| output.status.success())
+    }
+}
+
+impl Default for BundledCliDiagnostics {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// The exact arguments a log query becomes.
+///
+/// A pure function, so the whole flag surface is readable and testable in one
+/// place without spawning anything — the same reason `argv_for` is one.
+#[must_use]
+fn logs_argv(query: &LogQuery) -> Vec<String> {
+    let mut args = vec!["app-logs".to_owned(), "--json".to_owned()];
+    for source in &query.sources {
+        args.push("--source".to_owned());
+        args.push(source.clone());
+    }
+    if let Some(severity) = query.min_severity {
+        // The wire spelling, taken from the type rather than typed out again.
+        if let Ok(serde_json::Value::String(name)) = serde_json::to_value(severity) {
+            args.push("--severity".to_owned());
+            args.push(name);
+        }
+    }
+    if let Some(since) = query.since_unix_ms {
+        args.push("--since-unix-ms".to_owned());
+        args.push(since.to_string());
+    }
+    if let Some(search) = query.search.as_deref().map(str::trim)
+        && !search.is_empty()
+    {
+        args.push("--search".to_owned());
+        args.push(search.to_owned());
+    }
+    args.push("--page".to_owned());
+    args.push(query.page.to_string());
+    if let Some(size) = query.page_size {
+        args.push("--page-size".to_owned());
+        args.push(size.to_string());
+    }
+    if query.reveal_locations {
+        args.push("--reveal-locations".to_owned());
+    }
+    args
+}
+
+impl Diagnostics for BundledCliDiagnostics {
+    fn logs(&self, query: &LogQuery) -> Result<LogPage, AdapterError> {
+        self.run_json(&logs_argv(query), diagnostics::decode_log_page)
+    }
+
+    fn diagnose(&self, symptom: Option<&str>) -> Result<DiagnosisReport, AdapterError> {
+        let mut args = vec!["app-diagnose".to_owned(), "--json".to_owned()];
+        if let Some(symptom) = symptom {
+            args.push("--symptom".to_owned());
+            args.push(symptom.to_owned());
+        }
+        self.run_json(&args, diagnostics::decode_diagnosis)
+    }
+
+    fn export_bundle(
+        &self,
+        destination: &std::path::Path,
+        symptom: Option<&str>,
+    ) -> Result<BundleReceipt, AdapterError> {
+        // The destination is its own argv element, so a folder containing
+        // spaces stays one argument rather than several.
+        let mut args = vec![
+            "app-support-bundle".to_owned(),
+            "--out".to_owned(),
+            destination.display().to_string(),
+            "--json".to_owned(),
+        ];
+        if let Some(symptom) = symptom {
+            args.push("--symptom".to_owned());
+            args.push(symptom.to_owned());
+        }
+        self.run_json(&args, diagnostics::decode_bundle_receipt)
     }
 }
 
@@ -364,6 +533,16 @@ impl Storage for FileStorage {
     }
 }
 
+/// Storage key holding the notification record.
+pub const NOTIFICATIONS_KEY: &str = "notifications.log";
+
+/// How many notification lines are kept.
+///
+/// The same bound the audit log uses, for the same reason: a tray app runs for
+/// weeks, and a file appended to on every operation with nothing trimming it
+/// is a disk leak that only shows up on the machines least able to afford it.
+pub const NOTIFICATIONS_CAPACITY: usize = 200;
+
 /// Records notifications into the app log.
 ///
 /// Phase 8 replaces this with native desktop notifications. It writes a real
@@ -384,15 +563,30 @@ impl Notifier for LogNotifier {
     fn notify(&self, title: &str, body: &str) {
         let existing = self
             .storage
-            .read("notifications.log")
+            .read(NOTIFICATIONS_KEY)
             .ok()
             .flatten()
             .unwrap_or_default();
-        let mut next = existing;
-        next.extend_from_slice(format!("{title}\t{body}\n").as_bytes());
+        // Tabs and newlines are the record separators, so a title or body
+        // carrying one would forge extra lines in a file the support bundle
+        // ships. Replaced rather than escaped: nothing reads this back as
+        // structured data, so a space loses nothing a reader needs.
+        let sanitise = |text: &str| text.replace(['\t', '\n', '\r'], " ");
+        let appended = format!("{}\t{}", sanitise(title), sanitise(body));
+
+        let text = String::from_utf8_lossy(&existing);
+        let mut kept: Vec<&str> = text.lines().collect();
+        kept.push(&appended);
+        // Keep the newest, drop from the front: the oldest notification is the
+        // one nobody is going to read.
+        let overflow = kept.len().saturating_sub(NOTIFICATIONS_CAPACITY);
+        let next = kept[overflow..].join("\n") + "\n";
+
         // Best-effort: a notification that cannot be recorded must not fail the
         // operation it is reporting on.
-        let _ = self.storage.write_atomic("notifications.log", &next);
+        let _ = self
+            .storage
+            .write_atomic(NOTIFICATIONS_KEY, next.as_bytes());
     }
 }
 
@@ -407,6 +601,7 @@ pub fn production_adapters(data_dir: PathBuf) -> Adapters {
         cli: Arc::new(BundledCli::new()),
         clock: Arc::new(SystemClock),
         notifier: Arc::new(LogNotifier::new(storage.clone())),
+        diagnostics: Arc::new(BundledCliDiagnostics::new()),
         storage,
     }
 }
@@ -535,6 +730,11 @@ pub struct ControllerState {
     /// through it, and reaching into the controller's private adapters to find
     /// it would be worse than naming it once.
     pub storage: Arc<dyn Storage>,
+    /// The same handle the controller's adapters use, named here for the same
+    /// reason as `storage`: the diagnostics commands are reads that never go
+    /// through `plan`, so routing them through the controller would add a
+    /// pass-through method per subcommand and nothing else.
+    pub diagnostics: Arc<dyn Diagnostics>,
 }
 
 /// A refusal, shaped for the renderer.
@@ -561,12 +761,23 @@ impl From<rocm_app_core::controller::ControllerError> for CommandError {
             E::OperationMismatch => "operation-mismatch",
             E::Busy { .. } => "busy",
             E::NotAllowed { .. } => "not-allowed",
+            E::FixNotAllowed { .. } => "fix-not-allowed",
             E::Adapter(_) => "adapter",
         };
         Self {
             code: code.to_owned(),
             message: value.user_message(),
         }
+    }
+}
+
+impl From<AdapterError> for CommandError {
+    /// Routed through [`rocm_app_core::controller::ControllerError`] so an
+    /// adapter failure reaching the renderer through a read command reads
+    /// exactly as it does through `plan`, rather than gaining a second wording
+    /// for the same problem.
+    fn from(value: AdapterError) -> Self {
+        rocm_app_core::controller::ControllerError::from(value).into()
     }
 }
 
@@ -717,6 +928,120 @@ pub fn runtimes_view(
         })
         .collect();
     Ok(runtimes::view(&snapshot, &disk))
+}
+
+// ---------------------------------------------------------------------------
+// Diagnostics
+// ---------------------------------------------------------------------------
+
+/// Read the Activity view.
+///
+/// The app's own audit log and notification record are merged in here rather
+/// than asked of the CLI: they live in this app's data directory and describe
+/// this app's own behaviour, and a user debugging "I pressed apply and nothing
+/// happened" needs both halves on one timeline.
+#[tauri::command]
+pub fn diagnostics_logs(
+    state: tauri::State<'_, ControllerState>,
+    query: LogQuery,
+) -> Result<LogsView, CommandError> {
+    let page = state.diagnostics.logs(&query)?;
+    let own = own_records(state.storage.as_ref());
+    Ok(diagnostics::logs_view(&page, &own, &query))
+}
+
+/// Run the diagnosis.
+#[tauri::command]
+pub fn diagnostics_diagnose(
+    state: tauri::State<'_, ControllerState>,
+    symptom: Option<String>,
+) -> Result<DiagnosisView, CommandError> {
+    let report = state.diagnostics.diagnose(symptom.as_deref())?;
+    Ok(diagnostics::diagnosis_view(&report))
+}
+
+/// Write a support bundle to a folder the user chose.
+#[tauri::command]
+pub fn diagnostics_export(
+    state: tauri::State<'_, ControllerState>,
+    destination: String,
+    symptom: Option<String>,
+) -> Result<BundleReceipt, CommandError> {
+    Ok(state
+        .diagnostics
+        .export_bundle(std::path::Path::new(&destination), symptom.as_deref())?)
+}
+
+/// Describe applying a fix, without applying it.
+///
+/// A plan, not an execution: applying still needs an explicit approval through
+/// `controller_execute`, so this command adds no second route to a mutation.
+/// The refusal it can return is the same one the Diagnose screen consults, so
+/// a control that would be refused is never drawn in the first place.
+#[tauri::command]
+pub fn diagnostics_fix_plan(
+    state: tauri::State<'_, ControllerState>,
+    fix_id: String,
+) -> Result<ChangePlan, CommandError> {
+    let fix_id = FixId::new(fix_id).map_err(rocm_app_core::controller::ControllerError::from)?;
+    Ok(state
+        .controller
+        .plan(&OperationRequest::ApplyFix { fix_id })?)
+}
+
+/// The app's own two log sources, read from its own storage.
+///
+/// An unreadable file yields no records rather than an error: the ROCm CLI's
+/// logs are the reason this screen exists, and losing the whole view because
+/// the app's own notification file is corrupt would be the tail wagging the
+/// dog.
+fn own_records(storage: &dyn Storage) -> Vec<LogRecord> {
+    let mut records = Vec::new();
+
+    for (index, record) in rocm_app_core::controller::audit::read(storage)
+        .unwrap_or_default()
+        .into_iter()
+        .enumerate()
+    {
+        records.push(LogRecord {
+            id: format!("{}:{index}", diagnostics::APP_AUDIT_SOURCE),
+            source: diagnostics::APP_AUDIT_SOURCE.to_owned(),
+            at_unix_ms: record.at_unix_ms,
+            severity: match record.outcome {
+                rocm_app_core::controller::audit::Outcome::Failed => Severity::Error,
+                rocm_app_core::controller::audit::Outcome::Cancelled => Severity::Warn,
+                _ => Severity::Info,
+            },
+            category: Some("app".to_owned()),
+            action: Some(record.operation.clone()),
+            summary: format!("{} {:?}", record.operation, record.outcome).to_lowercase(),
+            detail: record.error_code,
+        });
+    }
+
+    let notifications = storage
+        .read(NOTIFICATIONS_KEY)
+        .ok()
+        .flatten()
+        .unwrap_or_default();
+    for (index, line) in String::from_utf8_lossy(&notifications).lines().enumerate() {
+        let (title, body) = line.split_once('\t').unwrap_or((line, ""));
+        records.push(LogRecord {
+            id: format!("{}:{index}", diagnostics::APP_NOTIFICATIONS_SOURCE),
+            source: diagnostics::APP_NOTIFICATIONS_SOURCE.to_owned(),
+            // The record carries no timestamp of its own; 0 sorts it oldest
+            // rather than inventing a time that would misplace it on the
+            // timeline as if it had just happened.
+            at_unix_ms: 0,
+            severity: Severity::Info,
+            category: Some("notification".to_owned()),
+            action: None,
+            summary: title.to_owned(),
+            detail: (!body.is_empty()).then(|| body.to_owned()),
+        });
+    }
+
+    records
 }
 
 /// Total size of the files under `root`, or `None` if it cannot be read.
@@ -912,5 +1237,87 @@ mod tests {
             Some("7.14.0"),
         );
         assert!(argv.windows(2).any(|w| w == ["--version", "7.14.0"]));
+    }
+
+    /// An unbounded file in a process that runs for weeks is a disk leak, and
+    /// the machines least able to afford one are the machines this app exists
+    /// to help.
+    #[test]
+    fn diagnostics_the_notification_log_keeps_only_the_newest_lines() {
+        use rocm_app_core::controller::adapters::FakeStorage;
+
+        let storage = Arc::new(FakeStorage::new());
+        let notifier = LogNotifier::new(storage.clone());
+        for index in 0..(NOTIFICATIONS_CAPACITY * 3) {
+            notifier.notify("ROCm", &format!("notification {index}"));
+        }
+
+        let written = storage
+            .read(NOTIFICATIONS_KEY)
+            .expect("readable")
+            .expect("written");
+        let text = String::from_utf8(written).expect("utf-8");
+        let lines: Vec<&str> = text.lines().collect();
+        assert_eq!(lines.len(), NOTIFICATIONS_CAPACITY);
+        // The newest survive, not the oldest: a log trimmed from the wrong end
+        // is worse than no log, because it looks current and is not.
+        assert!(
+            lines[lines.len() - 1].ends_with("notification 599"),
+            "{text}"
+        );
+        assert!(lines[0].ends_with("notification 400"), "{text}");
+    }
+
+    /// Tabs and newlines separate records, so a title or body carrying one
+    /// would forge extra lines in a file the support bundle ships.
+    #[test]
+    fn diagnostics_a_notification_cannot_forge_extra_lines() {
+        use rocm_app_core::controller::adapters::FakeStorage;
+
+        let storage = Arc::new(FakeStorage::new());
+        LogNotifier::new(storage.clone()).notify("ROCm\nFAKE\tinjected", "body\nline two");
+
+        let text = String::from_utf8(
+            storage
+                .read(NOTIFICATIONS_KEY)
+                .expect("readable")
+                .expect("written"),
+        )
+        .expect("utf-8");
+        assert_eq!(text.lines().count(), 1, "{text}");
+        assert_eq!(text.matches('\t').count(), 1, "{text}");
+    }
+
+    /// Every flag the log query can set, in one readable place, without
+    /// spawning anything.
+    #[test]
+    fn diagnostics_log_query_argv_carries_every_filter() {
+        let argv = logs_argv(&LogQuery {
+            sources: vec!["cli-audit".to_owned(), "cli-client".to_owned()],
+            min_severity: Some(Severity::Warn),
+            since_unix_ms: Some(1_767_225_600_000),
+            search: Some("  gfx1201  ".to_owned()),
+            page: 2,
+            page_size: Some(50),
+            reveal_locations: true,
+        });
+        assert_eq!(argv[0], "app-logs");
+        assert!(argv.contains(&"--json".to_owned()));
+        assert_eq!(argv.iter().filter(|a| *a == "--source").count(), 2);
+        assert!(argv.windows(2).any(|w| w == ["--severity", "warn"]));
+        assert!(
+            argv.windows(2)
+                .any(|w| w == ["--since-unix-ms", "1767225600000"])
+        );
+        // Trimmed, and one argv element, so a multi-word search is one
+        // argument rather than several.
+        assert!(argv.windows(2).any(|w| w == ["--search", "gfx1201"]));
+        assert!(argv.windows(2).any(|w| w == ["--page", "2"]));
+        assert!(argv.windows(2).any(|w| w == ["--page-size", "50"]));
+        assert!(argv.contains(&"--reveal-locations".to_owned()));
+
+        // A default query asks for no filter at all.
+        let bare = logs_argv(&LogQuery::default());
+        assert_eq!(bare, ["app-logs", "--json", "--page", "0"]);
     }
 }

@@ -105,6 +105,43 @@ impl From<RuntimeKey> for String {
     }
 }
 
+/// The id of a fix the diagnosis offered, e.g. `fix-4-render-group`.
+///
+/// Same allowlist as [`RuntimeKey`], and for the same reason: this value
+/// becomes an argv element, and a diagnosis payload is producer-supplied text.
+/// Validating it only where it is used would put the check in one of several
+/// call sites and leave the rest to be remembered.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(try_from = "String", into = "String")]
+pub struct FixId(String);
+
+impl FixId {
+    /// Validate and wrap a fix id.
+    pub fn new(value: impl Into<String>) -> Result<Self, RequestError> {
+        let value = value.into();
+        validate_token("fixId", &value, 128)?;
+        Ok(Self(value))
+    }
+
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl TryFrom<String> for FixId {
+    type Error = RequestError;
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Self::new(value)
+    }
+}
+
+impl From<FixId> for String {
+    fn from(value: FixId) -> Self {
+        value.0
+    }
+}
+
 /// A normalised TheRock GPU family, e.g. `gfx120X-all`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
@@ -282,6 +319,12 @@ pub enum OperationRequest {
     ValidateRuntime {
         key: RuntimeKey,
     },
+    /// Apply one fix the diagnosis named. Guarded twice: by
+    /// [`crate::diagnostics::fix_block`] before the control is drawn, and
+    /// again inside `RocmController::plan`.
+    ApplyFix {
+        fix_id: FixId,
+    },
 }
 
 impl OperationRequest {
@@ -308,6 +351,7 @@ impl OperationRequest {
             | Self::ActivateRuntime { key }
             | Self::RemoveRuntime { key }
             | Self::ValidateRuntime { key } => RuntimeKey::new(key.as_str()).map(|_| ()),
+            Self::ApplyFix { fix_id } => FixId::new(fix_id.as_str()).map(|_| ()),
         }
     }
 
@@ -320,6 +364,7 @@ impl OperationRequest {
             Self::ActivateRuntime { .. } => "activate-runtime",
             Self::RemoveRuntime { .. } => "remove-runtime",
             Self::ValidateRuntime { .. } => "validate-runtime",
+            Self::ApplyFix { .. } => "apply-fix",
         }
     }
 
@@ -329,13 +374,16 @@ impl OperationRequest {
     /// putting it on a success screen shows the user "activate-runtime
     /// finished", which is the app talking to itself.
     #[must_use]
-    pub const fn completion_summary(&self) -> &'static str {
+    pub fn completion_summary(&self) -> String {
         match self {
-            Self::InstallRuntime { .. } => "ROCm is installed.",
-            Self::UpdateRuntime { .. } => "ROCm is updated.",
-            Self::ActivateRuntime { .. } => "ROCm is now using the version you chose.",
-            Self::RemoveRuntime { .. } => "That ROCm version has been removed.",
-            Self::ValidateRuntime { .. } => "That ROCm version works.",
+            Self::InstallRuntime { .. } => "ROCm is installed.".to_owned(),
+            Self::UpdateRuntime { .. } => "ROCm is updated.".to_owned(),
+            Self::ActivateRuntime { .. } => "ROCm is now using the version you chose.".to_owned(),
+            Self::RemoveRuntime { .. } => "That ROCm version has been removed.".to_owned(),
+            Self::ValidateRuntime { .. } => "That ROCm version works.".to_owned(),
+            // Names the fix, because a user who approved one of several
+            // suggestions needs to see which one actually ran.
+            Self::ApplyFix { fix_id } => format!("Applied the fix {}.", fix_id.as_str()),
         }
     }
 

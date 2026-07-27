@@ -39,6 +39,10 @@ import QuickStatus from "./tray/QuickStatus";
 import Settings from "./tray/Settings";
 import { desktopTray, fixtureAutostart, fixtureTray } from "./lib/tray";
 import type { FullSurface, TrayBackend } from "./lib/tray";
+import Diagnostics from "./logs/Diagnostics";
+import Logs from "./logs/Logs";
+import { desktopDiagnostics, fixtureDiagnosticsBackend } from "./lib/logs";
+import type { DiagnosticsBackend } from "./lib/logs";
 
 /**
  * Fixture mode is opt-in at build time. It is what lets renderer tests and
@@ -47,7 +51,7 @@ import type { FullSurface, TrayBackend } from "./lib/tray";
  */
 const FIXTURE_MODE = import.meta.env.ROCM_APP_FIXTURE === "1" || import.meta.env.MODE === "test";
 
-type Surface = "dashboard" | "onboarding" | "runtimes" | "settings";
+type Surface = "dashboard" | "onboarding" | "runtimes" | "settings" | "logs" | "diagnostics";
 
 /** A tray hand-off names a surface as a bare string; only three are real. */
 function isFullSurface(value: string): value is FullSurface {
@@ -129,6 +133,25 @@ function fixtureRoute(): React.ReactElement | null {
       />
     );
   }
+  if (view === "logs") {
+    const exported = params.get("export");
+    return (
+      <Logs
+        backend={fixtureDiagnosticsBackend({
+          logs: params.get("scenario") ?? "populated",
+          revealed: "revealed",
+          ...(exported === null ? {} : { export: exported }),
+        })}
+      />
+    );
+  }
+  if (view === "diagnostics") {
+    return (
+      <Diagnostics
+        backend={fixtureDiagnosticsBackend({ diagnosis: params.get("scenario") ?? "matched" })}
+      />
+    );
+  }
   if (view === "settings") {
     const backend = fixtureTray("healthy", {
       autostart: fixtureAutostart(Number(params.get("scenario") ?? "0")),
@@ -143,6 +166,7 @@ function DesktopShell({ initialSurface }: { readonly initialSurface?: Surface | 
   const [onboarding] = useState<OnboardingBackend>(desktopBackend);
   const [runtimes] = useState<RuntimesBackend>(desktopRuntimes);
   const [tray] = useState<TrayBackend>(desktopTray);
+  const [diagnostics] = useState<DiagnosticsBackend>(desktopDiagnostics);
   const [surface, setSurface] = useState<Surface | null>(initialSurface ?? null);
 
   // One read decides the landing surface. It is the Overview's own answer, so
@@ -202,6 +226,12 @@ function DesktopShell({ initialSurface }: { readonly initialSurface?: Surface | 
   const toSettings = useCallback(() => {
     setSurface("settings");
   }, []);
+  const toLogs = useCallback(() => {
+    setSurface("logs");
+  }, []);
+  const toDiagnostics = useCallback(() => {
+    setSurface("diagnostics");
+  }, []);
 
   if (surface === null) {
     return (
@@ -213,7 +243,7 @@ function DesktopShell({ initialSurface }: { readonly initialSurface?: Surface | 
   if (surface === "onboarding") {
     return <OnboardingFlow backend={onboarding} onFinished={toDashboard} />;
   }
-  if (surface === "runtimes" || surface === "settings") {
+  if (surface !== "dashboard") {
     return (
       <>
         <nav className="shell__nav">
@@ -221,16 +251,32 @@ function DesktopShell({ initialSurface }: { readonly initialSurface?: Surface | 
             Back to overview
           </button>
         </nav>
-        {surface === "runtimes" ? <Runtimes backend={runtimes} /> : <Settings backend={tray} />}
+        {surface === "runtimes" && <Runtimes backend={runtimes} />}
+        {surface === "settings" && <Settings backend={tray} />}
+        {surface === "logs" && <Logs backend={diagnostics} />}
+        {surface === "diagnostics" && <Diagnostics backend={diagnostics} />}
       </>
     );
   }
+  // Activity and Diagnose hang off the shell's own nav rather than off the
+  // Overview: they are read-and-report surfaces that stay reachable whatever
+  // the Overview happens to be saying, including when it is saying nothing.
   return (
-    <Dashboard
-      source={dashboard}
-      onStartSetup={toOnboarding}
-      onManageVersions={toRuntimes}
-      onOpenSettings={toSettings}
-    />
+    <>
+      <nav className="shell__nav">
+        <button type="button" onClick={toLogs}>
+          Activity
+        </button>
+        <button type="button" onClick={toDiagnostics}>
+          Diagnose
+        </button>
+      </nav>
+      <Dashboard
+        source={dashboard}
+        onStartSetup={toOnboarding}
+        onManageVersions={toRuntimes}
+        onOpenSettings={toSettings}
+      />
+    </>
   );
 }

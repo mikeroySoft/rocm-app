@@ -35,7 +35,10 @@ export type OperationRequest =
   | { operation: "update-runtime"; key: string }
   | { operation: "activate-runtime"; key: string }
   | { operation: "remove-runtime"; key: string }
-  | { operation: "validate-runtime"; key: string };
+  | { operation: "validate-runtime"; key: string }
+  // A known fix from the closed diagnosis catalog. It carries an id, never a
+  // command: the app is handed something to plan, not something to run.
+  | { operation: "apply-fix"; fixId: string };
 
 export interface PlanStep {
   readonly stage: string;
