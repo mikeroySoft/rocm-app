@@ -66,6 +66,11 @@ KERNEL_MODULE_PAT = re.compile(r"\.ko(\.(xz|zst|gz))?$", re.IGNORECASE)
 
 PASS, FAIL, SKIP = "PASS", "FAIL", "SKIP"
 
+# Which bundle formats a host can actually produce. Mirrors the same table in
+# package_verify.py; the two scripts stay independent on purpose, so the table
+# is duplicated rather than imported across a boundary neither owns.
+HOST_BUNDLES = {"linux": ("deb", "rpm"), "win32": ("nsis",)}
+
 
 class CheckFailed(Exception):
     """A named check did not hold. The message is the reported reason."""
@@ -364,6 +369,15 @@ class Ctx:
     def _one(self, kind: str, pattern: str) -> Path:
         found = sorted(self.bundle_dir.glob(f"{kind}/{pattern}"))
         if not found:
+            # A Linux host builds deb and rpm, a Windows host builds nsis, and
+            # neither builds the other's. Absent-and-unbuildable is a skip with
+            # a reason; absent-but-buildable is a real failure, because it means
+            # the build this harness is supposed to be checking did not happen.
+            if kind not in HOST_BUNDLES.get(sys.platform, ()):
+                raise SkipCheck(
+                    f"{kind} is not built on {sys.platform}; "
+                    f"this host builds {', '.join(HOST_BUNDLES.get(sys.platform, ())) or 'nothing'}"
+                )
             raise CheckFailed(
                 f"no {kind} bundle under {self.bundle_dir}/{kind}; run `npm run tauri build`"
             )
