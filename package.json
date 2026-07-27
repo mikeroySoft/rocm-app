@@ -1,7 +1,7 @@
 {
   "name": "rocm-app",
   "version": "0.1.0",
-  "description": "ROCm App — install, update, change, monitor, and diagnose managed ROCm on Radeon and Ryzen AI systems.",
+  "description": "ROCm App \u2014 install, update, change, monitor, and diagnose managed ROCm on Radeon and Ryzen AI systems.",
   "license": "MIT",
   "private": true,
   "type": "module",
@@ -18,7 +18,8 @@
     "fmt:check": "prettier --check .",
     "test": "vitest",
     "tauri": "tauri",
-    "package:verify": "python3 scripts/package_verify.py"
+    "package:verify": "python3 scripts/package_verify.py",
+    "stage": "python3 scripts/stage_cli.py"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.11.1",

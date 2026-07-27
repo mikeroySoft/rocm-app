@@ -55,16 +55,21 @@ jobs:
       - run: npm test -- --run
       - run: npm run build
 
-      - name: Rust tests and lints
+      - name: Rust tests and lints (domain crate)
+        # Only `rocm-app-core` here. The thin `rocm-app` crate cannot compile
+        # until the CLI payload is staged — `tauri-build` resolves `externalBin`
+        # at build time and fails on a missing sidecar — and staging means
+        # building rocm-cli, which belongs to the packaging job that needs it
+        # anyway. The app crate's own tests and clippy run there, on every push.
         working-directory: src-tauri
         run: |
-          cargo test --all-targets
-          cargo clippy --all-targets -- -D warnings
+          cargo test -p rocm-app-core --all-targets
+          cargo clippy -p rocm-app-core --all-targets -- -D warnings
 
       - name: Harness self-tests
-        # These run without any built artifact: each one constructs its own
-        # fixtures, including the failing cases. A packaging harness that only
-        # ever sees a good bundle proves nothing.
+        # These need no built artifact: each constructs its own fixtures,
+        # including the failing cases. A packaging harness that only ever sees a
+        # good bundle proves nothing.
         run: |
           python3 scripts/package_verify.py --self-test
           python3 scripts/installer_acceptance.py --self-test
@@ -103,6 +108,13 @@ jobs:
           python3 scripts/stage_cli.py --from rocm-cli/target/release
           python3 scripts/stage_cli.py --check
 
+      - name: Rust tests and lints (whole app workspace)
+        # The app crate compiles only now that its sidecars exist.
+        working-directory: src-tauri
+        run: |
+          cargo test --all-targets
+          cargo clippy --all-targets -- -D warnings
+
       - name: Bundle deb and rpm
         run: npm run tauri build -- --bundles deb,rpm
 
@@ -127,7 +139,7 @@ jobs:
     # The reason this job exists. NSIS bundling needs a Windows host: the
     # bundler downloads and runs makensis there, and the development machine
     # this project is built on has neither. Windows packaging evidence is
-    # produced here or it is not produced at all -- it is never inferred from a
+    # produced here or it is not produced at all — it is never inferred from a
     # Linux build or from development mode.
     runs-on: windows-latest
     steps:
@@ -166,7 +178,7 @@ jobs:
       - name: Prove the installer carries the CLI
         # The load-bearing Windows assertion: an NSIS installer that shipped
         # without rocm.exe would still install, and the app would then fall back
-        # to whatever is on PATH -- the exact failure the sibling-lookup rule
+        # to whatever is on PATH — the exact failure the sibling-lookup rule
         # exists to avoid.
         shell: pwsh
         run: |
