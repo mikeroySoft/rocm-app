@@ -58,7 +58,19 @@ APP_MEMBER = "usr/bin/rocm-app"
 # `rocm install app` accepts. Anything else is refused up front rather than
 # silently checked against names that could never match.
 ARCH_TOKEN = {"deb": "amd64", "rpm": "x86_64", "nsis": "x64"}
-SUPPORTED_MACHINE = "x86_64"
+# The one architecture this product supports, under every name a host calls it.
+# Linux `platform.machine()` says `x86_64` and Windows says `AMD64`; treating
+# those as different architectures failed the Windows CI job after it had
+# already built a correct installer.
+SUPPORTED_MACHINES = frozenset({"x86_64", "amd64"})
+
+# What the release manifest calls it. `rocm install app` matches an asset on
+# this exact string, so it is the contract's spelling and never the host's.
+MANIFEST_ARCH = "x86_64"
+
+
+def host_machine_supported() -> bool:
+    return platform.machine().lower() in SUPPORTED_MACHINES
 
 # Which bundle targets this host can produce. An absent nsis directory on Linux
 # is a fact about the host, not a defect in the release.
@@ -634,7 +646,7 @@ def emit_manifest(
         "assets": [
             {
                 "os": "windows" if artifact.target == "nsis" else "linux",
-                "arch": SUPPORTED_MACHINE,
+                "arch": MANIFEST_ARCH,
                 "format": artifact.target,
                 "url": f"{prefix}/{artifact.path.name}",
                 "fileName": artifact.path.name,
@@ -682,8 +694,11 @@ def round_trip(ctx: Ctx, manifest: Path, report: Report) -> None:
 
 def run_checks(ctx: Ctx) -> tuple[Report, list[Artifact]]:
     report = Report()
-    if platform.machine() != SUPPORTED_MACHINE:
-        report.fail(f"unsupported host architecture: {platform.machine()}")
+    if not host_machine_supported():
+        report.fail(
+            f"unsupported host architecture: {platform.machine()} "
+            f"(this product ships x86_64 only)"
+        )
         return report, []
     product, version = product_and_version(ctx)
     report.head(f"{product} {version}  {platform.machine()}  ({ctx.bundle_dir})")
