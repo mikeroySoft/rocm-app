@@ -16,12 +16,12 @@ repository and does not add frontend weight to it.
 
 ## Supported platforms
 
-| Platform | Status |
-|---|---|
-| Native Windows 11 x86_64 | Supported |
-| Native Linux x86_64 | Supported |
-| WSL | **Not supported** — reported explicitly, with no install actions offered |
-| macOS, ARM, Instinct hardware | **Not supported** — out of scope |
+| Platform                      | Status                                                                   |
+| ----------------------------- | ------------------------------------------------------------------------ |
+| Native Windows 11 x86_64      | Supported                                                                |
+| Native Linux x86_64           | Supported                                                                |
+| WSL                           | **Not supported** — reported explicitly, with no install actions offered |
+| macOS, ARM, Instinct hardware | **Not supported** — out of scope                                         |
 
 The app fails to compile on a target that is neither Windows nor Linux. A
 best-effort build on an unsupported host would ship something that cannot reach
@@ -74,6 +74,27 @@ Then:
 npm ci
 npm run tauri dev
 ```
+
+### Running a binary you built yourself
+
+`npm run tauri dev` is the only way to run a **debug** build. A debug binary
+has `devUrl` (`http://localhost:1420`) compiled into it, so launching
+`src-tauri/target/debug/rocm-app` on its own opens a window that says
+_"Could not connect to localhost: Connection refused"_ — the Vite dev server
+it expects is not running. That is the frontend failing to load, not the app
+failing to start.
+
+For a standalone binary that serves its own bundled frontend, build a release:
+
+```bash
+npm run tauri build     # or: npm run build && cargo build --release --manifest-path src-tauri/Cargo.toml
+```
+
+The app locates the `rocm` command-line tool **beside its own executable**
+first, and only then on `PATH`. A development build therefore talks to
+whichever `rocm` is on your `PATH`, which may not be the one in
+`../rocm-cli/target/debug`. Copy or symlink the CLI next to the app binary to
+pin it.
 
 See [docs/testing.md](docs/testing.md) for the full gate list.
 
