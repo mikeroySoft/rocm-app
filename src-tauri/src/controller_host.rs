@@ -85,22 +85,31 @@ impl Default for BundledCliInspector {
 
 impl Inspector for BundledCliInspector {
     fn snapshot(&self) -> Result<AppSnapshot, AdapterError> {
-        let output = Command::new(&self.binary)
+        let output = match Command::new(&self.binary)
             .arg("app-snapshot")
             .stdin(Stdio::null())
             .output()
-            .map_err(|e| AdapterError::Process {
-                detail: format!("could not run {}: {e}", self.binary.display()),
-            })?;
+        {
+            Ok(output) => output,
+            // No such executable is a pairing problem, not a transient one.
+            Err(error) if error.kind() == ErrorKind::NotFound => {
+                return Err(missing_cli(&self.binary));
+            }
+            Err(error) => {
+                return Err(AdapterError::Process {
+                    detail: format!("could not run {}: {error}", self.binary.display()),
+                });
+            }
+        };
 
         if !output.status.success() {
-            return Err(AdapterError::Process {
-                detail: format!(
-                    "rocm app-snapshot exited {}: {}",
-                    output.status,
-                    String::from_utf8_lossy(&output.stderr).trim()
-                ),
-            });
+            return Err(classify_failure(
+                &self.binary,
+                output.status.code(),
+                output.stdout.len(),
+                String::from_utf8_lossy(&output.stderr).trim(),
+                || self.responds_to_version(),
+            ));
         }
 
         let stdout = String::from_utf8(output.stdout).map_err(|e| AdapterError::Process {
@@ -120,6 +129,70 @@ impl Inspector for BundledCliInspector {
                 detail: other.detail(),
             },
         })
+    }
+}
+
+impl BundledCliInspector {
+    /// Whether the binary runs at all.
+    ///
+    /// `--version` exists on every `rocm` ever built, so it separates "this
+    /// executable is broken or absent" from "this executable works and simply
+    /// does not know the subcommand".
+    fn responds_to_version(&self) -> bool {
+        Command::new(&self.binary)
+            .arg("--version")
+            .stdin(Stdio::null())
+            .output()
+            .is_ok_and(|output| output.status.success())
+    }
+}
+
+fn missing_cli(binary: &std::path::Path) -> AdapterError {
+    AdapterError::CliMismatch {
+        expected: "a rocm command-line tool that supports app-snapshot".to_owned(),
+        found: format!("no executable at {}", binary.display()),
+    }
+}
+
+/// Why a non-zero `app-snapshot` failed, told apart rather than lumped
+/// together.
+///
+/// The single most likely first-run failure is an app paired with a `rocm`
+/// that predates the app contract — during development, whichever `rocm` is on
+/// `PATH`. Reporting that as "a ROCm command did not finish successfully"
+/// names neither the cause nor a remedy.
+///
+/// Two signals, both typed rather than sniffed out of the error text: clap
+/// exits **2** for a usage error and writes nothing to stdout, and the same
+/// binary still answers `--version`. Together those mean the executable is
+/// healthy and simply does not have the subcommand. Any other non-zero exit is
+/// a real failure of a CLI that does understand the request, and stays a
+/// recoverable process error.
+///
+/// ponytail: the clap usage-exit code is a convention, not a contract. The
+/// `--version` confirmation is what keeps a genuine runtime failure from being
+/// mislabelled a mismatch; if clap ever changes the code, this degrades to the
+/// generic message rather than to a wrong one.
+fn classify_failure(
+    binary: &std::path::Path,
+    exit_code: Option<i32>,
+    stdout_len: usize,
+    stderr: &str,
+    runs_at_all: impl FnOnce() -> bool,
+) -> AdapterError {
+    const CLAP_USAGE_ERROR: i32 = 2;
+    if exit_code == Some(CLAP_USAGE_ERROR) && stdout_len == 0 && runs_at_all() {
+        return AdapterError::CliMismatch {
+            expected: "a rocm command-line tool that supports app-snapshot".to_owned(),
+            found: format!("{} does not support it", binary.display()),
+        };
+    }
+    AdapterError::Process {
+        detail: format!(
+            "{} app-snapshot exited with {}: {stderr}",
+            binary.display(),
+            exit_code.map_or_else(|| "a signal".to_owned(), |code| format!("code {code}")),
+        ),
     }
 }
 
@@ -681,6 +754,74 @@ fn now_unix_ms() -> u64 {
 mod tests {
     use super::*;
     use rocm_app_core::controller::request::{RuntimeKey, VersionSelector};
+
+    /// The most likely first-run failure: the app found a `rocm` that predates
+    /// the app contract. It must say so, not "a command did not finish".
+    #[test]
+    fn health_inspector_reports_an_old_cli_as_a_pairing_problem() {
+        let error = classify_failure(
+            std::path::Path::new("/home/someone/.local/bin/rocm"),
+            Some(2),
+            0,
+            "error: unrecognized subcommand 'app-snapshot'",
+            || true,
+        );
+
+        let AdapterError::CliMismatch { found, .. } = &error else {
+            panic!("expected a pairing problem, got {error:?}");
+        };
+        assert!(found.contains("/home/someone/.local/bin/rocm"), "{found}");
+
+        let reported = error.to_operation_error();
+        assert_eq!(reported.code, "cli-mismatch");
+        // Not retryable: running the same wrong binary again cannot help.
+        assert!(!reported.recoverable);
+        assert!(reported.message.contains("Reinstall ROCm App"));
+    }
+
+    /// A CLI that *does* understand the request and then fails is a different
+    /// problem, and must stay a recoverable process error.
+    #[test]
+    fn health_inspector_keeps_a_real_failure_recoverable() {
+        for (code, runs) in [(Some(1), true), (Some(2), false), (None, true)] {
+            let error = classify_failure(
+                std::path::Path::new("/usr/bin/rocm"),
+                code,
+                0,
+                "probe failed",
+                || runs,
+            );
+            let reported = error.to_operation_error();
+            assert_eq!(reported.code, "process", "code={code:?} runs={runs}");
+            assert!(reported.recoverable);
+            // The detail names the binary, so a user can see which one it ran.
+            assert!(error.to_string().contains("/usr/bin/rocm"));
+        }
+    }
+
+    /// Output on stdout means the subcommand ran; a usage exit alongside it is
+    /// not evidence the subcommand is missing.
+    #[test]
+    fn health_inspector_does_not_blame_pairing_when_the_command_produced_output() {
+        let error = classify_failure(
+            std::path::Path::new("/usr/bin/rocm"),
+            Some(2),
+            512,
+            "",
+            || true,
+        );
+        assert_eq!(error.to_operation_error().code, "process");
+    }
+
+    #[test]
+    fn health_inspector_reports_a_missing_cli_by_path() {
+        let error = missing_cli(std::path::Path::new("/nowhere/rocm"));
+        let AdapterError::CliMismatch { found, .. } = &error else {
+            panic!("expected a pairing problem, got {error:?}");
+        };
+        assert!(found.contains("/nowhere/rocm"), "{found}");
+        assert!(!error.to_operation_error().recoverable);
+    }
 
     #[test]
     fn controller_storage_key_cannot_escape_the_root() {

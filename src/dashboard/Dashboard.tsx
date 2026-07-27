@@ -31,9 +31,11 @@ export interface DashboardProps {
   readonly source: DashboardSource;
   /** Start the guided setup flow. Absent when there is nowhere to go. */
   readonly onStartSetup?: (() => void) | undefined;
+  /** Open ROCm Installs. Absent when the shell has nowhere to send them. */
+  readonly onManageVersions?: (() => void) | undefined;
 }
 
-export default function Dashboard({ source, onStartSetup }: DashboardProps) {
+export default function Dashboard({ source, onStartSetup, onManageVersions }: DashboardProps) {
   const [overview, setOverview] = useState<HealthOverview | null>(null);
   const [error, setError] = useState<OverviewError | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -177,6 +179,14 @@ export default function Dashboard({ source, onStartSetup }: DashboardProps) {
       <Telemetry panel={overview.telemetry} />
       <Inventory rows={overview.components} />
       <Driver driver={overview.driver} />
+
+      {onManageVersions !== undefined && (
+        <div className="dash__actions">
+          <button type="button" onClick={onManageVersions} data-testid="manage-versions">
+            Manage ROCm versions
+          </button>
+        </div>
+      )}
     </main>
   );
 }

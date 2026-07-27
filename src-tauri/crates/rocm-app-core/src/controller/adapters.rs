@@ -63,7 +63,8 @@ impl AdapterError {
             ),
             Self::CliMismatch { .. } => (
                 "cli-mismatch",
-                "The bundled ROCm command-line tool does not match this app. Reinstall ROCm App.",
+                "The ROCm command-line tool this app found cannot report status. \
+                 Reinstall ROCm App so the app and the command-line tool match.",
                 false,
             ),
             Self::Storage { .. } => ("storage", "Could not save changes to this computer.", true),

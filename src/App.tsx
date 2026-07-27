@@ -136,6 +136,9 @@ function DesktopShell({ initialSurface }: { readonly initialSurface?: Surface | 
   const toOnboarding = useCallback(() => {
     setSurface("onboarding");
   }, []);
+  const toRuntimes = useCallback(() => {
+    setSurface("runtimes");
+  }, []);
 
   if (surface === null) {
     return (
@@ -159,19 +162,5 @@ function DesktopShell({ initialSurface }: { readonly initialSurface?: Surface | 
       </>
     );
   }
-  return (
-    <>
-      <Dashboard source={dashboard} onStartSetup={toOnboarding} />
-      <nav className="shell__nav">
-        <button
-          type="button"
-          onClick={() => {
-            setSurface("runtimes");
-          }}
-        >
-          Manage ROCm versions
-        </button>
-      </nav>
-    </>
-  );
+  return <Dashboard source={dashboard} onStartSetup={toOnboarding} onManageVersions={toRuntimes} />;
 }
