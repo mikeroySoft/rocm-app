@@ -101,25 +101,70 @@ impl Drop for IsolatedState {
     }
 }
 
-fn run_snapshot(state: &IsolatedState) -> String {
+/// Whether the located CLI predates the app contract entirely.
+///
+/// The signal is the same one `classify_failure` uses in the host crate, and
+/// for the same reason: clap answers an unknown subcommand with usage on
+/// stderr, exit 2, and nothing on stdout, while a binary that is simply broken
+/// does not also answer `--version`. Requiring both keeps "this CLI is older
+/// than the contract" from swallowing "this CLI is faulty".
+fn cli_predates_the_contract(status: std::process::ExitStatus, stdout_len: usize) -> bool {
+    if status.code() != Some(2) || stdout_len != 0 {
+        return false;
+    }
+    Command::new(rocm_binary())
+        .arg("--version")
+        .output()
+        .is_ok_and(|out| out.status.success())
+}
+
+/// Run the producer, or report why this checkout cannot.
+///
+/// `None` means the CLI on hand has no `app-snapshot` at all. That happens
+/// wherever the rocm-cli revision available is older than the contract — in
+/// particular in CI, which clones the revision this app pins for its shared
+/// crates, and that pin deliberately predates the producer. The alternative to
+/// reporting it is a red build that says nothing about this app's code.
+fn try_snapshot(state: &IsolatedState) -> Option<String> {
     let mut command = Command::new(rocm_binary());
     command.arg("app-snapshot").arg("--pretty");
     state.apply(&mut command);
     let output = command.output().expect("run rocm app-snapshot");
 
-    assert!(
-        output.status.success(),
-        "rocm app-snapshot exited {}: {}",
-        output.status,
-        String::from_utf8_lossy(&output.stderr)
-    );
-    String::from_utf8(output.stdout).expect("snapshot output is valid UTF-8")
+    if !output.status.success() {
+        if cli_predates_the_contract(output.status, output.stdout.len()) {
+            eprintln!(
+                "SKIPPED: {} has no `app-snapshot` subcommand, so the live \
+                 producer/consumer harness cannot run against it. Point \
+                 ROCM_CLI_BIN or ROCM_CLI_REPO at a build that carries the \
+                 contract.",
+                rocm_binary().display()
+            );
+            return None;
+        }
+        panic!(
+            "rocm app-snapshot exited {}: {}",
+            output.status,
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+    Some(String::from_utf8(output.stdout).expect("snapshot output is valid UTF-8"))
+}
+
+/// Run the producer, or bail out of the calling test with a stated reason.
+macro_rules! snapshot_or_skip {
+    ($state:expr) => {
+        match try_snapshot($state) {
+            Some(raw) => raw,
+            None => return,
+        }
+    };
 }
 
 #[test]
 fn contract_live_producer_output_decodes_in_the_app() {
     let state = IsolatedState::new("decode");
-    let snapshot = contract::decode(&run_snapshot(&state))
+    let snapshot = contract::decode(&snapshot_or_skip!(&state))
         .expect("the app must decode what the current CLI produces");
 
     assert_eq!(snapshot.schema_version, contract::SUPPORTED_SCHEMA_VERSION);
@@ -135,7 +180,7 @@ fn contract_live_producer_output_decodes_in_the_app() {
 #[test]
 fn contract_live_producer_honours_isolated_state_roots() {
     let state = IsolatedState::new("isolation");
-    let snapshot = contract::decode(&run_snapshot(&state)).expect("decode");
+    let snapshot = contract::decode(&snapshot_or_skip!(&state)).expect("decode");
 
     assert!(
         snapshot.runtimes.is_empty(),
@@ -158,7 +203,7 @@ fn contract_live_producer_honours_isolated_state_roots() {
 #[test]
 fn contract_live_producer_offers_only_install_on_a_fresh_machine() {
     let state = IsolatedState::new("actions");
-    let snapshot = contract::decode(&run_snapshot(&state)).expect("decode");
+    let snapshot = contract::decode(&snapshot_or_skip!(&state)).expect("decode");
 
     assert_eq!(
         snapshot.offerable_actions(),
@@ -174,7 +219,7 @@ fn contract_live_producer_offers_only_install_on_a_fresh_machine() {
 #[test]
 fn contract_live_producer_driver_payload_is_read_only() {
     let state = IsolatedState::new("driver");
-    let raw = run_snapshot(&state);
+    let raw = snapshot_or_skip!(&state);
     let value: serde_json::Value = serde_json::from_str(&raw).expect("parse");
 
     let driver = value.get("driver").expect("driver report present");
@@ -217,7 +262,7 @@ fn snake_case_keys(value: &serde_json::Value, path: &str, bad: &mut Vec<String>)
 #[test]
 fn contract_live_producer_uses_camel_case_throughout() {
     let state = IsolatedState::new("casing");
-    let value: serde_json::Value = serde_json::from_str(&run_snapshot(&state)).expect("parse");
+    let value: serde_json::Value = serde_json::from_str(&snapshot_or_skip!(&state)).expect("parse");
 
     let mut bad = Vec::new();
     snake_case_keys(&value, "$", &mut bad);
