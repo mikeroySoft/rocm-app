@@ -241,13 +241,23 @@ describe("onboarding copy and accessibility", () => {
   it("is operable with the keyboard alone", async () => {
     const backend = start("supported");
     const user = userEvent.setup();
-    const primary = await screen.findByRole("button", { name: /set up rocm/i });
+    await screen.findByRole("button", { name: /set up rocm/i });
 
     // A real button: focusable, and Enter activates it. Tab *order* is not
     // asserted because jsdom does not implement the `<details>` collapse that
     // removes the advanced inputs from it in a browser.
-    primary.focus();
-    expect(primary).toHaveFocus();
+    //
+    // The button is re-acquired inside `waitFor` rather than captured once. A
+    // post-mount update replaces the node, and focusing the old one sends the
+    // keystroke to `<body>` — which failed on a loaded CI runner while passing
+    // eight times in a row here. Retrying until focus holds on a node that is
+    // still current removes the race without weakening the claim.
+    let primary!: HTMLElement;
+    await waitFor(() => {
+      primary = screen.getByRole("button", { name: /set up rocm/i });
+      primary.focus();
+      expect(primary).toHaveFocus();
+    });
     await user.keyboard("{Enter}");
 
     expect(await screen.findByTestId("folder-input")).toBeInTheDocument();

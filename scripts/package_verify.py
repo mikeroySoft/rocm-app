@@ -346,21 +346,34 @@ def scan_rpm(path: Path, wanted: set[str]) -> tuple[set[str], dict[str, str]]:
 
     digests: dict[str, str] = {}
     with tempfile.TemporaryDirectory(prefix="rocm-rpm-") as scratch:
-        payload = subprocess.Popen(["rpm2cpio", str(path)], stdout=subprocess.PIPE)
-        extract = subprocess.run(
-            ["cpio", "--extract", "--make-directories", "--quiet", *(f"./{m}" for m in sorted(wanted))],
-            stdin=payload.stdout,
-            cwd=scratch,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.PIPE,
-            text=True,
-            check=False,
-        )
-        payload.stdout.close()
-        if payload.wait() != 0:
-            raise VerifyError(f"rpm2cpio failed for {path.name}")
+        # Through a file rather than a pipe. `cpio` given an explicit member
+        # list stops reading once it has them, `rpm2cpio` then dies of SIGPIPE,
+        # and the exit code that produces is indistinguishable from a real
+        # failure — which is exactly how this failed in CI while passing here.
+        payload = Path(scratch) / "payload.cpio"
+        with payload.open("wb") as sink:
+            unpacked = subprocess.run(
+                ["rpm2cpio", str(path)], stdout=sink, stderr=subprocess.PIPE, check=False
+            )
+        if unpacked.returncode != 0 or payload.stat().st_size == 0:
+            raise VerifyError(
+                f"rpm2cpio failed for {path.name}: {unpacked.stderr.decode(errors='replace').strip()}"
+            )
+
+        into = Path(scratch) / "root"
+        into.mkdir()
+        with payload.open("rb") as source:
+            extract = subprocess.run(
+                ["cpio", "--extract", "--make-directories", "--quiet"],
+                stdin=source,
+                cwd=into,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=False,
+            )
         for name in wanted:
-            extracted = Path(scratch) / name
+            extracted = into / name
             if extracted.is_file():
                 digests[name] = sha256_file(extracted)
         if not digests and extract.returncode != 0:
