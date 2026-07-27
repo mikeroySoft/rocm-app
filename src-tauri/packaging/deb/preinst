@@ -1,0 +1,52 @@
+#!/bin/sh
+# Copyright © Advanced Micro Devices, Inc., or its affiliates.
+#
+# SPDX-License-Identifier: MIT
+#
+# Refuse to clobber a `rocm` or `rocmd` this package does not own.
+#
+# Installing ROCm App installs the CLI, and dpkg puts it at /usr/bin/rocm. dpkg
+# tracks which package owns which file and will refuse to overwrite another
+# *package's* file — but a binary copied into /usr/bin by hand is owned by
+# nobody, so dpkg would silently overwrite it and then delete it on uninstall.
+# That is somebody else's tool, removed by our uninstaller, and they would have
+# no way to know why.
+#
+# So: if the path exists and dpkg cannot name an owner, stop and say exactly
+# what to do. Refusing an install is recoverable in one command; deleting a
+# binary the user built is not.
+set -e
+
+case "$1" in
+  install | upgrade) ;;
+  *) exit 0 ;;
+esac
+
+unowned=""
+for binary in rocm rocmd; do
+  path="/usr/bin/$binary"
+  [ -e "$path" ] || continue
+  # `dpkg-query -S` exits non-zero when no package owns the path.
+  if ! dpkg-query -S "$path" >/dev/null 2>&1; then
+    unowned="$unowned $path"
+  fi
+done
+
+if [ -n "$unowned" ]; then
+  cat >&2 <<EOF
+ROCm App installs the ROCm command-line tool, but these files already exist and
+no package owns them:
+$(for p in $unowned; do echo "  $p"; done)
+
+Installing would overwrite them, and uninstalling ROCm App would then delete
+them. Move or remove them first, for example:
+
+$(for p in $unowned; do echo "  sudo mv $p $p.saved"; done)
+
+A ROCm CLI installed by install.sh into ~/.local/bin is not affected: this only
+concerns /usr/bin.
+EOF
+  exit 1
+fi
+
+exit 0

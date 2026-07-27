@@ -1,0 +1,206 @@
+# Copyright © Advanced Micro Devices, Inc., or its affiliates.
+#
+# SPDX-License-Identifier: MIT
+#
+# Every third-party action is pinned to a full commit SHA with a trailing
+# version comment. A moving tag (`@v4`, `@main`) lets a retagged or compromised
+# action enter CI silently; the SHA and the comment are bumped together.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # rocm-app bundles the CLI, so CI has to build it. This is the revision the
+  # app's Cargo.toml pins for its shared crates; the packaged binaries and the
+  # linked crates then come from the same source.
+  ROCM_CLI_REPO: https://github.com/mikeroysoft/rocm-cli
+  ROCM_CLI_REV: cae77819a58ee8448a14160ce989832f500e6cc4
+  CARGO_TERM_COLOR: always
+
+jobs:
+  checks:
+    name: checks (linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+        with:
+          workspaces: src-tauri
+
+      - name: Install Tauri system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev \
+            libxdo-dev build-essential curl wget file libssl-dev pkg-config
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test -- --run
+      - run: npm run build
+
+      - name: Rust tests and lints
+        working-directory: src-tauri
+        run: |
+          cargo test --all-targets
+          cargo clippy --all-targets -- -D warnings
+
+      - name: Harness self-tests
+        # These run without any built artifact: each one constructs its own
+        # fixtures, including the failing cases. A packaging harness that only
+        # ever sees a good bundle proves nothing.
+        run: |
+          python3 scripts/package_verify.py --self-test
+          python3 scripts/installer_acceptance.py --self-test
+
+  package-linux:
+    name: package (linux deb+rpm)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+        with:
+          workspaces: |
+            src-tauri
+            rocm-cli
+
+      - name: Install Tauri system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev \
+            libxdo-dev build-essential curl wget file libssl-dev pkg-config rpm
+
+      - name: Build the ROCm CLI this app will ship
+        run: |
+          git clone --filter=blob:none "$ROCM_CLI_REPO" rocm-cli
+          git -C rocm-cli checkout "$ROCM_CLI_REV"
+          cargo build --release --manifest-path rocm-cli/Cargo.toml -p rocm -p rocmd
+
+      - run: npm ci
+      - name: Stage the CLI payload
+        run: |
+          python3 scripts/stage_cli.py --from rocm-cli/target/release
+          python3 scripts/stage_cli.py --check
+
+      - name: Bundle deb and rpm
+        run: npm run tauri build -- --bundles deb,rpm
+
+      - name: Verify artifacts
+        run: npm run package:verify
+
+      - name: Installer acceptance
+        run: python3 scripts/installer_acceptance.py
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: linux-bundles
+          path: |
+            src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/deb/*.deb.sha256
+            src-tauri/target/release/bundle/rpm/*.rpm
+            src-tauri/target/release/bundle/rpm/*.rpm.sha256
+          if-no-files-found: error
+
+  package-windows:
+    name: package (windows nsis)
+    # The reason this job exists. NSIS bundling needs a Windows host: the
+    # bundler downloads and runs makensis there, and the development machine
+    # this project is built on has neither. Windows packaging evidence is
+    # produced here or it is not produced at all -- it is never inferred from a
+    # Linux build or from development mode.
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+        with:
+          workspaces: |
+            src-tauri
+            rocm-cli
+
+      - name: Build the ROCm CLI this app will ship
+        run: |
+          git clone --filter=blob:none "$env:ROCM_CLI_REPO" rocm-cli
+          git -C rocm-cli checkout "$env:ROCM_CLI_REV"
+          cargo build --release --manifest-path rocm-cli/Cargo.toml -p rocm -p rocmd
+
+      - run: npm ci
+      - name: Stage the CLI payload
+        run: |
+          python scripts/stage_cli.py --from rocm-cli/target/release
+          python scripts/stage_cli.py --check
+
+      - name: Bundle NSIS
+        run: npm run tauri build -- --bundles nsis
+
+      - name: Verify artifacts
+        run: npm run package:verify
+
+      - name: Installer acceptance
+        run: python scripts/installer_acceptance.py
+
+      - name: Prove the installer carries the CLI
+        # The load-bearing Windows assertion: an NSIS installer that shipped
+        # without rocm.exe would still install, and the app would then fall back
+        # to whatever is on PATH -- the exact failure the sibling-lookup rule
+        # exists to avoid.
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem src-tauri/target/release/bundle/nsis/*-setup.exe |
+            Select-Object -First 1
+          if (-not $setup) { throw "no NSIS installer was produced" }
+          "installer: $($setup.Name)  $($setup.Length) bytes"
+          $hash = (Get-FileHash $setup.FullName -Algorithm SHA256).Hash.ToLower()
+          "sha256:    $hash"
+          # /S is the silent switch the app installer uses; installing into a
+          # throwaway directory keeps the runner's own state out of it.
+          $target = Join-Path $env:RUNNER_TEMP "rocm-app-install"
+          Start-Process -FilePath $setup.FullName -ArgumentList "/S", "/D=$target" -Wait
+          foreach ($name in @("rocm-app.exe", "rocm.exe", "rocmd.exe")) {
+            $path = Join-Path $target $name
+            if (-not (Test-Path $path)) { throw "installer did not place $name" }
+            "installed:  $name"
+          }
+          & (Join-Path $target "rocm.exe") --version
+          & (Join-Path $target "rocmd.exe") --version
+          $manifest = Get-Content (Join-Path $target "compatibility.json") | ConvertFrom-Json
+          foreach ($entry in $manifest.binaries) {
+            $installed = (Get-FileHash (Join-Path $target "$($entry.name).exe") `
+              -Algorithm SHA256).Hash.ToLower()
+            if ($installed -ne $entry.sha256) {
+              throw "$($entry.name).exe does not match the compatibility manifest"
+            }
+            "verified:   $($entry.name).exe $($entry.version)"
+          }
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: windows-bundles
+          path: |
+            src-tauri/target/release/bundle/nsis/*-setup.exe
+            src-tauri/target/release/bundle/nsis/*-setup.exe.sha256
+          if-no-files-found: error

@@ -33,3 +33,9 @@ current-user-asks.md
 /.claude
 .DS_Store
 __pycache__/
+
+# Staged CLI payload and its compatibility manifest are build outputs: 48 MB of
+# binaries copied from a rocm-cli build, described by hashes that are only true
+# for that build. `scripts/stage_cli.py` regenerates both.
+/src-tauri/binaries/
+/src-tauri/compatibility.json

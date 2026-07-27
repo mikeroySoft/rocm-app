@@ -1,0 +1,33 @@
+#!/bin/sh
+# Copyright © Advanced Micro Devices, Inc., or its affiliates.
+#
+# SPDX-License-Identifier: MIT
+#
+# Remove the app's own registration on uninstall.
+#
+# dpkg already removes every file this package owns, including /usr/bin/rocm and
+# /usr/bin/rocmd, and it removes only those — a CLI in ~/.local/bin, or one this
+# package's preinst refused to overwrite, is untouched. Package ownership is the
+# ownership metadata; there is deliberately no second bookkeeping scheme beside
+# it to disagree with.
+#
+# What dpkg does not know about is the per-user autostart entry the app writes
+# when "Start at login" is on. It lives under each user's home, so it survives a
+# package removal and would relaunch a binary that is gone.
+set -e
+
+case "$1" in
+  remove | purge) ;;
+  *) exit 0 ;;
+esac
+
+# tauri-plugin-autostart writes an XDG autostart .desktop file named after the
+# app. Only that exact name is removed: a glob here would delete other people's
+# autostart entries on a shared machine.
+for home in /home/* /root; do
+  [ -d "$home" ] || continue
+  entry="$home/.config/autostart/rocm-app.desktop"
+  [ -e "$entry" ] && rm -f "$entry"
+done
+
+exit 0
