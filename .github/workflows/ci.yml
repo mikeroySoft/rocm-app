@@ -352,18 +352,43 @@ jobs:
             src-tauri
             rocm-cli
 
-      - name: Put Edge WebDriver on PATH
-        # The runner image ships msedgedriver matched to its own Edge build and
-        # points `EdgeWebDriver` at the folder. Using it avoids installing an
-        # unpinned tool from a third-party git repository just to obtain a
-        # driver the machine already has — and a mismatched Edge/driver pair
-        # hangs rather than failing, which is the worst kind of CI red.
+      - name: Match Edge WebDriver to the WebView2 runtime
+        # The app under test is a WebView2 app, so the driver must match the
+        # WebView2 *runtime* the app embeds, not the Edge browser the image
+        # happens to ship — the two drift apart on runner images, and every
+        # session against the browser-matched driver died with "Microsoft
+        # Edge failed to start: crashed" while the bare app ran fine. The
+        # runtime version comes from the EdgeUpdate registry key; the driver
+        # comes from Microsoft's own CDN at exactly that version, falling
+        # back to the newest driver of the same major.
         shell: pwsh
         run: |
-          if (-not $env:EdgeWebDriver) { throw "the runner image exposes no EdgeWebDriver path" }
-          "msedgedriver: $env:EdgeWebDriver"
-          & (Join-Path $env:EdgeWebDriver "msedgedriver.exe") --version
-          $env:EdgeWebDriver >> $env:GITHUB_PATH
+          $ErrorActionPreference = "Stop"
+          $clients = @(
+            "HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}",
+            "HKLM:\SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
+          )
+          $runtime = $clients | Where-Object { Test-Path $_ } |
+            ForEach-Object { (Get-ItemProperty $_).pv } | Select-Object -First 1
+          if (-not $runtime) { throw "no WebView2 runtime registered on this image" }
+          "WebView2 runtime: $runtime"
+          if ($env:EdgeWebDriver) {
+            "image msedgedriver: " + (& (Join-Path $env:EdgeWebDriver "msedgedriver.exe") --version)
+          }
+          $zip = Join-Path $env:RUNNER_TEMP "edgedriver.zip"
+          try {
+            Invoke-WebRequest "https://msedgedriver.microsoft.com/$runtime/edgedriver_win64.zip" -OutFile $zip
+          } catch {
+            $major = $runtime.Split(".")[0]
+            $latest = (Invoke-WebRequest "https://msedgedriver.microsoft.com/LATEST_RELEASE_${major}_WINDOWS").Content
+            $pinned = ($latest -replace "[^\d.]", "").Trim()
+            "no driver published at $runtime; using newest for major ${major}: $pinned"
+            Invoke-WebRequest "https://msedgedriver.microsoft.com/$pinned/edgedriver_win64.zip" -OutFile $zip
+          }
+          $dir = Join-Path $env:RUNNER_TEMP "edgedriver-webview2"
+          Expand-Archive $zip -DestinationPath $dir -Force
+          "matched msedgedriver: " + (& (Join-Path $dir "msedgedriver.exe") --version)
+          $dir >> $env:GITHUB_PATH
 
       - name: Install tauri-driver
         run: cargo install tauri-driver --version 2.0.6 --locked
