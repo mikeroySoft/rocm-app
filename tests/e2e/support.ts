@@ -76,7 +76,11 @@ export async function until(
   check: () => boolean | Promise<boolean>,
   timeout = 30_000,
 ): Promise<void> {
-  await browser.waitUntil(check, { timeout, interval: 250, timeoutMsg: `timed out waiting: ${what}` });
+  await browser.waitUntil(check, {
+    timeout,
+    interval: 250,
+    timeoutMsg: `timed out waiting: ${what}`,
+  });
 }
 
 // ---------------------------------------------------------------------------

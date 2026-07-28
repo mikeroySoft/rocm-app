@@ -51,7 +51,7 @@ describe("diagnostics", () => {
     const destination = join(paths.state(), "bundle-out");
     const field = await waitForTestId("destination");
     await field.setValue(destination);
-    await (testId("export")).click();
+    await testId("export").click();
     const receipt = await waitForTestId("export-receipt", 60_000);
     const text = await receipt.getText();
     assert.match(text, /[0-9a-f]{8}/i, `the receipt showed no digest:\n${text}`);

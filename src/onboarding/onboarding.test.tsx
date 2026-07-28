@@ -119,6 +119,48 @@ describe("onboarding review", () => {
   });
 });
 
+/**
+ * Regression: a failed operation arrives twice — as a terminal `failed`
+ * progress event carrying the CLI's own words, then as the command's
+ * rejection. The rejection used to overwrite the settled outcome with a
+ * detail-less one, so the user saw "did not finish successfully" and nothing
+ * else on the one screen that owed them the why.
+ */
+describe("onboarding failure detail", () => {
+  it("keeps the CLI's multi-line error when the command also rejects", async () => {
+    const detail =
+      "error: the download was interrupted after 312 MB\n" +
+      "caused by: connection reset by peer\n" +
+      "help: check the network connection and try again";
+    const base = fixtureBackend(FIXTURES, "supported");
+    const backend: typeof base = {
+      ...base,
+      execute: (approval, onEvent) => {
+        void approval;
+        onEvent({
+          event: "failed",
+          operationId: "op-1",
+          error: {
+            code: "process",
+            message: "A ROCm command did not finish successfully.",
+            recoverable: true,
+            detail,
+          },
+        });
+        return Promise.reject(new Error("exit status 1"));
+      },
+    };
+    render(<OnboardingFlow backend={backend} />);
+    const user = await reachReview();
+    await user.click(screen.getByRole("button", { name: /^install rocm$/i }));
+
+    const shown = await screen.findByTestId("outcome-detail");
+    expect(shown).toHaveTextContent(/interrupted after 312 MB/);
+    expect(shown).toHaveTextContent(/connection reset by peer/);
+    expect(screen.getByTestId("outcome")).toHaveAttribute("data-kind", "failed");
+  });
+});
+
 describe("onboarding progress", () => {
   it("cannot be left while a change is running, and offers only Stop", async () => {
     start("supported", { stopAfter: 2 });

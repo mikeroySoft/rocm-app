@@ -1,0 +1,8 @@
+# Generated files are byte-pinned by their generators, not formatted.
+# fixtures/*.json come from the Rust suite (ROCM_APP_WRITE_FIXTURES=1) and
+# the contract producer; a formatter pass would fail every fixtures_match
+# test and hide real drift inside cosmetic diffs.
+/fixtures/
+/dist/
+/test-results/
+/src-tauri/target/

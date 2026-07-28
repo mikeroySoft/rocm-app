@@ -206,37 +206,50 @@ export default function Dashboard({
 }
 
 function Telemetry({ panel }: { readonly panel: TelemetryPanel }) {
+  // When nothing is readable for one shared reason, four rows repeating that
+  // sentence bury it. Say it once. The rows come back the moment any metric
+  // reads or the reasons diverge, because then the rows carry information.
+  const reasons = new Set(
+    panel.metrics.map((metric) => (metric.value.state === "reading" ? null : metric.value.reason)),
+  );
+  const shared = reasons.size === 1 ? [...reasons][0] : null;
   return (
     <section className="dash__panel" aria-labelledby="dash-telemetry">
       <h2 id="dash-telemetry" className="dash__subtitle">
         Graphics card right now
       </h2>
       {panel.device !== null && <p className="dash__muted">{panel.device}</p>}
-      <dl className="dash__metrics" data-testid="metrics">
-        {panel.metrics.map((metric: MetricRow) => (
-          <div className="dash__metric" key={metric.key}>
-            <dt>{metric.label}</dt>
-            <dd data-testid={`metric-${metric.key}`} data-state={metric.value.state}>
-              {metric.value.state === "reading" ? (
-                <>
-                  <span className="dash__metric-value">{metric.value.text}</span>
-                  {metric.value.ratio !== null && (
-                    <span
-                      className="dash__gauge"
-                      role="img"
-                      aria-label={`${metric.label}: ${metric.value.text}`}
-                    >
-                      <span style={{ inlineSize: `${(metric.value.ratio * 100).toFixed(0)}%` }} />
-                    </span>
-                  )}
-                </>
-              ) : (
-                metric.value.reason
-              )}
-            </dd>
-          </div>
-        ))}
-      </dl>
+      {panel.metrics.length > 0 && shared != null ? (
+        <p className="dash__muted" data-testid="metrics-unavailable" data-state="unavailable">
+          {shared}
+        </p>
+      ) : (
+        <dl className="dash__metrics" data-testid="metrics">
+          {panel.metrics.map((metric: MetricRow) => (
+            <div className="dash__metric" key={metric.key}>
+              <dt>{metric.label}</dt>
+              <dd data-testid={`metric-${metric.key}`} data-state={metric.value.state}>
+                {metric.value.state === "reading" ? (
+                  <>
+                    <span className="dash__metric-value">{metric.value.text}</span>
+                    {metric.value.ratio !== null && (
+                      <span
+                        className="dash__gauge"
+                        role="img"
+                        aria-label={`${metric.label}: ${metric.value.text}`}
+                      >
+                        <span style={{ inlineSize: `${(metric.value.ratio * 100).toFixed(0)}%` }} />
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  metric.value.reason
+                )}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      )}
       {panel.history.length > 0 && (
         <p className="dash__muted" data-testid="history">
           {panel.history.length} recent readings kept on this computer.

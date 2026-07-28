@@ -619,10 +619,24 @@ fn health_age_labels_read_like_english() {
         .label
     };
     assert_eq!(label(0), "Checked just now");
-    assert_eq!(label(60_000), "Last checked 1 minute ago");
+    assert_eq!(label(60_000), "Checked just now");
+    assert_eq!(label(100_000), "Last checked 1 minute ago");
     assert_eq!(label(12 * 60_000), "Last checked 12 minutes ago");
+    assert_eq!(label(30 * 60_000), "Last checked 30 minutes ago");
+    assert_eq!(label(59 * 60_000), "Last checked 59 minutes ago");
     assert_eq!(label(60 * 60_000), "Last checked 1 hour ago");
+    assert_eq!(label(90 * 60_000), "Last checked 1 hour ago");
+    assert_eq!(label(2 * 60 * 60_000), "Last checked 2 hours ago");
     assert_eq!(label(5 * 60 * 60_000), "Last checked 5 hours ago");
+    assert_eq!(label(47 * 60 * 60_000), "Last checked 47 hours ago");
+    assert_eq!(label(48 * 60 * 60_000), "Last checked 2 days ago");
+    assert_eq!(label(3 * 24 * 60 * 60_000), "Last checked 3 days ago");
+    assert_eq!(label(13 * 24 * 60 * 60_000), "Last checked 13 days ago");
+    assert_eq!(label(14 * 24 * 60 * 60_000), "Last checked more than two weeks ago");
+    assert_eq!(
+        label(4995 * 60 * 60_000),
+        "Last checked more than two weeks ago"
+    );
 }
 
 /// A clock that has gone backwards must not produce a nonsense age.

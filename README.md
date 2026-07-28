@@ -62,7 +62,7 @@ not anything is open.
   icon click events as unsupported on Linux, so both windows are reachable from
   the menu on both platforms and nothing depends on a click.
 - **Notifications are transition-only.** The app speaks up when the health
-  verdict *changes*, when an update it would actually offer becomes available,
+  verdict _changes_, when an update it would actually offer becomes available,
   and when an operation finishes or fails. The last thing said is persisted, so
   quitting and relaunching does not re-announce it. An unchanged verdict is
   never repeated.

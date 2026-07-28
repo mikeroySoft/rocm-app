@@ -19,7 +19,7 @@
  * `planFix` describes it, and only an approved plan reaches `execute`.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { approvalFor } from "../lib/controller";
 import type { ChangePlan, ProgressEvent } from "../lib/controller";
 import { FIX_BLOCK_MESSAGES } from "../lib/logs";
@@ -90,13 +90,25 @@ export default function Diagnostics({ backend }: DiagnosticsProps) {
     [backend],
   );
 
+  // Same contract as the other operation screens: a failed operation lands
+  // as a terminal `failed` event first, then the command rejects. Only a
+  // transport failure — no terminal event — may move the user off the
+  // outcome screen.
+  const settled = useRef(false);
+
   const apply = useCallback(
     (plan: ChangePlan) => {
+      settled.current = false;
       setStage({ step: "running", events: [] });
       void backend
         .execute(approvalFor(plan), (event) => {
+          const terminal =
+            event.event === "completed" || event.event === "failed" || event.event === "cancelled";
+          if (terminal) {
+            settled.current = true;
+          }
           setStage((current) =>
-            event.event === "completed" || event.event === "failed" || event.event === "cancelled"
+            terminal
               ? { step: "done", event }
               : {
                   step: "running",
@@ -105,6 +117,9 @@ export default function Diagnostics({ backend }: DiagnosticsProps) {
           );
         })
         .catch((cause: unknown) => {
+          if (settled.current) {
+            return;
+          }
           setRefusal(messageOf(cause));
           setStage({ step: "report" });
         });
@@ -182,7 +197,7 @@ export default function Diagnostics({ backend }: DiagnosticsProps) {
               ? "Stopped"
               : "That fix did not finish"}
         </h1>
-        <p className="dash__body" data-testid="fix-outcome" data-kind={kind}>
+        <p className="dash__body prewrap" data-testid="fix-outcome" data-kind={kind}>
           {describe(stage.event)}
         </p>
         <button
@@ -271,8 +286,10 @@ function Verdict({
           </p>
           {view.route !== null && (
             <p className="dash__links">
-              <a href={view.route.url} data-testid="route">
-                Report this to the {view.route.target} team
+              {/* The routing team is carried by the link target, not the
+                  sentence — "rocm-core" is an identifier, not copy. */}
+              <a href={view.route.url} data-testid="route" title={view.route.target}>
+                Report this problem
               </a>
             </p>
           )}
@@ -345,9 +362,15 @@ function Finding({
             </div>
           </dl>
           {fix.verify !== null && (
-            <p className="dash__muted">
-              You can confirm it worked by running <code>{fix.verify}</code>.
-            </p>
+            // Command syntax is advanced detail: useful to the person who
+            // wants proof, noise to the person who wants their GPU back.
+            <details className="onboard__advanced" data-testid={`verify-${finding.id}`}>
+              <summary>How to confirm it worked</summary>
+              <p className="dash__muted">
+                Run <code className="diagnostics__verify">{fix.verify}</code> in a terminal after
+                the fix finishes.
+              </p>
+            </details>
           )}
           {fix.notes.map((note, index) => (
             <p className="dash__muted" key={`${finding.id}-note-${String(index)}`}>

@@ -25,7 +25,7 @@ describe("first launch", () => {
     // the answer, so this also pins that the snapshot was read and understood.
     const facts = await waitForTestId("facts");
     assert.ok((await facts.getText()).length > 0, "the recommendation showed no facts");
-    assert.equal(await (browser.$('[data-testid="verdict"]')).isExisting(), false);
+    assert.equal(await browser.$('[data-testid="verdict"]').isExisting(), false);
   });
 
   it("read the machine through the isolated roots", () => {

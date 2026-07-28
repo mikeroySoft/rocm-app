@@ -460,13 +460,18 @@ impl CliRunner for BundledCli {
         if output.status.success() {
             Ok(())
         } else {
+            // The CLI's stderr is the why, in the CLI's own words, and it is
+            // what the failure screen shows. The argv echo stays out of it:
+            // command syntax belongs to the opt-in event log (the "execute"
+            // stage above) and the audit journal, not a primary surface.
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            let stderr = stderr.trim();
             Err(AdapterError::Process {
-                detail: format!(
-                    "rocm {} exited {}: {}",
-                    argv.join(" "),
-                    output.status,
-                    String::from_utf8_lossy(&output.stderr).trim()
-                ),
+                detail: if stderr.is_empty() {
+                    format!("The command exited with {}.", output.status)
+                } else {
+                    stderr.to_owned()
+                },
             })
         }
     }

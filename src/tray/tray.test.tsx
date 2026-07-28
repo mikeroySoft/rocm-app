@@ -123,6 +123,18 @@ describe("compact tray window", () => {
     expect(backend.calls.checkNow).toBe(2);
   });
 
+  /** Esc is the keyboard's way out of an undecorated always-on-top panel. */
+  it("asks the host to hide itself on Escape", async () => {
+    const backend = await showQuick("healthy");
+    const user = userEvent.setup();
+
+    await user.keyboard("{Escape}");
+    expect(backend.calls.hidden).toBe(1);
+    // Other keys are not dismissals.
+    await user.keyboard("{Enter}a");
+    expect(backend.calls.hidden).toBe(1);
+  });
+
   /** The panel tracks the tray while it is open, and stops dead once it is not. */
   it("keeps re-reading while open and stops on unmount", async () => {
     vi.useFakeTimers();
@@ -254,7 +266,13 @@ describe("tray fixtures", () => {
 
   it("records nothing until the screen asks for something", () => {
     const backend: FixtureTray = fixtureTray("healthy");
-    expect(backend.calls).toEqual({ reads: [], opened: [], checkNow: 0, setAutostart: [] });
+    expect(backend.calls).toEqual({
+      reads: [],
+      opened: [],
+      checkNow: 0,
+      setAutostart: [],
+      hidden: 0,
+    });
   });
 });
 

@@ -66,9 +66,7 @@ describe("guided setup", () => {
   });
 
   it("reports the machine as set up afterwards", async () => {
-    await until("the post-install snapshot to be read", () =>
-      changes().length === 1,
-    );
+    await until("the post-install snapshot to be read", () => changes().length === 1);
     assertNoDriverMutation();
   });
 });

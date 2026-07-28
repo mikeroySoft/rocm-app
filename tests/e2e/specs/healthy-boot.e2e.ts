@@ -35,15 +35,15 @@ describe("healthy boot", () => {
 
   it("offers the read-only surfaces and the version manager", async () => {
     for (const id of ["manage-versions", "open-settings", "refresh"]) {
-      assert.equal(await (testId(id)).isDisplayed(), true, `${id} was not offered`);
+      assert.equal(await testId(id).isDisplayed(), true, `${id} was not offered`);
     }
   });
 
   it("changes nothing when the user refreshes", async () => {
-    const before = (await (testId("freshness")).getText()) || "";
-    await (testId("refresh")).click();
+    const before = (await testId("freshness").getText()) || "";
+    await testId("refresh").click();
     await until("the Overview to refresh", async () => {
-      const now = await (testId("freshness")).getText();
+      const now = await testId("freshness").getText();
       return now !== before || now.length > 0;
     });
     assertNoMutationYet("refreshing the Overview");

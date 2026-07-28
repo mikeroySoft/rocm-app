@@ -81,7 +81,11 @@ export const SCENARIOS: Readonly<Record<string, Scenario>> = {
       [`update --apply --runtime ${ACTIVE_RUNTIME} --yes`]: {
         exit: 0,
         stdout: "updated\n",
-        delayMs: 800,
+        // Long enough that the updating progress screen is a state the suite
+        // can observe and assert on, rather than a frame that flashes between
+        // two polls. Nothing consumed the shorter delay: no spec drives an
+        // update to completion today.
+        delayMs: 4000,
         thenSnapshot: "updated.json",
       },
       [`runtimes activate ${OTHER_RUNTIME}`]: {
@@ -96,6 +100,30 @@ export const SCENARIOS: Readonly<Record<string, Scenario>> = {
   "unsupported-wsl": {
     snapshot: "contract/unsupported-wsl.json",
   },
+
+  /** Offline for long enough that the last update check has gone stale. */
+  "offline-stale": { snapshot: "contract/offline-stale.json" },
+
+  /** The producer could only report part of the machine. */
+  partial: { snapshot: "contract/partial.json" },
+
+  /** Real-world worst-case string lengths; a UI stress state, not a golden. */
+  "long-content": { snapshot: "e2e/long-content.json" },
+
+  /** An install that fails mid-download with a realistic multi-line error. */
+  "install-fails": {
+    snapshot: "contract/setup-required.json",
+    mutations: {
+      "prefix:install sdk": {
+        exit: 1,
+        delayMs: 1500,
+        stderr:
+          "error: the download was interrupted after 312 MB\n" +
+          "caused by: connection reset by peer\n" +
+          "help: check the network connection and try again\n",
+      },
+    },
+  },
 } as const;
 
 /** Which scenario a spec file boots into, keyed by file name. */
@@ -108,4 +136,21 @@ export const SPEC_SCENARIOS: Readonly<Record<string, string>> = {
   "routing.e2e.ts": "healthy",
   "unsupported.e2e.ts": "unsupported-wsl",
   "deliberate-failure.e2e.ts": "healthy",
+  "overview.visual.ts": "healthy",
+  "setup.visual.ts": "setup-required",
+  "attention.visual.ts": "attention",
+  "unsupported.visual.ts": "unsupported-wsl",
+  "stale.visual.ts": "offline-stale",
+  "partial.visual.ts": "partial",
+  "activity.visual.ts": "attention",
+  "long-content.visual.ts": "long-content",
+  "failure.visual.ts": "install-fails",
+  "compact.visual.ts": "long-content",
+  "axe-healthy.a11y.ts": "healthy",
+  "axe-setup.a11y.ts": "setup-required",
+  "axe-attention.a11y.ts": "attention",
+  "axe-unsupported.a11y.ts": "unsupported-wsl",
+  "keyboard.a11y.ts": "healthy",
+  "keyboard-flows.a11y.ts": "setup-required",
+  "reduced-motion.a11y.ts": "setup-required",
 };

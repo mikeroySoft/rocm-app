@@ -267,6 +267,7 @@ fn reconcile_autostart_on_launch(app: &AppHandle, platform: HostPlatform) -> boo
     let os_enabled = manager.is_enabled().unwrap_or(false);
     match reconcile_autostart(desired, os_enabled) {
         AutostartAction::Enable => {
+            ensure_autostart_dir();
             let _ = manager.enable();
         }
         AutostartAction::Disable => {
@@ -539,6 +540,7 @@ fn apply_autostart(app: &AppHandle, host: &TrayHost, enabled: bool) -> Autostart
     save_autostart_preference(app, enabled);
     let manager = app.autolaunch();
     let outcome = if enabled {
+        ensure_autostart_dir();
         manager.enable()
     } else {
         manager.disable()
@@ -557,6 +559,34 @@ fn apply_autostart(app: &AppHandle, host: &TrayHost, enabled: bool) -> Autostart
         },
     }
 }
+
+/// Where the Linux autostart entry goes, resolved the way the backend does.
+///
+/// `auto-launch` 0.5 hardcodes `dirs::home_dir()/.config/autostart` — it does
+/// **not** consult `XDG_CONFIG_HOME` — and creates the leaf with a bare
+/// `fs::create_dir`, which fails with ENOENT whenever `~/.config` itself is
+/// absent. A genuinely fresh account lacks `~/.config`; desktops create it
+/// lazily. Verified against the vendored crate source, not its docs.
+#[cfg(target_os = "linux")]
+fn autostart_dir(home: Option<&std::ffi::OsStr>) -> Option<std::path::PathBuf> {
+    home.filter(|value| !value.is_empty())
+        .map(|home| std::path::Path::new(home).join(".config").join("autostart"))
+}
+
+/// The first "Start at login" toggle on a first-day machine failed with
+/// "No such file or directory" because of the backend behaviour above.
+/// Creating the directory is idempotent; a real failure still surfaces
+/// through `enable()`, which the caller reports honestly.
+#[cfg(target_os = "linux")]
+fn ensure_autostart_dir() {
+    if let Some(dir) = autostart_dir(std::env::var_os("HOME").as_deref()) {
+        let _ = std::fs::create_dir_all(dir);
+    }
+}
+
+/// Windows registers a Run key and macOS is out of scope; nothing to create.
+#[cfg(not(target_os = "linux"))]
+const fn ensure_autostart_dir() {}
 
 fn autostart_detail(enabled: bool) -> String {
     if enabled {
@@ -644,6 +674,18 @@ pub fn tray_open_full(app: AppHandle, surface: Option<FullSurface>) {
     }
 }
 
+/// Dismiss the compact window without opening anything.
+///
+/// Esc in the panel calls this. The window is undecorated and always on top,
+/// so it has no close button and no title bar; without a keyboard dismissal
+/// the only ways out are pointer paths — the tray toggle or the hand-off
+/// button. Same rule as `tray_open_full`: the hide happens here so the
+/// frontend needs no window-manipulation permission.
+#[tauri::command]
+pub fn tray_hide_quick(app: AppHandle) {
+    hide_window(&app, QUICK_WINDOW);
+}
+
 // ---------------------------------------------------------------------------
 // Desktop notifications
 // ---------------------------------------------------------------------------
@@ -709,6 +751,26 @@ mod tests {
             .expect("deserialize");
             assert_eq!(read, chosen);
         }
+    }
+
+    /// Regression: the first "Start at login" toggle on a fresh account
+    /// failed with ENOENT. `auto-launch` 0.5 hardcodes
+    /// `home_dir()/.config/autostart` (no `XDG_CONFIG_HOME`), and its bare
+    /// `create_dir` cannot make the missing `~/.config` parent. The resolver
+    /// must mirror exactly that lookup, and invent nothing without a home.
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn tray_host_autostart_dir_follows_the_backend_lookup() {
+        use std::ffi::OsStr;
+        use std::path::PathBuf;
+
+        assert_eq!(
+            autostart_dir(Some(OsStr::new("/home/u"))),
+            Some(PathBuf::from("/home/u/.config/autostart")),
+        );
+        // An empty variable is unset in spirit, not a root to write under.
+        assert_eq!(autostart_dir(Some(OsStr::new(""))), None);
+        assert_eq!(autostart_dir(None), None);
     }
 
     /// The dangerous default. An unreadable preference must read as "no choice

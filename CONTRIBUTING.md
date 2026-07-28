@@ -27,7 +27,7 @@ authentication will not verify your commits.
 
 **Never widen the platform gate.** `HostPlatform::install_allowed` is the single
 place that decides whether a host may be offered a mutation. When it returns
-false the control must be *omitted*, not disabled — a greyed-out Install button
+false the control must be _omitted_, not disabled — a greyed-out Install button
 on WSL still promises the operation is nearly available.
 
 **Never add a driver mutation.** Driver data is read-only in the types, the UI,

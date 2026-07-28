@@ -128,13 +128,20 @@ export const config: WebdriverIO.Config = {
     env["ROCM_FIXTURE_JOURNAL"] = join(stateRoot, "fixture-journal.jsonl");
     process.env["ROCM_E2E_ENV"] = JSON.stringify(env);
 
+    // WebKitGTK folds fractional font-DPI scale into the device pixel ratio;
+    // this is the one host-level text-scale mechanism the webview honours —
+    // measured, gtk-xft-dpi does nothing.
+    const visualScale = process.env["ROCM_VISUAL_SCALE"];
+    if (visualScale && visualScale !== "1" && visualScale !== "1.0") {
+      env["GDK_DPI_SCALE"] = visualScale;
+    }
     driver = await startDriver(env, join(root, "logs"), PORT);
 
     const application = join(stateRoot, "bin", WINDOWS ? "rocm-app.exe" : "rocm-app");
     for (const capability of capabilities as WebdriverIO.Capabilities[]) {
-      const options = (capability as unknown as Record<string, { application: string } | undefined>)[
-        "tauri:options"
-      ];
+      const options = (
+        capability as unknown as Record<string, { application: string } | undefined>
+      )["tauri:options"];
       if (options) {
         options.application = application;
       }
@@ -165,7 +172,11 @@ export const config: WebdriverIO.Config = {
       .catch((error: unknown) => ({ unavailable: String(error) }));
     writeFileSync(
       join(dir, "browser-log.json"),
-      JSON.stringify(logs ?? { unavailable: "this WebDriver session exposes no browser log" }, null, 2),
+      JSON.stringify(
+        logs ?? { unavailable: "this WebDriver session exposes no browser log" },
+        null,
+        2,
+      ),
     );
   },
 
@@ -180,7 +191,10 @@ export const config: WebdriverIO.Config = {
     }
     // The last word on isolation: sentinels intact, and no marker anywhere in
     // what the run is about to upload.
-    const report = verifyIsolation(join(root, "state"), [join(root, "artifacts"), join(root, "logs")]);
+    const report = verifyIsolation(join(root, "state"), [
+      join(root, "artifacts"),
+      join(root, "logs"),
+    ]);
     writeFileSync(join(root, "isolation-verify.txt"), report);
     process.stdout.write(report.endsWith("\n") ? report : `${report}\n`);
   },

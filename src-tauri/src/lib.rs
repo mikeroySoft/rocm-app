@@ -108,6 +108,7 @@ pub fn run() {
             tray_host::tray_autostart_state,
             tray_host::tray_set_autostart,
             tray_host::tray_open_full,
+            tray_host::tray_hide_quick,
         ])
         .build(tauri::generate_context!())
         .expect("failed to start ROCm App");

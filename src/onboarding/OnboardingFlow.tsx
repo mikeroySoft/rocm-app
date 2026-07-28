@@ -154,12 +154,21 @@ export default function OnboardingFlow({ backend, onFinished }: OnboardingFlowPr
         }
       })
       .catch((error: unknown) => {
-        setOutcome({
-          kind: "failed",
-          message: messageOf(error),
-          detail: null,
-          recoverable: true,
-        });
+        // The progress stream is the richer source: an operation failure
+        // arrives as a `failed` event carrying the CLI's own words, and the
+        // command's rejection follows it. Overwriting here would flatten
+        // that detail to null — so this only speaks when the stream never
+        // settled, which is a transport failure rather than an operation
+        // failure.
+        setOutcome(
+          (current) =>
+            current ?? {
+              kind: "failed",
+              message: messageOf(error),
+              detail: null,
+              recoverable: true,
+            },
+        );
         setStep("result");
       });
   }, [backend, plan]);
@@ -521,7 +530,7 @@ function ResultCard({
         {outcome.message}
       </p>
       {outcome.kind === "failed" && outcome.detail !== null && (
-        <p className="onboard__muted" data-testid="outcome-detail">
+        <p className="onboard__muted prewrap" data-testid="outcome-detail">
           {outcome.detail}
         </p>
       )}

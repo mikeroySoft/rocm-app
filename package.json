@@ -1,7 +1,7 @@
 {
   "name": "rocm-app",
   "version": "0.1.0",
-  "description": "ROCm App \u2014 install, update, change, monitor, and diagnose managed ROCm on Radeon and Ryzen AI systems.",
+  "description": "ROCm App — install, update, change, monitor, and diagnose managed ROCm on Radeon and Ryzen AI systems.",
   "license": "MIT",
   "private": true,
   "type": "module",
@@ -22,7 +22,9 @@
     "package:verify": "python3 scripts/package_verify.py",
     "stage": "python3 scripts/stage_cli.py",
     "test:e2e": "wdio run tests/e2e/wdio.conf.ts",
-    "test:e2e:fixture": "python3 scripts/e2e_selftest.py"
+    "test:e2e:fixture": "python3 scripts/e2e_selftest.py",
+    "test:visual": "python3 scripts/ui_quality.py --suite visual",
+    "test:a11y": "python3 scripts/ui_quality.py --suite a11y"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.11.1",
@@ -44,6 +46,7 @@
     "@wdio/local-runner": "^9.30.0",
     "@wdio/mocha-framework": "^9.30.0",
     "@wdio/spec-reporter": "^9.29.1",
+    "axe-core": "^4.12.1",
     "eslint": "^10.8.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.3",

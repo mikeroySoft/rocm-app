@@ -3,26 +3,75 @@
  *
  * SPDX-License-Identifier: MIT
  *
- * Light-first baseline tokens. Phase 12 owns the final visual system; this file
- * exists so Phase 1 renders legibly and so the status colours are never the
- * only carrier of meaning.
+ * The visual system. Light-first, calm, and legible at a glance.
+ *
+ * Rules the whole file follows:
+ *
+ * - Colour never carries a state alone. Every status ships as text from the
+ *   backend; these rules only tint words that are already on screen, so a
+ *   monochrome or screen-reader reading loses nothing.
+ * - Every text/background pair below holds WCAG AA (≥ 4.5:1). The palette was
+ *   checked pair-by-pair; if you change a token, re-run the a11y suite —
+ *   `npm run test:a11y` measures the rendered result, not this comment.
+ * - Long values (GPU names, versions, paths, URLs) wrap instead of pushing
+ *   layout: every grid value column is `minmax(0, 1fr)` and value cells set
+ *   `overflow-wrap`. lspci strings are the test case, not the exception.
+ * - Motion is decorative and small, and all of it dies under
+ *   `prefers-reduced-motion: reduce` (the block at the end of this file).
+ * - One focus language: a 2px accent outline, offset so it never melts into
+ *   a control's own border.
  */
 
 :root {
-  --bg: #ffffff;
-  --fg: #14161a;
-  --muted: #5b6270;
-  --border: #d8dce3;
-  --ok: #0f7b3f;
+  color-scheme: light;
+
+  /* Canvas and surfaces */
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --surface-sunken: #eef0f3;
+
+  /* Ink */
+  --fg: #17191d;
+  --muted: #565d6a;
+
+  /* Lines */
+  --border: #d9dde3;
+  --border-strong: #adb5c0;
+
+  /* Status ink — all ≥ 5.5:1 on --surface and on their quiet tints */
+  --ok: #106b39;
   --warn: #8a5300;
   --bad: #b3261e;
-  --unknown: #5b6270;
+  --unknown: #565d6a;
+  --ok-quiet: #e6f4ec;
+  --warn-quiet: #f7efe2;
+  --bad-quiet: #fbeae9;
+  --unknown-quiet: #edeff2;
+
+  /* Action */
+  --accent: #0b5cd5;
+  --accent-hover: #0a51bb;
+  --accent-quiet: #e8f0fd;
+  --focus: #0b5cd5;
+
+  /* Shape and depth */
   --radius: 10px;
+  --radius-sm: 8px;
+  --shadow-1: 0 1px 2px rgb(23 25 29 / 0.05), 0 1px 3px rgb(23 25 29 / 0.07);
+
   --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", "Consolas", "DejaVu Sans Mono", monospace;
 }
 
 * {
   box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
+  /* Keyboard focus and scrollIntoView must never land under the sticky
+   * navigation bar. */
+  scroll-padding-top: 64px;
 }
 
 body {
@@ -33,6 +82,34 @@ body {
   font-size: 14px;
   line-height: 1.5;
 }
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  background: var(--surface-sunken);
+  padding: 1px 5px;
+  border-radius: 5px;
+  overflow-wrap: anywhere;
+}
+
+/* One focus language for every interactive element. `:where()` keeps the
+ * specificity at zero so a component can strengthen it, but nothing below
+ * needs to — the scattered per-scope copies this replaces were identical. */
+:where(button, a, input, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Backend detail strings arrive with their own line breaks (CLI stderr,
+ * OS errors with paths). Keep the breaks, break the unbreakable. */
+.prewrap {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* --------------------------------------------------------------------------
+ * App shell (fixture landing card)
+ * ------------------------------------------------------------------------ */
 
 .app {
   padding: 20px;
@@ -65,6 +142,8 @@ body {
   border: 1px solid var(--border);
   border-left-width: 4px;
   border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
   padding: 16px;
   display: flex;
   flex-direction: column;
@@ -114,36 +193,55 @@ body {
   align-self: flex-start;
   padding: 8px 14px;
   border: 1px solid transparent;
-  border-radius: 8px;
-  background: #0b5cd5;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
   color: #ffffff;
   font: inherit;
   font-weight: 600;
   cursor: pointer;
 }
 
-.card__action:focus-visible {
-  outline: 2px solid #0b5cd5;
-  outline-offset: 2px;
+/* --------------------------------------------------------------------------
+ * Shell navigation
+ *
+ * A real bar rather than floating chips: it stays put while the page
+ * scrolls, so "Back to overview" can never be scrolled out of reach.
+ * ------------------------------------------------------------------------ */
+
+.shell__nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  /* Line the bar's content up with the centred 780px column below it. */
+  padding: 10px max(20px, calc((100vw - 740px) / 2));
+  display: flex;
+  gap: 8px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation: none !important;
-    transition: none !important;
-  }
+.shell__nav button {
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-weight: 550;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.shell__nav button:hover {
+  background: var(--surface-sunken);
 }
 
 /* --------------------------------------------------------------------------
  * Guided setup
- *
- * Structural only. Phase 12 owns the visual system; what matters here is that
- * one action reads as primary, progress is visible, and focus is never
- * invisible.
  * ------------------------------------------------------------------------ */
 
 .onboard {
-  padding: 24px 20px;
+  padding: 28px 20px 32px;
   max-width: 640px;
   margin: 0 auto;
   display: flex;
@@ -153,12 +251,14 @@ body {
 
 .onboard__title {
   margin: 0;
-  font-size: 20px;
-  font-weight: 650;
+  font-size: 22px;
+  font-weight: 660;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
 }
 
 .onboard__title:focus-visible {
-  outline: 2px solid #0b5cd5;
+  outline: 2px solid var(--focus);
   outline-offset: 4px;
 }
 
@@ -183,17 +283,23 @@ body {
   padding: 10px 12px;
   border: 1px solid var(--bad);
   border-radius: var(--radius);
+  background: var(--bad-quiet);
   color: var(--bad);
+  /* Refusals can carry CLI stderr, which arrives with its own line breaks. */
+  white-space: pre-line;
+  overflow-wrap: anywhere;
 }
 
 .onboard__facts {
   margin: 0;
   display: grid;
-  grid-template-columns: max-content 1fr;
+  grid-template-columns: max-content minmax(0, 1fr);
   gap: 6px 16px;
-  padding: 12px 14px;
+  padding: 14px 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
 }
 
 .onboard__fact {
@@ -207,6 +313,8 @@ body {
 .onboard__fact dd {
   margin: 0;
   font-weight: 550;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .onboard__steps {
@@ -219,9 +327,9 @@ body {
 
 .onboard__badge {
   margin-left: 8px;
-  padding: 1px 6px;
+  padding: 1px 8px;
   border-radius: 999px;
-  background: #fff3d6;
+  background: var(--warn-quiet);
   color: var(--warn);
   font-size: 11px;
   font-weight: 650;
@@ -229,14 +337,19 @@ body {
 
 .onboard__driver,
 .onboard__advanced {
-  padding: 10px 12px;
+  padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  background: var(--surface);
 }
 
 .onboard__advanced summary {
   cursor: pointer;
   font-weight: 600;
+}
+
+.onboard__advanced summary:hover {
+  color: var(--accent);
 }
 
 .onboard__fieldset {
@@ -264,8 +377,9 @@ body {
 
 .onboard__field input {
   padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
   font: inherit;
   color: var(--fg);
 }
@@ -276,15 +390,28 @@ body {
   gap: 8px;
 }
 
+/* Folder suggestions are real paths; a long one wraps inside its button
+ * instead of forcing the row wide. */
+.onboard__choices button {
+  max-width: 100%;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
 .onboard__links {
   margin: 8px 0 0;
   padding-left: 18px;
 }
 
+.onboard__links a,
+.dash__links a {
+  color: var(--accent);
+}
+
 .onboard__bar {
   height: 6px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #0b5cd5 0%, #6ea8fb 50%, #0b5cd5 100%);
+  background: linear-gradient(90deg, var(--accent) 0%, #6ea8fb 50%, var(--accent) 100%);
   background-size: 200% 100%;
   animation: onboard-sweep 1.6s linear infinite;
 }
@@ -303,26 +430,37 @@ body {
   padding: 10px 12px 10px 28px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  background: var(--surface-sunken);
   color: var(--muted);
   font-size: 13px;
   max-height: 200px;
   overflow-y: auto;
+  overflow-wrap: anywhere;
 }
 
 .onboard__actions {
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .onboard button {
   padding: 8px 14px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: #ffffff;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
   color: var(--fg);
   font: inherit;
+  font-weight: 550;
   cursor: pointer;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.onboard button:hover {
+  background: var(--surface-sunken);
 }
 
 /* Written as `.onboard button.onboard__primary` so it outranks the generic
@@ -330,14 +468,13 @@ body {
  * specificity and the primary action renders as an ordinary button. */
 .onboard button.onboard__primary {
   border-color: transparent;
-  background: #0b5cd5;
+  background: var(--accent);
   color: #ffffff;
   font-weight: 600;
 }
 
-.onboard button:focus-visible {
-  outline: 2px solid #0b5cd5;
-  outline-offset: 2px;
+.onboard button.onboard__primary:hover {
+  background: var(--accent-hover);
 }
 
 /* A details toggle is not a primary action: keep it to its own width instead
@@ -354,14 +491,10 @@ body {
 
 /* --------------------------------------------------------------------------
  * Overview
- *
- * Structural only; Phase 12 owns the visual system. The rule that matters
- * here is that colour is never the only carrier of a state — every status
- * ships as text from the backend, and these rules only tint it.
  * ------------------------------------------------------------------------ */
 
 .dash {
-  padding: 24px 20px;
+  padding: 24px 20px 32px;
   max-width: 780px;
   margin: 0 auto;
   display: flex;
@@ -372,11 +505,17 @@ body {
 .dash__header {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
+/* The verdict is a pill: tinted ground, dark status ink, and the word itself.
+ * The tint is redundant with the text on purpose. */
 .dash__verdict {
   margin: 0;
+  align-self: flex-start;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--unknown-quiet);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -385,21 +524,25 @@ body {
 }
 
 .dash__verdict[data-value="healthy"] {
+  background: var(--ok-quiet);
   color: var(--ok);
 }
 .dash__verdict[data-value="setup-required"],
 .dash__verdict[data-value="unknown"] {
+  background: var(--warn-quiet);
   color: var(--warn);
 }
 .dash__verdict[data-value="attention"] {
+  background: var(--bad-quiet);
   color: var(--bad);
 }
 
 .dash__title {
   margin: 0;
-  font-size: 20px;
-  font-weight: 650;
-  line-height: 1.3;
+  font-size: 22px;
+  font-weight: 660;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
 }
 
 .dash__subtitle {
@@ -416,6 +559,7 @@ body {
   margin: 0;
   color: var(--muted);
   font-size: 13px;
+  overflow-wrap: anywhere;
 }
 
 .dash__actions {
@@ -427,31 +571,38 @@ body {
 
 .dash button {
   padding: 7px 13px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: #ffffff;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
   color: var(--fg);
   font: inherit;
+  font-weight: 550;
   cursor: pointer;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.dash button:hover {
+  background: var(--surface-sunken);
 }
 
 .dash button.dash__primary {
   border-color: transparent;
-  background: #0b5cd5;
+  background: var(--accent);
   color: #ffffff;
   font-weight: 600;
 }
 
-.dash button:focus-visible {
-  outline: 2px solid #0b5cd5;
-  outline-offset: 2px;
+.dash button.dash__primary:hover {
+  background: var(--accent-hover);
 }
 
 .dash__facts,
 .dash__metrics {
   margin: 0;
   display: grid;
-  grid-template-columns: max-content 1fr;
+  grid-template-columns: max-content minmax(0, 1fr);
   gap: 6px 16px;
 }
 
@@ -469,6 +620,8 @@ body {
 .dash__metric dd {
   margin: 0;
   font-weight: 550;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .dash__metric dd[data-state="unavailable"] {
@@ -477,11 +630,13 @@ body {
 }
 
 /* The value and its gauge share a row; a fixed min-width collided with a
- * long reading like "12 GB of 32 GB" and drew the bar over the text. */
+ * long reading like "12 GB of 32 GB" and drew the bar over the text. The row
+ * wraps instead, so a long reading pushes the gauge down, never under. */
 .dash__metric dd[data-state="reading"] {
   display: flex;
   align-items: center;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 8px 12px;
 }
 
 .dash__metric-value {
@@ -494,27 +649,33 @@ body {
   block-size: 6px;
   vertical-align: middle;
   border-radius: 999px;
-  background: var(--border);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
   overflow: hidden;
 }
 
 .dash__gauge > span {
   display: block;
   block-size: 100%;
-  background: #0b5cd5;
+  border-radius: inherit;
+  background: var(--accent);
 }
 
 .dash__panel {
-  padding: 14px 16px;
+  padding: 16px 18px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
 }
 
 .dash__notices {
   margin: 0;
   padding: 12px 16px 12px 32px;
   border: 1px solid var(--warn);
+  border-left-width: 4px;
   border-radius: var(--radius);
+  background: var(--warn-quiet);
   color: var(--warn);
   display: flex;
   flex-direction: column;
@@ -530,9 +691,15 @@ body {
 .dash__table th,
 .dash__table td {
   text-align: start;
-  padding: 6px 8px;
+  padding: 7px 8px;
   border-block-end: 1px solid var(--border);
   vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.dash__table tr:last-child th,
+.dash__table tr:last-child td {
+  border-block-end: 0;
 }
 
 .dash__table thead th {
@@ -567,25 +734,14 @@ body {
   padding-inline-start: 18px;
 }
 
+/* A single action is its own width, not a full-width bar across the column. */
+.dash > button {
+  align-self: flex-start;
+}
+
 /* --------------------------------------------------------------------------
- * ROCm Installs
+ * ROCm versions
  * ------------------------------------------------------------------------ */
-
-.shell__nav {
-  max-width: 780px;
-  margin: 0 auto 24px;
-  padding: 0 20px;
-}
-
-.shell__nav button {
-  padding: 7px 13px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: #ffffff;
-  color: var(--fg);
-  font: inherit;
-  cursor: pointer;
-}
 
 .runtimes {
   margin: 0;
@@ -600,6 +756,8 @@ body {
   padding: 14px 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -616,13 +774,14 @@ body {
   margin: 0;
   font-size: 15px;
   font-weight: 650;
+  overflow-wrap: anywhere;
 }
 
 .runtimes__badge {
   padding: 1px 8px;
   border-radius: 999px;
-  background: #e8f0fe;
-  color: #0b5cd5;
+  background: var(--accent-quiet);
+  color: var(--accent);
   font-size: 11px;
   font-weight: 650;
 }
@@ -657,31 +816,38 @@ body {
 
 .runtimes__row button {
   padding: 6px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: #ffffff;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
   color: var(--fg);
   font: inherit;
+  font-weight: 550;
   cursor: pointer;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease;
 }
 
-.runtimes__row button:focus-visible,
-.shell__nav button:focus-visible {
-  outline: 2px solid #0b5cd5;
-  outline-offset: 2px;
+.runtimes__row button:hover {
+  background: var(--surface-sunken);
 }
 
-/* A single action is its own width, not a full-width bar across the column. */
-.dash > button {
-  align-self: flex-start;
+/* Values behind the "Details" disclosure are raw identifiers and paths. */
+.runtimes__row details .dash__facts dd {
+  font-weight: 450;
+  font-family: var(--font-mono);
+  font-size: 12px;
 }
 
 /* --------------------------------------------------------------------------
  * Compact tray window
  *
- * 380x300, undecorated, always on top: there is no title bar and no room to
- * scroll, so this owns its own padding and the healthy state has to fit. The
- * status word is text first — the accent only tints what it already says.
+ * 380x300, undecorated, always on top: this owns its own padding and the
+ * healthy state has to fit outright at 100% text scale. At raised text
+ * scales the viewport shrinks (WebKitGTK folds text-DPI scale into the
+ * device pixel ratio), vertical scrolling is acceptable, and the facts list
+ * drops to one column rather than squeezing two. The status word is text
+ * first — the accent only tints what it already says.
  * ------------------------------------------------------------------------ */
 
 .quick {
@@ -690,12 +856,16 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  background: var(--surface);
+  /* An undecorated window has no frame of its own; a hairline keeps the
+   * panel legible against any wallpaper. */
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 .quick__status {
   margin: 0;
   font-size: 17px;
-  font-weight: 650;
+  font-weight: 660;
   color: var(--unknown);
 }
 
@@ -716,12 +886,13 @@ body {
 .quick__reason {
   margin: 0;
   color: var(--muted);
+  overflow-wrap: anywhere;
 }
 
 .quick__facts {
   margin: 0;
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 2px 12px;
   font-size: 13px;
 }
@@ -737,12 +908,15 @@ body {
 .quick__fact dd {
   margin: 0;
   font-weight: 550;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 /* Pinned to the bottom of the fixed height so the controls do not move as the
  * facts above them change length. */
 .quick__actions {
   margin-block-start: auto;
+  padding-block-start: 8px;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -750,24 +924,50 @@ body {
 
 .quick button {
   padding: 6px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: #ffffff;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
   color: var(--fg);
   font: inherit;
+  font-weight: 550;
   cursor: pointer;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.quick button:hover {
+  background: var(--surface-sunken);
 }
 
 .quick button.quick__primary {
-  border-color: #0b5cd5;
-  background: #0b5cd5;
+  border-color: transparent;
+  background: var(--accent);
   color: #ffffff;
   font-weight: 600;
 }
 
-.quick button:focus-visible {
-  outline: 2px solid #0b5cd5;
-  outline-offset: 2px;
+.quick button.quick__primary:hover {
+  background: var(--accent-hover);
+}
+
+/* 200% text scale leaves ~190 CSS px of width: one fact per line, tighter
+ * frame, and the buttons take the full width they are given. */
+@media (max-width: 260px) {
+  .quick {
+    padding: 10px 12px;
+    gap: 6px;
+  }
+  .quick__facts {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .quick__facts dd {
+    margin-block-end: 6px;
+  }
+  .quick button {
+    flex: 1 1 auto;
+  }
 }
 
 /* --------------------------------------------------------------------------
@@ -775,7 +975,7 @@ body {
  * ------------------------------------------------------------------------ */
 
 .settings {
-  padding: 20px;
+  padding: 24px 20px 32px;
   max-width: 780px;
   margin: 0 auto;
   display: flex;
@@ -787,6 +987,8 @@ body {
   padding: 14px 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -807,11 +1009,6 @@ body {
   cursor: default;
 }
 
-.settings__toggle input:focus-visible {
-  outline: 2px solid #0b5cd5;
-  outline-offset: 2px;
-}
-
 .settings__detail {
   margin: 0;
   color: var(--muted);
@@ -821,14 +1018,13 @@ body {
 /* --------------------------------------------------------------------------
  * Activity
  *
- * Structural only; Phase 12 owns the visual system. The rule that matters
- * here is the same one the rest of the file follows: the severity accent only
- * tints a word the row already spells out, so a colour-blind reader loses
- * nothing. The record rows are buttons, so they carry their own reset.
+ * The severity accent only tints a word the row already spells out, so a
+ * colour-blind reader loses nothing. The record rows are buttons, so they
+ * carry their own reset.
  * ------------------------------------------------------------------------ */
 
 .logs {
-  padding: 20px;
+  padding: 24px 20px 32px;
   max-width: 780px;
   margin: 0 auto;
   display: flex;
@@ -840,6 +1036,8 @@ body {
   padding: 14px 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -849,7 +1047,7 @@ body {
   margin: 0;
   padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   display: flex;
   flex-wrap: wrap;
   gap: 6px 16px;
@@ -892,9 +1090,9 @@ body {
 .logs__field input,
 .logs__field select {
   padding: 6px 8px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
   color: var(--fg);
   font: inherit;
 }
@@ -914,8 +1112,8 @@ body {
   width: 100%;
   padding: 8px 10px;
   border: 1px solid transparent;
-  border-radius: 8px;
-  background: var(--bg);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
   color: var(--fg);
   font: inherit;
   text-align: left;
@@ -924,19 +1122,16 @@ body {
   grid-template-columns: minmax(0, 10rem) minmax(0, 12rem) minmax(0, 7rem) minmax(0, 1fr);
   gap: 10px;
   align-items: baseline;
+  transition: border-color 0.12s ease;
 }
 
 .logs__record:hover {
-  border-color: var(--border);
+  border-color: var(--border-strong);
 }
 
 .logs__record[aria-pressed="true"] {
-  border-color: var(--fg);
-}
-
-.logs__record:focus-visible {
-  outline: 2px solid #0b5cd5;
-  outline-offset: 2px;
+  border-color: var(--accent);
+  background: var(--accent-quiet);
 }
 
 .logs__source,
@@ -965,6 +1160,7 @@ body {
 
 .logs__summary {
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .logs__empty,
@@ -973,10 +1169,19 @@ body {
   padding: 14px 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
   display: flex;
   flex-direction: column;
   gap: 8px;
   align-items: flex-start;
+}
+
+/* Selected-record text and export errors carry whatever the backend wrote,
+ * line breaks included. */
+.logs__detail p {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
 }
 
 .logs__pager {
@@ -994,6 +1199,7 @@ body {
   padding-left: 20px;
   color: var(--muted);
   font-size: 13px;
+  overflow-wrap: anywhere;
 }
 
 .logs__receipt,
@@ -1002,6 +1208,8 @@ body {
   flex-direction: column;
   gap: 6px;
   align-items: flex-start;
+  overflow-wrap: anywhere;
+  max-width: 100%;
 }
 
 .logs__refused {
@@ -1009,21 +1217,39 @@ body {
   padding-left: 10px;
 }
 
+.logs__refused p {
+  white-space: pre-line;
+}
+
 .logs button {
   padding: 7px 13px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
   color: var(--fg);
   font: inherit;
+  font-weight: 550;
   cursor: pointer;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.logs button:hover:not(:disabled) {
+  background: var(--surface-sunken);
 }
 
 /* Written as `.logs button.dash__primary` so it outranks the `.logs button`
  * reset above; the single-class form loses on specificity. */
 .logs button.dash__primary {
-  border-color: var(--fg);
+  border-color: transparent;
+  background: var(--accent);
+  color: #ffffff;
   font-weight: 600;
+}
+
+.logs button.dash__primary:hover:not(:disabled) {
+  background: var(--accent-hover);
 }
 
 .logs button:disabled {
@@ -1031,25 +1257,21 @@ body {
   cursor: default;
 }
 
-.logs button:focus-visible,
-.logs input:focus-visible,
-.logs select:focus-visible,
-.logs summary:focus-visible {
-  outline: 2px solid #0b5cd5;
-  outline-offset: 2px;
+.logs button.dash__primary:disabled {
+  background: var(--surface-sunken);
+  border-color: var(--border);
 }
 
 /* --------------------------------------------------------------------------
  * Diagnose
  *
- * Same rule as everywhere else: the confidence accent tints the reviewed
- * wording the backend already sent, and never replaces it. A blocked fix
- * reads as a sentence, so it is styled as prose rather than as a dead
- * control.
+ * The confidence accent tints the reviewed wording the backend already sent,
+ * and never replaces it. A blocked fix reads as a sentence, so it is styled
+ * as prose rather than as a dead control.
  * ------------------------------------------------------------------------ */
 
 .diagnostics {
-  padding: 20px;
+  padding: 24px 20px 32px;
   max-width: 780px;
   margin: 0 auto;
   display: flex;
@@ -1072,9 +1294,9 @@ body {
 .diagnostics__symptom input {
   flex: 1 1 16rem;
   padding: 6px 8px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
   color: var(--fg);
   font: inherit;
 }
@@ -1100,6 +1322,8 @@ body {
   padding: 14px 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1128,6 +1352,7 @@ body {
   padding-left: 20px;
   color: var(--muted);
   font-size: 13px;
+  overflow-wrap: anywhere;
 }
 
 .diagnostics__fix {
@@ -1136,6 +1361,14 @@ body {
   gap: 8px;
   align-items: flex-start;
   width: 100%;
+}
+
+.diagnostics__fix .onboard__advanced {
+  align-self: stretch;
+}
+
+.diagnostics__verify {
+  overflow-wrap: anywhere;
 }
 
 .diagnostics__blocked {
@@ -1148,22 +1381,45 @@ body {
 
 .diagnostics button {
   padding: 7px 13px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
   color: var(--fg);
   font: inherit;
+  font-weight: 550;
   cursor: pointer;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.diagnostics button:hover {
+  background: var(--surface-sunken);
 }
 
 .diagnostics button.dash__primary {
-  border-color: var(--fg);
+  border-color: transparent;
+  background: var(--accent);
+  color: #ffffff;
   font-weight: 600;
 }
 
-.diagnostics button:focus-visible,
-.diagnostics input:focus-visible,
-.diagnostics a:focus-visible {
-  outline: 2px solid #0b5cd5;
-  outline-offset: 2px;
+.diagnostics button.dash__primary:hover {
+  background: var(--accent-hover);
+}
+
+.diagnostics a {
+  color: var(--accent);
+}
+
+/* --------------------------------------------------------------------------
+ * Motion policy: everything above is decorative. Kill all of it when the
+ * desktop asks for reduced motion.
+ * ------------------------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
 }

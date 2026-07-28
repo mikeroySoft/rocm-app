@@ -213,6 +213,43 @@ describe("runtimes review and apply", () => {
     expect(outcome).toHaveTextContent(/unchanged/i);
   });
 
+  /**
+   * Regression: a failed operation delivers a terminal `failed` event and
+   * then the command rejects. The rejection used to yank the user back to
+   * the list with a banner, replacing the outcome screen they were reading.
+   */
+  it("stays on the outcome screen when the command also rejects", async () => {
+    const failed: ProgressEvent = {
+      event: "failed",
+      operationId: ACTIVATION_PLAN.id,
+      error: {
+        code: "process",
+        message: "A ROCm command did not finish successfully.",
+        recoverable: true,
+        detail: "exit status 1",
+      },
+    };
+    const base = fixtureRuntimes("installed", { plan: ACTIVATION_PLAN, events: [failed] });
+    const backend: typeof base = {
+      ...base,
+      execute: async (approval, onEvent) => {
+        await base.execute(approval, onEvent);
+        throw new Error("exit status 1");
+      },
+    };
+    render(<Runtimes backend={backend} />);
+    await screen.findByTestId("rows");
+    const user = userEvent.setup();
+
+    await user.click(screen.getByTestId("action-7.13.0-activate"));
+    await user.click(await screen.findByTestId("apply"));
+
+    const outcome = await screen.findByTestId("outcome");
+    expect(outcome).toHaveAttribute("data-kind", "failed");
+    expect(screen.queryByTestId("refusal")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("rows")).not.toBeInTheDocument();
+  });
+
   it("reports a failed change with the backend's own message", async () => {
     const failed: ProgressEvent = {
       event: "failed",

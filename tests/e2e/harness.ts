@@ -260,7 +260,10 @@ export function startXvfb(display: string, logDir: string): Started | null {
     return null;
   }
   const log = join(logDir, "xvfb.log");
-  const child = spawn("Xvfb", [display, "-screen", "0", "1400x1050x24", "-nolisten", "tcp"], {
+  // 1920x1200: the visual suite resizes the main window to 1440x900, and a
+  // screen smaller than the window clamps it, so every geometry assertion
+  // would be measuring the clamp instead of the layout.
+  const child = spawn("Xvfb", [display, "-screen", "0", "1920x1200x24", "-nolisten", "tcp"], {
     stdio: ["ignore", "pipe", "pipe"],
     detached: true,
   });
@@ -303,7 +306,25 @@ export async function startDriver(
 
   let program = driver;
   let argv = args;
-  if (!WINDOWS && which("dbus-run-session")) {
+  // ROCM_E2E_BUS=inherit: the ui_quality orchestrator owns a private session
+  // bus shared with the tray watcher; wrapping again would put the app on a
+  // different bus than the watcher and the tray icon would register with
+  // nobody.
+  const inheritBus = process.env["ROCM_E2E_BUS"] === "inherit";
+  if (inheritBus) {
+    // The isolated env is built from scratch, so the orchestrator's bus
+    // address has to be carried across explicitly — without it the app's
+    // libdbus autolaunches a bus of its own and registers with nobody.
+    const address = process.env["DBUS_SESSION_BUS_ADDRESS"];
+    if (!address) {
+      throw new Error(
+        "ROCM_E2E_BUS=inherit but DBUS_SESSION_BUS_ADDRESS is unset; " +
+          "run through scripts/ui_quality.py, which owns the session bus.",
+      );
+    }
+    env["DBUS_SESSION_BUS_ADDRESS"] = address;
+  }
+  if (!WINDOWS && !inheritBus && which("dbus-run-session")) {
     program = "dbus-run-session";
     argv = ["--", driver, ...args];
   }
@@ -380,7 +401,8 @@ export async function stop(started: Started | null): Promise<void> {
 export function stage(stateRoot: string): void {
   const bin = join(stateRoot, "bin");
   mkdirSync(bin, { recursive: true });
-  const app = process.env["ROCM_E2E_APP"] ?? join(REPO, "src-tauri", "target", "release", `rocm-app${EXE}`);
+  const app =
+    process.env["ROCM_E2E_APP"] ?? join(REPO, "src-tauri", "target", "release", `rocm-app${EXE}`);
   const cli =
     process.env["ROCM_E2E_FIXTURE_CLI"] ??
     join(REPO, "src-tauri", "target", "release", `rocm-fixture-cli${EXE}`);
@@ -447,7 +469,10 @@ export function captureArtifacts(label: string, extras: Readonly<Record<string, 
     }
   }
   if (existsSync(paths.journal())) {
-    writeFileSync(join(dir, "fixture-journal.jsonl"), sanitize(readFileSync(paths.journal(), "utf8")));
+    writeFileSync(
+      join(dir, "fixture-journal.jsonl"),
+      sanitize(readFileSync(paths.journal(), "utf8")),
+    );
   }
   return dir;
 }

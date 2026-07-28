@@ -513,25 +513,42 @@ fn freshness_of(observed_at_unix_ms: u64, now_unix_ms: u64) -> Freshness {
     }
 }
 
+/// Humanized age wording. Each unit rolls into the next before the count
+/// stops reading as a duration: "Last checked 4995 hours ago" reads as a bug,
+/// not an age — nobody counts hours past two days, and past two weeks the
+/// exact count stops mattering at all.
 fn age_label(age_ms: u64) -> String {
     const MINUTE: u64 = 60 * 1_000;
     const HOUR: u64 = 60 * MINUTE;
+    const DAY: u64 = 24 * HOUR;
+    const JUST_NOW: u64 = 90 * 1_000;
+    const MINUTES_UNTIL: u64 = HOUR;
+    const HOURS_UNTIL: u64 = 48 * HOUR;
+    const DAYS_UNTIL: u64 = 14 * DAY;
     match age_ms {
-        0..MINUTE => "Checked just now".to_owned(),
-        MINUTE..HOUR => {
+        0..JUST_NOW => "Checked just now".to_owned(),
+        JUST_NOW..MINUTES_UNTIL => {
             let minutes = age_ms / MINUTE;
             format!(
                 "Last checked {minutes} minute{} ago",
                 if minutes == 1 { "" } else { "s" }
             )
         }
-        _ => {
+        MINUTES_UNTIL..HOURS_UNTIL => {
             let hours = age_ms / HOUR;
             format!(
                 "Last checked {hours} hour{} ago",
                 if hours == 1 { "" } else { "s" }
             )
         }
+        HOURS_UNTIL..DAYS_UNTIL => {
+            let days = age_ms / DAY;
+            format!(
+                "Last checked {days} day{} ago",
+                if days == 1 { "" } else { "s" }
+            )
+        }
+        _ => "Last checked more than two weeks ago".to_owned(),
     }
 }
 

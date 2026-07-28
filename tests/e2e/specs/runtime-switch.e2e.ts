@@ -46,13 +46,13 @@ describe("runtime switch", () => {
   });
 
   it("shows the other runtime active once the machine reports it", async () => {
-    await (browser.$("button*=Back to ROCm versions")).click();
+    await browser.$("button*=Back to ROCm versions").click();
     const rows = await waitForTestId("rows");
-    await browser.waitUntil(
-      async () => (await rows.getText()).includes("7.13.0"),
-      { timeout: 20_000, timeoutMsg: "the runtime list never refreshed" },
-    );
-    assert.equal(await (testId("rows")).isDisplayed(), true);
+    await browser.waitUntil(async () => (await rows.getText()).includes("7.13.0"), {
+      timeout: 20_000,
+      timeoutMsg: "the runtime list never refreshed",
+    });
+    assert.equal(await testId("rows").isDisplayed(), true);
   });
 
   it("never invoked a driver command", () => {

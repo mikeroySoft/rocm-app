@@ -540,6 +540,23 @@ mod tests {
         }
     }
 
+    /// `fixtures/e2e/long-content.json` is a hand-derived UI stress artifact,
+    /// not producer output; this test is what keeps it honest against schema
+    /// drift.
+    #[test]
+    fn contract_e2e_long_content_fixture_decodes() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../fixtures/e2e/long-content.json"
+        );
+        let raw = std::fs::read_to_string(path).expect("missing fixtures/e2e/long-content.json");
+        let snapshot = decode(&raw).expect("long-content fixture failed to decode");
+        assert_eq!(snapshot.schema_version, SUPPORTED_SCHEMA_VERSION);
+        assert!(snapshot.platform.install_allowed());
+        assert_eq!(snapshot.health.verdict, HealthVerdict::Healthy);
+        assert!(snapshot.active_runtime().is_some());
+    }
+
     #[test]
     fn contract_golden_verdicts_match_their_names() {
         for (name, expected) in [

@@ -75,6 +75,8 @@ export interface TrayBackend {
   setAutostart(enabled: boolean): Promise<AutostartState>;
   checkNow(): Promise<void>;
   openFull(surface?: FullSurface): Promise<void>;
+  /** Dismiss the compact window; Esc calls this. */
+  hideQuick(): Promise<void>;
 }
 
 export function desktopTray(): TrayBackend {
@@ -101,6 +103,10 @@ export function desktopTray(): TrayBackend {
     openFull: async (surface) => {
       requireTauri();
       await invoke("tray_open_full", surface === undefined ? {} : { surface });
+    },
+    hideQuick: async () => {
+      requireTauri();
+      await invoke("tray_hide_quick");
     },
   };
 }
@@ -163,6 +169,8 @@ export interface TrayCalls {
   checkNow: number;
   /** Autostart writes — the only mutation any tray surface can perform. */
   readonly setAutostart: boolean[];
+  /** Dismissals — a window hide, which changes nothing on the machine. */
+  hidden: number;
 }
 
 export interface FixtureTray extends TrayBackend {
@@ -187,7 +195,7 @@ export function fixtureTray(
 ): FixtureTray {
   const quick = fixtureQuickStatus(name);
   const autostart = options.autostart ?? fixtureAutostart(1);
-  const calls: TrayCalls = { reads: [], opened: [], checkNow: 0, setAutostart: [] };
+  const calls: TrayCalls = { reads: [], opened: [], checkNow: 0, setAutostart: [], hidden: 0 };
   return {
     calls,
     quickStatus: () => {
@@ -210,6 +218,10 @@ export function fixtureTray(
     },
     openFull: (surface) => {
       calls.opened.push(surface);
+      return Promise.resolve();
+    },
+    hideQuick: () => {
+      calls.hidden += 1;
       return Promise.resolve();
     },
   };

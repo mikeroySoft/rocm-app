@@ -27,7 +27,7 @@ describe("compact and full routing", () => {
     const status = await waitForTestId("quick-status");
     assert.ok((await status.getText()).length > 0, "the compact panel showed no status");
     assert.equal(
-      await (testId("manage-versions")).isExisting(),
+      await testId("manage-versions").isExisting(),
       false,
       "the compact panel rendered a full-window control",
     );
@@ -37,7 +37,7 @@ describe("compact and full routing", () => {
     await fullWindow();
     await waitForTestId("verdict");
     assert.equal(
-      await (testId("quick-status")).isExisting(),
+      await testId("quick-status").isExisting(),
       false,
       "the full window rendered the compact panel",
     );

@@ -145,19 +145,19 @@ describe("dashboard telemetry", () => {
   });
 
   /**
-   * Criterion: a collector failure leaves health intact and marks only the
-   * metrics unavailable.
+   * Criterion: a collector failure leaves health intact and marks the metrics
+   * unavailable. When every metric fails for the same reason, that reason is
+   * said once — four rows repeating one sentence bury it.
    */
   it("keeps the health verdict when the collector fails entirely", async () => {
     await show("telemetry-permission");
 
     expect(screen.getByTestId("verdict")).toHaveTextContent("Ready");
     expect(screen.getAllByTestId("component-cli")[0]).toHaveTextContent("0.1.0");
-    for (const key of ["utilization", "vram", "temperature", "power"]) {
-      const metric = screen.getByTestId(`metric-${key}`);
-      expect(metric).toHaveAttribute("data-state", "unavailable");
-      expect(metric.textContent.trim()).not.toBe("");
-    }
+    const collapsed = screen.getByTestId("metrics-unavailable");
+    expect(collapsed).toHaveAttribute("data-state", "unavailable");
+    expect(collapsed.textContent.trim()).not.toBe("");
+    expect(screen.queryByTestId("metrics")).not.toBeInTheDocument();
     expect(screen.getByTestId("notices")).toHaveTextContent(/permission/i);
   });
 

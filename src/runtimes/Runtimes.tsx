@@ -14,7 +14,7 @@
  * setup: `plan` describes, and only an approved plan executes.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { approvalFor } from "../lib/controller";
 import type { ChangePlan, OperationRequest, ProgressEvent } from "../lib/controller";
 import { BLOCK_MESSAGES } from "../lib/runtimes";
@@ -70,11 +70,21 @@ export default function Runtimes({ backend }: RuntimesProps) {
     [backend],
   );
 
+  // Whether the progress stream delivered a terminal event for the running
+  // operation. The command's rejection follows that event, and acting on the
+  // rejection too would yank the user off the outcome screen they are
+  // reading and flatten the CLI's own failure words into a banner.
+  const settled = useRef(false);
+
   const apply = useCallback(
     (plan: ChangePlan) => {
+      settled.current = false;
       setStage({ step: "running", events: [] });
       void backend
         .execute(approvalFor(plan), (event) => {
+          if (isTerminal(event)) {
+            settled.current = true;
+          }
           setStage((current) =>
             isTerminal(event)
               ? { step: "done", event }
@@ -85,6 +95,9 @@ export default function Runtimes({ backend }: RuntimesProps) {
           );
         })
         .catch((cause: unknown) => {
+          if (settled.current) {
+            return;
+          }
           setRefusal(messageOf(cause));
           setStage({ step: "list" });
         });
@@ -146,11 +159,17 @@ export default function Runtimes({ backend }: RuntimesProps) {
             )}
           </section>
 
-          <ul className="runtimes" data-testid="rows">
-            {view.rows.map((row) => (
-              <Row key={row.key} row={row} onAction={review} />
-            ))}
-          </ul>
+          {view.rows.length === 0 ? (
+            <p className="dash__muted" data-testid="rows-empty">
+              No ROCm versions are installed yet. Set up ROCm from the overview to add one.
+            </p>
+          ) : (
+            <ul className="runtimes" data-testid="rows">
+              {view.rows.map((row) => (
+                <Row key={row.key} row={row} onAction={review} />
+              ))}
+            </ul>
+          )}
         </>
       )}
     </main>
@@ -331,7 +350,7 @@ function Done({ event, onBack }: { readonly event: ProgressEvent; readonly onBac
             ? "Stopped"
             : "That change did not finish"}
       </h1>
-      <p className="dash__body" data-testid="outcome" data-kind={kind}>
+      <p className="dash__body prewrap" data-testid="outcome" data-kind={kind}>
         {describe(event)}
       </p>
       <button type="button" className="dash__primary" onClick={onBack}>

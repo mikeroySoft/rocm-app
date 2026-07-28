@@ -13,7 +13,13 @@
 
 import { strict as assert } from "node:assert";
 
-import { assertNoDriverMutation, assertNoMutationYet, fullWindow, testId, waitForTestId } from "../support";
+import {
+  assertNoDriverMutation,
+  assertNoMutationYet,
+  fullWindow,
+  testId,
+  waitForTestId,
+} from "../support";
 
 describe("unsupported host", () => {
   before(async () => {
@@ -41,7 +47,7 @@ describe("unsupported host", () => {
     // Overview, the versions list, and the logs. Only the change controls go.
     for (const id of ["apply", "update-action", "next-action"]) {
       assert.equal(
-        await (testId(id)).isExisting(),
+        await testId(id).isExisting(),
         false,
         `the Overview offered "${id}" on an unsupported host`,
       );

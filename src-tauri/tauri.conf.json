@@ -42,11 +42,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": [
-      "deb",
-      "rpm",
-      "nsis"
-    ],
+    "targets": ["deb", "rpm", "nsis"],
     "publisher": "mikeroysoft",
     "homepage": "https://github.com/mikeroysoft/rocm-app",
     "licenseFile": "../LICENSE",
@@ -60,13 +56,8 @@
     "category": "DeveloperTool",
     "shortDescription": "Manage ROCm on Radeon and Ryzen AI systems.",
     "longDescription": "Install, update, change, monitor, and diagnose managed ROCm runtimes on native Windows and native Linux.",
-    "externalBin": [
-      "binaries/rocm",
-      "binaries/rocmd"
-    ],
-    "resources": [
-      "compatibility.json"
-    ],
+    "externalBin": ["binaries/rocm", "binaries/rocmd"],
+    "resources": ["compatibility.json"],
     "linux": {
       "deb": {
         "section": "devel",
@@ -85,9 +76,7 @@
         "installMode": "currentUser",
         "installerHooks": "packaging/nsis/hooks.nsh",
         "startMenuFolder": "ROCm",
-        "languages": [
-          "English"
-        ]
+        "languages": ["English"]
       }
     }
   }

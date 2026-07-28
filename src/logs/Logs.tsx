@@ -566,7 +566,7 @@ function Empty({
       return (
         <section className="logs__empty" data-testid="empty" data-state="unavailable">
           <p className="dash__body">ROCm App could not read its activity records.</p>
-          <p className="dash__muted" data-testid="empty-detail">
+          <p className="dash__muted prewrap" data-testid="empty-detail">
             {reason.detail}
           </p>
           <button type="button" data-testid="empty-refresh" onClick={onRefresh}>

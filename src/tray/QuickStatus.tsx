@@ -59,6 +59,21 @@ export default function QuickStatus({ backend }: QuickStatusProps) {
     };
   }, [backend]);
 
+  // Esc dismisses the panel. It is undecorated and always on top, so without
+  // this the keyboard has no way to put it away — the mouse paths (the tray
+  // toggle, "Open ROCm App") both live behind a pointer.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        void backend.hideQuick();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [backend]);
+
   const openFull = useCallback(
     (surface?: FullSurface) => {
       void backend.openFull(surface);
@@ -119,7 +134,9 @@ export default function QuickStatus({ backend }: QuickStatusProps) {
         {facts.statusLabel}
       </h1>
 
-      <p className="quick__reason" data-testid="quick-reason">
+      {/* `status` so a screen reader hears the verdict change without the
+          window taking focus; the panel updates itself on a timer. */}
+      <p className="quick__reason" role="status" data-testid="quick-reason">
         {facts.reason}
       </p>
 
