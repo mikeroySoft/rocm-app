@@ -466,11 +466,23 @@ jobs:
           Probe "A (tauri-driver shape, no webviewOptions)" @{ binary = $exe; args = @() }
           Probe "B (with userDataFolder hint)" @{ binary = $exe; args = @(); webviewOptions = @{ userDataFolder = $udf } }
           Stop-Process -Id $driver.Id -Force -ErrorAction SilentlyContinue
+          # Force-killing the driver orphans the app it launched, and the
+          # single-instance plugin then makes every later launch forward to
+          # the orphan and exit immediately — which reads as "Microsoft Edge
+          # failed to start: crashed" in the scenario suite. The probe owns
+          # its mess.
+          Stop-Process -Name rocm-app -Force -ErrorAction SilentlyContinue
           "---- last 40 verbose driver lines ----"
           if (Test-Path $log) { Get-Content $log -Tail 40 }
 
       - name: Desktop scenarios
-        run: npm run test:e2e
+        # The straggler sweep is insurance for the same single-instance
+        # reason: one leftover rocm-app.exe from any earlier step makes all
+        # 7 scenarios fail with a launch that exits instantly.
+        shell: bash
+        run: |
+          taskkill //F //IM rocm-app.exe 2>/dev/null || true
+          npm run test:e2e
 
       - name: Harness failure path
         run: npm run test:e2e:fixture
