@@ -42,6 +42,26 @@ export default tseslint.config(
     rules: { "@typescript-eslint/no-non-null-assertion": "off" },
   },
   {
+    // The desktop suite is Node code with WebdriverIO globals, and it lives
+    // outside the app's tsconfig on purpose: pulling `@wdio/globals/types`
+    // into the root project would put `browser` and `$` in scope for `src`,
+    // where reaching for them is always a mistake.
+    files: ["tests/e2e/**/*.ts"],
+    languageOptions: {
+      globals: { ...globals.node, ...globals.mocha, browser: "readonly" },
+      parserOptions: {
+        projectService: false,
+        project: ["./tsconfig.e2e.json"],
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      // A spec drives a real window; asserting on `null` from the DOM is the
+      // normal case and a non-null assertion is clearer than a cast.
+      "@typescript-eslint/no-non-null-assertion": "off",
+    },
+  },
+  {
     files: ["**/*.js"],
     languageOptions: { globals: globals.node },
   },

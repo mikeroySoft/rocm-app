@@ -19,6 +19,11 @@ Every one of these must exit 0 before a change is considered done.
 | Frontend unit tests | `npm test -- --run` |
 | Rust tests | `cargo test --manifest-path src-tauri/Cargo.toml --all-targets` |
 | Rust lint | `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings` |
+| Workflow pins and platform coverage | `npm run ci:validate` |
+| Desktop end-to-end | `npm run test:e2e` |
+| Harness failure path | `npm run test:e2e:fixture` |
+| Isolation harness | `python3 scripts/fresh_user_smoke.py --self-test` |
+| Native Wayland desktop | `python3 scripts/wayland_desktop_check.py` |
 
 `src-tauri/Cargo.toml` declares `default-members = [".", "crates/rocm-app-core"]`,
 so the two `cargo` gates cover the domain crate as well as the Tauri shell.
@@ -168,3 +173,93 @@ The icon is computed, not shipped: there is no PNG asset and no generator
 script, so a status added without a glyph does not compile. `fixtures/tray.json`
 records each status's glyph mask and colour, so a visual change to them is a
 reviewable diff.
+
+## The desktop suite
+
+`npm run test:e2e` drives the **shipped release binary** through WebdriverIO and
+`tauri-driver`. There is no fixture build, no dev server, and no product flag:
+the specs exercise the React desktop backends, Tauri IPC, the Rust controller,
+and a real `std::process::Command` spawn.
+
+What *is* stood in for is the machine. `src-tauri/crates/rocm-fixture-cli` is a
+`rocm` that answers from a directory of recorded producer output instead of
+touching a GPU, and the harness copies it next to a copy of the app binary — the
+same place an installed CLI lives — so the sibling-lookup rule is exercised
+rather than bypassed. A machine stand-in is legitimate for the same reason the
+`StatusNotifierWatcher` stand-in is: CI has no Radeon card. A *product* stand-in
+would not be.
+
+Every invocation the app makes is appended to a journal
+(`ROCM_FIXTURE_JOURNAL`), which is where three assertions come from that the UI
+cannot be trusted to make about itself:
+
+- **Nothing changed before approval.** The journal holds only reads until the
+  approve click. A screen that says "nothing happened" while a process ran is
+  exactly the failure this catches.
+- **No driver command, anywhere.** Driver mutation is out of scope for this
+  product; the check is `driver`/`--dkms` appearing in no argv on any path.
+- **Isolation held.** Every invocation records the roots it was handed, so the
+  roots the suite set are provably the roots the app passed down.
+
+### Scenarios
+
+One spec file per boot, because the landing surface is decided by the app's
+first snapshot read. `tests/e2e/scenarios.ts` maps each spec to a producer
+golden from `fixtures/contract/`.
+
+| Spec | Scenario | Covers |
+|---|---|---|
+| `first-launch` | `setup-required` | first launch, isolated roots, no change on start |
+| `healthy-boot` | `healthy` | Overview, GPU and runtime identity, refresh |
+| `onboarding` | `setup-required` | guided setup, review, approval, progress, result |
+| `runtime-switch` | `healthy` | version list, review, apply, post-change state |
+| `diagnostics` | `attention` | Activity, support-bundle export, Diagnose |
+| `routing` | `healthy` | compact and full windows, surface routing, autostart |
+| `unsupported` | `unsupported-wsl` | refusal, no change controls, explanation |
+
+### Isolation
+
+`scripts/fresh_user_smoke.py` owns the isolated root set and the sentinels
+planted in real user state; the WebdriverIO harness shells it rather than
+keeping a second copy of that policy. `--prepare` builds the roots and plants
+the sentinels, `--verify` re-checks them and scans the artifacts for any marker
+that leaked.
+
+### Retries, and why they cannot hide anything
+
+`specFileRetries` and `mochaOpts.retries` are both **zero**: either can turn a
+repeated functional failure green. `connectionRetryCount` is 1 and retries only
+a failed WebDriver HTTP request, which cannot rerun a test body.
+
+`npm run test:e2e:fixture` proves it rather than asserting it. It runs one spec
+that fails on purpose against a healthy app, under a config with retries turned
+*up*, and checks that the bound was reached exactly, that the run is still red,
+and that the screenshot, page source, failure text, driver log and fixture
+journal are all in `test-results/e2e/<runId>/artifacts/` with no sentinel marker
+surviving sanitisation.
+
+### Two things that will bite you
+
+- **Build the app with `npx tauri build --no-bundle`, never `cargo build`.**
+  Tauri's `dev` cfg is the *absence* of the `custom-protocol` feature that only
+  the CLI passes, so a cargo-built binary points its windows at the Vite dev
+  server. `tests/e2e/support.ts` detects this and says so, because otherwise it
+  looks like a hundred product failures instead of one build mistake.
+- **On Linux the harness runs `tauri-driver` under `dbus-run-session`.**
+  Inheriting a live desktop's session bus while `HOME` points at a scratch root
+  makes the app reach that session's portal and keyring services with none of
+  the state they expect, and it dies with SIGSEGV about a second and a half in.
+
+## Native Wayland
+
+WebKitWebDriver drives an X11 (or XWayland) window, so close-to-tray and
+`hide()` behaviour on a *native* Wayland toplevel is covered separately by
+`scripts/wayland_desktop_check.py`. It starts a headless nested GNOME Shell,
+launches the release binary against it, drives the tray over
+`com.canonical.dbusmenu`, and reads the answer off the Wayland wire log
+(`WAYLAND_DEBUG=1`) — GNOME 50 refuses `Introspect.GetWindows` and
+`Screenshot` to non-shell callers, and the protocol log is stronger evidence
+than pixels anyway. Three checks: the tray registers with its menu, `hide()`
+unmaps a toplevel, and a compositor close request hides the window while the
+process survives. With no compositor available it reports a named skip rather
+than a false pass.

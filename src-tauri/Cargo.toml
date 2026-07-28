@@ -1,8 +1,12 @@
 [workspace]
-members = ["crates/rocm-app-core"]
+members = ["crates/rocm-app-core", "crates/rocm-fixture-cli"]
 # The Tauri app and the domain crate are both default members so the plan's
 # `cargo test --manifest-path src-tauri/Cargo.toml` gate covers domain tests
 # too. Without this, `rocm-app-core`'s suite silently never runs.
+#
+# `rocm-fixture-cli` is deliberately left out: it is a stand-in `rocm` binary
+# built only by the e2e harness, and every developer `cargo test` here would
+# otherwise pay to compile a binary the app never links.
 default-members = [".", "crates/rocm-app-core"]
 resolver = "2"
 

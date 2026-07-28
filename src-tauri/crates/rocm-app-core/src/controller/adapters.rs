@@ -109,7 +109,14 @@ pub trait Inspector: Send + Sync {
 /// Resolves what version an install or update would land on.
 pub trait Catalog: Send + Sync {
     /// Newest trusted version for a family on a channel.
-    fn latest_version(&self, channel: &str, family: &str) -> Result<String, AdapterError>;
+    ///
+    /// `Ok(None)` means "there is no version to pin": a fresh machine has no
+    /// installed runtime, so nothing local can name the newest build, and the
+    /// CLI resolves it at install time instead. That is the state guided setup
+    /// exists for, so it must not be an error — reporting it as one refuses
+    /// the very first install on every machine that has never had ROCm.
+    fn latest_version(&self, channel: &str, family: &str)
+    -> Result<Option<String>, AdapterError>;
 }
 
 /// Runs the bundled CLI.
@@ -329,14 +336,22 @@ impl Inspector for FakeInspector {
 
 /// A catalog with scripted answers.
 pub struct FakeCatalog {
-    latest: Mutex<Result<String, AdapterError>>,
+    latest: Mutex<Result<Option<String>, AdapterError>>,
 }
 
 impl FakeCatalog {
     #[must_use]
     pub fn new(latest: impl Into<String>) -> Self {
         Self {
-            latest: Mutex::new(Ok(latest.into())),
+            latest: Mutex::new(Ok(Some(latest.into()))),
+        }
+    }
+
+    /// A machine with nothing installed: no version to pin, and no error.
+    #[must_use]
+    pub const fn unpinned() -> Self {
+        Self {
+            latest: Mutex::new(Ok(None)),
         }
     }
 
@@ -349,7 +364,11 @@ impl FakeCatalog {
 }
 
 impl Catalog for FakeCatalog {
-    fn latest_version(&self, _channel: &str, _family: &str) -> Result<String, AdapterError> {
+    fn latest_version(
+        &self,
+        _channel: &str,
+        _family: &str,
+    ) -> Result<Option<String>, AdapterError> {
         self.latest.lock().expect("poisoned").clone()
     }
 }

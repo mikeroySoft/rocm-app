@@ -156,6 +156,42 @@ fn controller_plan_resolves_latest_to_a_concrete_version() {
 }
 
 #[test]
+fn controller_plans_a_first_install_when_nothing_names_a_version() {
+    // A machine with no runtime reports `update: not-applicable`, because
+    // there is nothing to update. That is not a network failure and must not
+    // refuse the install: guided setup exists for exactly this machine. The
+    // plan carries no version, and the CLI resolves the newest build itself.
+    let controller = RocmController::new(Adapters {
+        inspector: Arc::new(FakeInspector::new(snapshot_named("setup-required"))),
+        catalog: Arc::new(FakeCatalog::unpinned()),
+        cli: Arc::new(FakeCliRunner::succeeding(&["download", "install"])),
+        clock: Arc::new(FakeClock::new(NOW)),
+        storage: Arc::new(FakeStorage::new()),
+        notifier: Arc::new(FakeNotifier::new()),
+        diagnostics: Arc::new(FakeDiagnostics::new()),
+    });
+    let request = OperationRequest::InstallRuntime {
+        channel: Channel::Release,
+        family: RuntimeFamily::new("gfx120X-all").expect("family"),
+        version: VersionSelector::Latest,
+        install_root: None,
+    };
+
+    let plan = controller
+        .plan(&request)
+        .expect("a fresh machine must still be installable");
+
+    assert_eq!(plan.resolved_version(), None);
+    assert!(plan.steps().iter().any(|s| s.mutating));
+
+    let argv = crate::controller::adapters::argv_for(&request, plan.resolved_version());
+    assert!(
+        !argv.iter().any(|arg| arg == "--version"),
+        "an unpinned install must not pass --version: {argv:?}"
+    );
+}
+
+#[test]
 fn controller_plan_alone_never_invokes_the_cli() {
     let h = Harness::healthy();
     let _ = h.plan_activate();

@@ -383,18 +383,27 @@ impl SnapshotCatalog {
 }
 
 impl Catalog for SnapshotCatalog {
-    fn latest_version(&self, _channel: &str, _family: &str) -> Result<String, AdapterError> {
+    fn latest_version(
+        &self,
+        _channel: &str,
+        _family: &str,
+    ) -> Result<Option<String>, AdapterError> {
         let snapshot = self.inspector.snapshot()?;
         match snapshot.update.state {
-            UpdateState::Available { latest, .. } => Ok(latest),
+            UpdateState::Available { latest, .. } => Ok(Some(latest)),
             UpdateState::NoUpdate { installed }
             | UpdateState::AheadOfIndex { installed, .. }
-            | UpdateState::Stale { installed, .. } => Ok(installed),
+            | UpdateState::Stale { installed, .. } => Ok(Some(installed)),
             UpdateState::Offline { detail } => Err(AdapterError::Network { detail }),
             UpdateState::UntrustedMetadata { detail } => Err(AdapterError::Verification { detail }),
-            UpdateState::NotApplicable | UpdateState::Unrecognised => Err(AdapterError::Network {
-                detail: "no trusted version information is available yet".to_owned(),
-            }),
+            // `NotApplicable` is the producer's answer when no runtime is
+            // installed: there is nothing to *update*, which says nothing
+            // about what is available to *install*. Returning a network error
+            // here refused guided setup on every machine that had never had
+            // ROCm — the exact machine it exists for. `Unrecognised` is the
+            // same shape: an update report this app cannot read is not
+            // evidence that no build exists.
+            UpdateState::NotApplicable | UpdateState::Unrecognised => Ok(None),
         }
     }
 }
@@ -617,12 +626,28 @@ pub fn production_adapters(data_dir: PathBuf) -> Adapters {
 /// series, and an unbounded `Vec` in a tray app that runs for weeks is a leak.
 const HISTORY_CAPACITY: usize = 120;
 
+/// Run a future to completion on a thread that belongs to no async runtime.
+///
+/// Commands run on the async runtime, and `block_on` from a runtime worker
+/// panics with "Cannot start a runtime from within a runtime" — which then
+/// poisons the caller's `LazyLock` and takes the tray monitor down with it.
+/// A plain thread has no runtime to nest, and both callers here are already
+/// waiting on a subprocess, so one thread spawn costs nothing measurable.
+fn off_runtime<T: Send>(future: impl Future<Output = T> + Send) -> Option<T> {
+    std::thread::scope(|scope| {
+        scope
+            .spawn(|| tauri::async_runtime::block_on(future))
+            .join()
+            .ok()
+    })
+}
+
 /// Resolve the `amd-smi` that belongs to the managed runtime, once.
 ///
 /// `AmdSmiCollector::detect_with_binary` runs a subprocess and a `/dev/kfd`
 /// pre-flight, which is far too expensive to repeat on every refresh.
 fn detect_collector() -> Option<AmdSmiCollector> {
-    tauri::async_runtime::block_on(AmdSmiCollector::detect_with_binary(amd_smi_binary()))
+    off_runtime(AmdSmiCollector::detect_with_binary(amd_smi_binary())).flatten()
 }
 
 /// Live GPU readings plus a bounded ring of recent ones.
@@ -666,7 +691,12 @@ impl TelemetryStore {
             });
         };
 
-        match tauri::async_runtime::block_on(collector.metrics()) {
+        let Some(read) = off_runtime(collector.metrics()) else {
+            // The reader thread panicked; treat it as an unreadable device
+            // rather than taking the whole Overview down with it.
+            return self.without_sample(TelemetryFailure::Error);
+        };
+        match read {
             Ok(metrics) => match metrics.first() {
                 Some(first) => {
                     let sample = GpuSample::from_metrics(first);
@@ -720,6 +750,20 @@ impl TelemetryStore {
 // ---------------------------------------------------------------------------
 // Tauri command surface
 // ---------------------------------------------------------------------------
+//
+// # Every command that can shell out is `#[tauri::command(async)]`
+//
+// A synchronous Tauri command runs on the main thread, which on Linux is the
+// GTK main loop that also drives the WebView. Blocking it stops repaints, IPC
+// replies, and progress events for the whole duration — so an install, which
+// takes minutes, would freeze the window it is supposed to be reporting into,
+// Stop button and all. The desktop suite caught this: the progress screen it
+// asserts on never rendered, because the render could not happen until the
+// command that was meant to be reported *on* had already finished.
+//
+// `controller_cancel` is the one exception, and stays synchronous on purpose:
+// it is a single atomic store, and it must be able to run while the operation
+// it cancels is still in flight.
 
 /// Shared controller state.
 pub struct ControllerState {
@@ -782,7 +826,7 @@ impl From<AdapterError> for CommandError {
 }
 
 /// Read machine state.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn controller_snapshot(
     state: tauri::State<'_, ControllerState>,
     refresh: bool,
@@ -807,7 +851,7 @@ pub struct SnapshotResponse {
 }
 
 /// Describe a change without performing it.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn controller_plan(
     state: tauri::State<'_, ControllerState>,
     request: OperationRequest,
@@ -816,7 +860,7 @@ pub fn controller_plan(
 }
 
 /// Perform a previously reviewed change.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn controller_execute(
     state: tauri::State<'_, ControllerState>,
     approval: Approval,
@@ -857,7 +901,7 @@ pub fn controller_cancel(state: tauri::State<'_, ControllerState>) {
 /// Reads state and computes an answer; it starts nothing. The install itself
 /// still goes through `controller_plan` + `controller_execute` with an
 /// approval, so this command adds no second path to a mutation.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn onboarding_view(
     state: tauri::State<'_, ControllerState>,
     choices: Option<Choices>,
@@ -879,7 +923,7 @@ pub fn onboarding_view(
 /// immediately; the renderer then asks again with `true`. Telemetry is read
 /// on both paths because it is cheap relative to a full probe and is the part
 /// most visibly wrong when stale.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn health_overview(
     state: tauri::State<'_, ControllerState>,
     refresh: bool,
@@ -908,7 +952,7 @@ pub fn health_overview(
 /// would have to walk every install root on every snapshot, and a snapshot is
 /// taken whenever the window opens. This route is opened deliberately, so the
 /// walk happens when someone asked to see the numbers.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn runtimes_view(
     state: tauri::State<'_, ControllerState>,
     refresh: bool,
@@ -940,7 +984,7 @@ pub fn runtimes_view(
 /// than asked of the CLI: they live in this app's data directory and describe
 /// this app's own behaviour, and a user debugging "I pressed apply and nothing
 /// happened" needs both halves on one timeline.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn diagnostics_logs(
     state: tauri::State<'_, ControllerState>,
     query: LogQuery,
@@ -951,7 +995,7 @@ pub fn diagnostics_logs(
 }
 
 /// Run the diagnosis.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn diagnostics_diagnose(
     state: tauri::State<'_, ControllerState>,
     symptom: Option<String>,
@@ -961,7 +1005,7 @@ pub fn diagnostics_diagnose(
 }
 
 /// Write a support bundle to a folder the user chose.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn diagnostics_export(
     state: tauri::State<'_, ControllerState>,
     destination: String,
@@ -978,7 +1022,7 @@ pub fn diagnostics_export(
 /// `controller_execute`, so this command adds no second route to a mutation.
 /// The refusal it can return is the same one the Diagnose screen consults, so
 /// a control that would be refused is never drawn in the first place.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn diagnostics_fix_plan(
     state: tauri::State<'_, ControllerState>,
     fix_id: String,

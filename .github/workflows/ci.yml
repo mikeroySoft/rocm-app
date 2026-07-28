@@ -66,13 +66,22 @@ jobs:
           cargo test -p rocm-app-core --lib
           cargo clippy -p rocm-app-core --all-targets -- -D warnings
 
+      - name: Workflow validation
+        # Pins and platform coverage, checked by the repository rather than by
+        # review. A moving action tag or a lost Windows job fails here.
+        run: npm run ci:validate
+
       - name: Harness self-tests
         # These need no built artifact: each constructs its own fixtures,
         # including the failing cases. A packaging harness that only ever sees a
-        # good bundle proves nothing.
+        # good bundle proves nothing, and neither does an e2e harness whose
+        # failure path has never run.
         run: |
           python3 scripts/package_verify.py --self-test
           python3 scripts/installer_acceptance.py --self-test
+          python3 scripts/fresh_user_smoke.py --self-test
+          python3 scripts/e2e_selftest.py --self-test
+          python3 scripts/wayland_desktop_check.py --self-test
 
   package-linux:
     name: package (linux deb+rpm)
@@ -229,3 +238,149 @@ jobs:
             src-tauri/target/release/bundle/nsis/*-setup.exe
             src-tauri/target/release/bundle/nsis/*-setup.exe.sha256
           if-no-files-found: error
+
+  e2e-linux:
+    name: desktop e2e (linux)
+    # Ubuntu 22.04 rather than latest: it carries the oldest WebKitGTK and
+    # glibc this project claims to support, so a binary that drives the real
+    # webview here drives it on every newer distribution too. `latest` would
+    # only ever prove the newest one.
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+        with:
+          workspaces: |
+            src-tauri
+            rocm-cli
+
+      - name: Install Tauri and WebDriver system dependencies
+        # `webkit2gtk-driver` provides WebKitWebDriver, which `tauri-driver`
+        # drives; `xvfb` provides the display the suite starts for itself.
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev \
+            libxdo-dev build-essential curl wget file libssl-dev pkg-config \
+            webkit2gtk-driver xvfb dbus-x11
+
+      - name: Install tauri-driver
+        # Pinned and `--locked`: the intermediary that launches the app under
+        # test is as much a part of the harness as the specs are.
+        run: cargo install tauri-driver --version 2.0.6 --locked
+
+      - name: Build the ROCm CLI this app will ship
+        run: |
+          git clone --filter=blob:none "$ROCM_CLI_GIT_URL" rocm-cli
+          git -C rocm-cli checkout "$ROCM_CLI_REV"
+          cargo build --release --manifest-path rocm-cli/Cargo.toml -p rocm -p rocmd
+
+      - run: npm ci
+      - name: Stage the CLI payload
+        run: |
+          python3 scripts/stage_cli.py --from rocm-cli/target/release
+          python3 scripts/stage_cli.py --check
+
+      - name: Build the app under test
+        # `tauri build`, never a bare `cargo build`: Tauri's `dev` cfg is the
+        # absence of the `custom-protocol` feature that only the CLI passes, so
+        # a cargo-built binary points its windows at the Vite dev server and
+        # every selector misses against a connection-refused page.
+        run: |
+          env -u CI npx tauri build --no-bundle
+          cargo build --release --manifest-path src-tauri/Cargo.toml -p rocm-fixture-cli
+
+      - name: Desktop scenarios
+        run: npm run test:e2e
+
+      - name: Harness failure path
+        # Runs the always-failing spec under raised retries and asserts the run
+        # is still red, the bound was reached exactly, and the artifacts are
+        # there. A green suite proves nothing until this has run.
+        run: npm run test:e2e:fixture
+
+      - name: Native Wayland desktop checks
+        # WebKitWebDriver cannot drive a native Wayland toplevel, so close-to-
+        # tray and hide-unmap are covered here instead. No compositor on a
+        # GitHub runner: this reports a named skip rather than a false pass.
+        run: python3 scripts/wayland_desktop_check.py --compositor auto
+
+      - name: Fresh-user isolation smoke
+        run: python3 scripts/fresh_user_smoke.py
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure()
+        with:
+          name: e2e-linux-artifacts
+          path: test-results/e2e
+          if-no-files-found: warn
+
+  e2e-windows:
+    name: desktop e2e (windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+        with:
+          workspaces: |
+            src-tauri
+            rocm-cli
+
+      - name: Put Edge WebDriver on PATH
+        # The runner image ships msedgedriver matched to its own Edge build and
+        # points `EdgeWebDriver` at the folder. Using it avoids installing an
+        # unpinned tool from a third-party git repository just to obtain a
+        # driver the machine already has — and a mismatched Edge/driver pair
+        # hangs rather than failing, which is the worst kind of CI red.
+        shell: pwsh
+        run: |
+          if (-not $env:EdgeWebDriver) { throw "the runner image exposes no EdgeWebDriver path" }
+          "msedgedriver: $env:EdgeWebDriver"
+          & (Join-Path $env:EdgeWebDriver "msedgedriver.exe") --version
+          $env:EdgeWebDriver >> $env:GITHUB_PATH
+
+      - name: Install tauri-driver
+        run: cargo install tauri-driver --version 2.0.6 --locked
+
+      - name: Build the ROCm CLI this app will ship
+        run: |
+          git clone --filter=blob:none "$env:ROCM_CLI_GIT_URL" rocm-cli
+          git -C rocm-cli checkout "$env:ROCM_CLI_REV"
+          cargo build --release --manifest-path rocm-cli/Cargo.toml -p rocm -p rocmd
+
+      - run: npm ci
+      - name: Stage the CLI payload
+        run: |
+          python scripts/stage_cli.py --from rocm-cli/target/release
+          python scripts/stage_cli.py --check
+
+      - name: Build the app under test
+        run: |
+          npx tauri build --no-bundle
+          cargo build --release --manifest-path src-tauri/Cargo.toml -p rocm-fixture-cli
+        env:
+          CI: ""
+
+      - name: Desktop scenarios
+        run: npm run test:e2e
+
+      - name: Harness failure path
+        run: npm run test:e2e:fixture
+
+      - name: Fresh-user isolation smoke
+        run: python scripts/fresh_user_smoke.py
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure()
+        with:
+          name: e2e-windows-artifacts
+          path: test-results/e2e
+          if-no-files-found: warn

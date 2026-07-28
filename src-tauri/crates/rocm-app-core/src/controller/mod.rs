@@ -271,7 +271,12 @@ impl RocmController {
             return Err(ControllerError::FixNotAllowed { reason });
         }
 
-        // Resolve "latest" now so the review screen shows a concrete version.
+        // Resolve "latest" now so the review screen can show a concrete
+        // version. `None` is a legitimate answer, not a failure: on a machine
+        // with nothing installed there is no trusted local index to read, and
+        // the CLI resolves the newest build itself at install time. Treating
+        // that as an error refused the first install on every fresh machine —
+        // the one case guided setup exists for.
         let resolved_version = match request {
             OperationRequest::InstallRuntime {
                 channel,
@@ -280,18 +285,17 @@ impl RocmController {
                 ..
             } => match version {
                 request::VersionSelector::Exact { version } => Some(version.clone()),
-                request::VersionSelector::Latest => Some(
-                    self.adapters
-                        .catalog
-                        .latest_version(channel.as_str(), family.as_str())?,
-                ),
+                request::VersionSelector::Latest => self
+                    .adapters
+                    .catalog
+                    .latest_version(channel.as_str(), family.as_str())?,
             },
             OperationRequest::UpdateRuntime { .. } => {
                 let family = snapshot
                     .active_runtime()
                     .map(|r| r.family.clone())
                     .unwrap_or_default();
-                Some(self.adapters.catalog.latest_version("nightly", &family)?)
+                self.adapters.catalog.latest_version("nightly", &family)?
             }
             _ => None,
         };

@@ -1,0 +1,18 @@
+[package]
+name = "rocm-fixture-cli"
+description = "Test-only stand-in for the bundled `rocm` binary: canned responses from a directory, one journal line per invocation."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "rocm-fixture-cli"
+path = "src/main.rs"
+
+[dependencies]
+serde_json.workspace = true
