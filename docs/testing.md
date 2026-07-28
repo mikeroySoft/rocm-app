@@ -55,6 +55,25 @@ webview helper processes counts every shared library once per process. It is
 used anyway because it only errs high — a budget met on the over-count is met
 in reality.
 
+## Native Windows status
+
+What CI proves on `windows-latest` today: the NSIS installer builds,
+installs, and the installed `rocm.exe` / `rocmd.exe` run and hash-match
+`compatibility.json` (`package (windows nsis)`); the bare app launches under
+fully isolated roots, creates its state, and survives (the fresh-user smoke
+inside `desktop e2e (windows)`); and a WebDriver session can be created
+against the app — the debug port opens when a driver asks (see
+`build_declared_windows` in `src-tauri/src/lib.rs`), msedgedriver attaches,
+and the first spec assertions pass.
+
+What it does not prove yet: the full scenario suite. Windows sessions
+currently collapse partway through a spec ("invalid session id: the browser
+has closed the connection"), so `desktop e2e (windows)` is red and Windows
+desktop-e2e coverage must be treated as **absent** until that job is green.
+The breadcrumb trail lives in the job itself: a direct-msedgedriver probe
+step logs the driver's own words on every run, and `e2e-windows-artifacts`
+carries the sandbox, the driver log, and the WebView2 profile.
+
 ## Test layers
 
 **`rocm-app-core` (Rust, no Tauri).** Where the real assertions live. Platform

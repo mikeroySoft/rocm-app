@@ -198,10 +198,10 @@ export const config: WebdriverIO.Config = {
     // "no such window: target window already closed" before any spec ran.
     // Land deterministically on the main window. WebKitWebDriver on Linux
     // starts on the main window already.
-    await browser.waitUntil(
-      async () => (await browser.getWindowHandles()).length > 0,
-      { timeout: 15000, timeoutMsg: "the app exposed no window handles" },
-    );
+    await browser.waitUntil(async () => (await browser.getWindowHandles()).length > 0, {
+      timeout: 15000,
+      timeoutMsg: "the app exposed no window handles",
+    });
     for (const handle of await browser.getWindowHandles()) {
       try {
         await browser.switchToWindow(handle);
