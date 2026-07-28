@@ -106,9 +106,16 @@ jobs:
             libxdo-dev build-essential curl wget file libssl-dev pkg-config rpm cpio
 
       - name: Build the ROCm CLI this app will ship
+        # Fetch into the directory rather than `git clone`: rust-cache lists
+        # `rocm-cli` as a workspace and restores its `target/` before this
+        # step runs, so on every cache hit the directory already exists and a
+        # clone would refuse. `git init` is idempotent and keeps the restored
+        # build products in place.
         run: |
-          git clone --filter=blob:none "$ROCM_CLI_GIT_URL" rocm-cli
-          git -C rocm-cli checkout "$ROCM_CLI_REV"
+          git init -q rocm-cli
+          git -C rocm-cli remote add origin "$ROCM_CLI_GIT_URL" 2>/dev/null || true
+          git -C rocm-cli fetch -q --filter=blob:none origin "$ROCM_CLI_REV"
+          git -C rocm-cli checkout -q "$ROCM_CLI_REV"
           cargo build --release --manifest-path rocm-cli/Cargo.toml -p rocm -p rocmd
 
       - run: npm ci
@@ -173,9 +180,15 @@ jobs:
             rocm-cli
 
       - name: Build the ROCm CLI this app will ship
+        # Same fetch-into-directory shape as the Linux job, for the same
+        # rust-cache reason — and `shell: bash` so one failing command fails
+        # the step; pwsh only checks the last command's exit code.
+        shell: bash
         run: |
-          git clone --filter=blob:none "$env:ROCM_CLI_GIT_URL" rocm-cli
-          git -C rocm-cli checkout "$env:ROCM_CLI_REV"
+          git init -q rocm-cli
+          git -C rocm-cli remote add origin "$ROCM_CLI_GIT_URL" 2>/dev/null || true
+          git -C rocm-cli fetch -q --filter=blob:none origin "$ROCM_CLI_REV"
+          git -C rocm-cli checkout -q "$ROCM_CLI_REV"
           cargo build --release --manifest-path rocm-cli/Cargo.toml -p rocm -p rocmd
 
       - run: npm ci
@@ -274,9 +287,14 @@ jobs:
         run: cargo install tauri-driver --version 2.0.6 --locked
 
       - name: Build the ROCm CLI this app will ship
+        # Fetch into the directory, not `git clone`: rust-cache restores
+        # `rocm-cli/target` before this step, so on a cache hit the directory
+        # already exists and a clone would refuse.
         run: |
-          git clone --filter=blob:none "$ROCM_CLI_GIT_URL" rocm-cli
-          git -C rocm-cli checkout "$ROCM_CLI_REV"
+          git init -q rocm-cli
+          git -C rocm-cli remote add origin "$ROCM_CLI_GIT_URL" 2>/dev/null || true
+          git -C rocm-cli fetch -q --filter=blob:none origin "$ROCM_CLI_REV"
+          git -C rocm-cli checkout -q "$ROCM_CLI_REV"
           cargo build --release --manifest-path rocm-cli/Cargo.toml -p rocm -p rocmd
 
       - run: npm ci
@@ -351,9 +369,16 @@ jobs:
         run: cargo install tauri-driver --version 2.0.6 --locked
 
       - name: Build the ROCm CLI this app will ship
+        # Fetch-into-directory for the rust-cache reason above, and
+        # `shell: bash` so one failing command fails the step — pwsh only
+        # checks the last command's exit code, which let a broken build
+        # report green here once.
+        shell: bash
         run: |
-          git clone --filter=blob:none "$env:ROCM_CLI_GIT_URL" rocm-cli
-          git -C rocm-cli checkout "$env:ROCM_CLI_REV"
+          git init -q rocm-cli
+          git -C rocm-cli remote add origin "$ROCM_CLI_GIT_URL" 2>/dev/null || true
+          git -C rocm-cli fetch -q --filter=blob:none origin "$ROCM_CLI_REV"
+          git -C rocm-cli checkout -q "$ROCM_CLI_REV"
           cargo build --release --manifest-path rocm-cli/Cargo.toml -p rocm -p rocmd
 
       - run: npm ci
@@ -363,11 +388,13 @@ jobs:
           python scripts/stage_cli.py --check
 
       - name: Build the app under test
+        # `env -u CI` genuinely unsets the variable; `CI: ""` sets it to an
+        # empty string, which tauri-cli rejects ("a value is required for
+        # '--ci'"). Git-bash makes the same script work on both platforms.
+        shell: bash
         run: |
-          npx tauri build --no-bundle
+          env -u CI npx tauri build --no-bundle
           cargo build --release --manifest-path src-tauri/Cargo.toml -p rocm-fixture-cli
-        env:
-          CI: ""
 
       - name: Desktop scenarios
         run: npm run test:e2e
