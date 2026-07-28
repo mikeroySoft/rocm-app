@@ -188,7 +188,21 @@ fn contract_live_producer_honours_isolated_state_roots() {
          The CLI is reading real user state.",
         snapshot.runtimes.iter().map(|r| &r.key).collect::<Vec<_>>()
     );
-    assert_eq!(snapshot.health.verdict, HealthVerdict::SetupRequired);
+    // The exact verdict is machine-dependent and deliberately not pinned:
+    // with empty roots, a host whose GPU maps to a ROCm family reads
+    // `SetupRequired`, while a GPU-less runner reads `Attention` (an absent
+    // GPU outranks the absent runtime). Isolation is proven by the empty
+    // runtime list and the `RuntimeAbsent` reason — the two facts that
+    // depend only on the roots. Pinning `SetupRequired` here made this test
+    // green on every developer GPU box and red on its first CI run.
+    assert!(
+        matches!(
+            snapshot.health.verdict,
+            HealthVerdict::SetupRequired | HealthVerdict::Attention
+        ),
+        "empty roots must read setup-required (or attention on a GPU-less host); got {:?}",
+        snapshot.health.verdict
+    );
     assert!(
         snapshot
             .health

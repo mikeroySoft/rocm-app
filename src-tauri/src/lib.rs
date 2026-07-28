@@ -63,6 +63,7 @@ pub fn run() {
         )
         .setup(|app| {
             use tauri::Manager as _;
+            build_declared_windows(app)?;
             let data_dir = app.path().app_data_dir()?;
             let mut adapters = controller_host::production_adapters(data_dir);
             let storage = adapters.storage.clone();
@@ -125,6 +126,40 @@ pub fn run() {
             api.prevent_exit();
         }
     });
+}
+
+/// Create the two config-declared windows (`create: false` keeps Tauri from
+/// auto-creating them), so the WebView2 launch arguments can be decided at
+/// runtime.
+///
+/// Wry always sets WebView2's `AdditionalBrowserArguments` itself, and the
+/// runtime then ignores the `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS` variable
+/// msedgedriver plants to open the remote-debugging port. A driven app
+/// therefore never opened the port, its `DevToolsActivePort` file never
+/// appeared, and every WebDriver session on Windows died with "Microsoft
+/// Edge failed to start: crashed" while the same binary ran fine launched
+/// bare — measured by the CI probe step, which failed identically with and
+/// without a user-data-folder hint. When the variable is present (only a
+/// driver plants it), append it to wry's own defaults (wry 0.55.1,
+/// src/webview2/mod.rs). An undriven launch sees no variable and builds the
+/// exact arguments wry would have chosen, so no debug port ever opens
+/// unless the environment explicitly asked for one.
+fn build_declared_windows(app: &tauri::App) -> tauri::Result<()> {
+    #[cfg(windows)]
+    let driver_args = std::env::var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS").ok();
+    let windows = app.config().app.windows.clone();
+    for config in &windows {
+        #[allow(unused_mut)]
+        let mut builder = tauri::WebviewWindowBuilder::from_config(app.handle(), config)?;
+        #[cfg(windows)]
+        if let Some(args) = driver_args.as_deref() {
+            builder = builder.additional_browser_args(&format!(
+                "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection {args}"
+            ));
+        }
+        builder.build()?;
+    }
+    Ok(())
 }
 
 #[cfg(test)]
