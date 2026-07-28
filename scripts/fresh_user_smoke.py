@@ -32,6 +32,7 @@ binary about 1.5s in.
 
 Usage:
     python3 scripts/fresh_user_smoke.py                      # full smoke
+    python3 scripts/fresh_user_smoke.py --real-gpu-read-only # real CLI + GPU, state untouched
     python3 scripts/fresh_user_smoke.py --emit-env /tmp/iso
     python3 scripts/fresh_user_smoke.py --prepare /tmp/iso
     python3 scripts/fresh_user_smoke.py --verify /tmp/iso --scan test-results/e2e
@@ -101,6 +102,19 @@ NUL_SNIFF_BYTES = 8192
 
 DEFAULT_APP = APP_ROOT / "src-tauri" / "target" / "release" / "rocm-app"
 DEFAULT_FIXTURE_CLI = APP_ROOT / "src-tauri" / "target" / "release" / "rocm-fixture-cli"
+
+
+def default_real_cli() -> Path:
+    """The real staged CLI `npm run stage` writes, whatever the host triple.
+
+    `rocm-*` cannot match the daemon (`rocmd-*` has a `d` where the glob wants
+    a `-`), so the first hit is the CLI itself.
+    """
+    binaries = APP_ROOT / "src-tauri" / "binaries"
+    for path in sorted(binaries.glob("rocm-*")):
+        if path.is_file():
+            return path
+    return binaries / "rocm-x86_64-unknown-linux-gnu"
 
 
 class SmokeSkipped(Exception):
@@ -444,6 +458,138 @@ def verify(root: Path, scans: list[Path], allow_unused: bool, report: Report) ->
 
 
 # --------------------------------------------------------------------------
+# --real-gpu-read-only: the real CLI, the real GPU, and proof that the real
+# runtime registry/config/cache never changed.
+# --------------------------------------------------------------------------
+
+# Files at or under this size are hashed; larger ones (runtime archives in the
+# cache) are compared by size and mtime alone, which any write disturbs.
+HASH_CAP_BYTES = 4 << 20
+
+
+def real_rocm_watch_targets() -> list[Path]:
+    """The real registry/config/cache locations, mirrored from rocm-core.
+
+    `AppPaths::discover` (rocm-cli crates/rocm-core/src/lib.rs) resolves
+    config/data/cache from the `ROCM_CLI_*` overrides, then `~/.rocm` (cache:
+    `~/.rocm/cache`, runtime.rs `default_*_dir`), then redirects data into
+    `setup.therock_venv` from config.json with cache at `<venv>/cache`. Both
+    the default and the redirected data roots are watched, because the
+    registry has lived under the default root across that redirect. Logs and
+    engine scratch are deliberately not watched: they are volatile, and they
+    are not what "read-only" promises to preserve.
+    """
+    home = Path.home()
+    config_dir = Path(os.environ.get("ROCM_CLI_CONFIG_DIR") or home / ".rocm")
+    data_dirs = [Path(os.environ.get("ROCM_CLI_DATA_DIR") or home / ".rocm")]
+    cache_dirs = [Path(os.environ.get("ROCM_CLI_CACHE_DIR") or home / ".rocm" / "cache")]
+    if not os.environ.get("ROCM_CLI_DATA_DIR"):
+        try:
+            raw = json.loads((config_dir / "config.json").read_text(encoding="utf-8"))
+            venv = str((raw.get("setup") or {}).get("therock_venv") or "").strip()
+        except (OSError, ValueError):
+            venv = ""
+        if venv:
+            data_dirs.append(Path(venv))
+            if not os.environ.get("ROCM_CLI_CACHE_DIR"):
+                cache_dirs.append(Path(venv) / "cache")
+    targets = [config_dir / "config.json"]
+    for base in data_dirs:
+        targets += [base / "runtimes" / "active.json", base / "runtimes" / "registry"]
+    targets += cache_dirs
+    return list(dict.fromkeys(targets))
+
+
+def _file_signature(path: Path) -> str:
+    try:
+        stat = path.lstat()
+        signature = f"{stat.st_size}:{stat.st_mtime_ns}"
+        if stat.st_size <= HASH_CAP_BYTES and path.is_file():
+            signature += ":" + sha256_file(path)
+        return signature
+    except OSError as error:
+        return f"unreadable:{type(error).__name__}"
+
+
+def state_inventory(targets: list[Path]) -> dict[str, str]:
+    """Every watched path's identity, absent paths included.
+
+    An absent target is recorded as such -- a path that did not exist before
+    the run must still not exist after it, and a directory that appears reads
+    as `changed` rather than vanishing from the comparison.
+    """
+    entries: dict[str, str] = {}
+    for target in targets:
+        if not target.exists():
+            entries[str(target)] = "absent"
+            continue
+        if target.is_dir():
+            entries[str(target)] = "present"
+            for parent, _dirs, names in os.walk(target):
+                for name in names:
+                    path = Path(parent) / name
+                    entries[str(path)] = _file_signature(path)
+        else:
+            entries[str(target)] = _file_signature(target)
+    return entries
+
+
+def check_state_unchanged(before: dict[str, str], after: dict[str, str],
+                          report: Report) -> None:
+    """--real-gpu-read-only's core promise: nothing real changed."""
+    problems = (
+        [f"changed: {p}" for p in sorted(before.keys() & after.keys()) if before[p] != after[p]]
+        + [f"created: {p}" for p in sorted(after.keys() - before.keys())]
+        + [f"removed: {p}" for p in sorted(before.keys() - after.keys())]
+    )
+    if problems:
+        shown = "; ".join(problems[:10])
+        if len(problems) > 10:
+            shown += f" … +{len(problems) - 10} more"
+        report.fail(f"real runtime state changed during the run — {shown}")
+    else:
+        files = sum(1 for v in before.values() if v not in ("absent", "present"))
+        report.ok(
+            f"real registry/config/cache unchanged: {files} file(s) re-checked "
+            "byte- or stat-identical"
+        )
+
+
+def check_real_gpu(cli: Path, env: dict[str, str], root: Path, report: Report) -> None:
+    """The staged real CLI must see real AMD hardware from inside isolation.
+
+    This is the half that makes `--real-gpu-read-only` mean what it says: the
+    snapshot the app consumes names a physical GPU, and it is produced with
+    every ROCm root pointed at the sandbox -- so the pre/post inventory also
+    polices this very probe.
+    """
+    try:
+        result = subprocess.run(
+            [str(cli), "app-snapshot"], env=env, cwd=str(root),
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=120,
+        )
+    except (OSError, subprocess.SubprocessError) as error:
+        report.fail(f"could not run the staged rocm app-snapshot: {error}")
+        return
+    if result.returncode != 0:
+        tail = " | ".join(result.stderr.strip().splitlines()[-3:])
+        report.fail(f"rocm app-snapshot exited {result.returncode}: {tail or '(no stderr)'}")
+        return
+    try:
+        snapshot = json.loads(result.stdout)
+    except ValueError:
+        report.fail("rocm app-snapshot printed no parseable JSON")
+        return
+    gpu = snapshot.get("gpu") or {}
+    name = gpu.get("name") or ""
+    target = gpu.get("gfxTarget") or ""
+    if not (name or target):
+        report.fail("app-snapshot names no GPU; --real-gpu-read-only requires real AMD hardware")
+        return
+    report.ok(f"real GPU visible under isolation: {name or 'unnamed'} ({target or 'no gfx target'})")
+
+
+# --------------------------------------------------------------------------
 # Display
 # --------------------------------------------------------------------------
 
@@ -531,13 +677,15 @@ def stop_process(proc: subprocess.Popen | None) -> None:
         pass
 
 
-def stage_binaries(root: Path, app: Path, fixture_cli: Path, env: dict[str, str],
-                   report: Report) -> Path:
-    """Copy the app -- and the fixture CLI it must find -- into the sandbox.
+def stage_binaries(root: Path, app: Path, cli: Path, env: dict[str, str],
+                   report: Report, fixture: bool = True) -> Path:
+    """Copy the app -- and the CLI it must find -- into the sandbox.
 
     The app resolves its CLI as a sibling of its own executable, so running it
     from `target/release` would hand it the real staged `rocm`. Copying both
-    into `<root>/bin` is what makes the sibling lookup land on the fixture.
+    into `<root>/bin` is what makes the sibling lookup land on the one under
+    test -- the scripted fixture normally, the real staged CLI under
+    `--real-gpu-read-only`.
     """
     if not app.is_file():
         raise SmokeSkipped(f"no built app binary at {app}")
@@ -547,17 +695,20 @@ def stage_binaries(root: Path, app: Path, fixture_cli: Path, env: dict[str, str]
     shutil.copy2(app, staged)
     staged.chmod(0o755)
 
-    if fixture_cli.is_file():
-        cli = bin_dir / ("rocm.exe" if os.name == "nt" else "rocm")
-        shutil.copy2(fixture_cli, cli)
-        cli.chmod(0o755)
-        fixture_dir = root / "fixture"
-        fixture_dir.mkdir(parents=True, exist_ok=True)
-        env["ROCM_FIXTURE_DIR"] = str(fixture_dir)
-        env["ROCM_FIXTURE_JOURNAL"] = str(root / "fixture-journal.jsonl")
-        report.ok(f"staged fixture CLI as {cli}")
+    if cli.is_file():
+        sibling = bin_dir / ("rocm.exe" if os.name == "nt" else "rocm")
+        shutil.copy2(cli, sibling)
+        sibling.chmod(0o755)
+        if fixture:
+            fixture_dir = root / "fixture"
+            fixture_dir.mkdir(parents=True, exist_ok=True)
+            env["ROCM_FIXTURE_DIR"] = str(fixture_dir)
+            env["ROCM_FIXTURE_JOURNAL"] = str(root / "fixture-journal.jsonl")
+            report.ok(f"staged fixture CLI as {sibling}")
+        else:
+            report.ok(f"staged real CLI as {sibling}")
     else:
-        report.note(f"no fixture CLI at {fixture_cli}; app will find no sibling rocm")
+        report.note(f"no fixture CLI at {cli}; app will find no sibling rocm")
     return staged
 
 
@@ -686,22 +837,44 @@ def run_app(staged: Path, root: Path, env: dict[str, str], timeout: float,
 def smoke(args: argparse.Namespace) -> int:
     """--prepare, launch under isolation, --verify, tear everything down."""
     report = Report()
-    report.head("fresh-user smoke")
+    real = args.real_gpu_read_only
+    report.head("fresh-user smoke (real GPU, read-only)" if real else "fresh-user smoke")
     root = Path(tempfile.mkdtemp(prefix="rocm-fresh-user-", dir=_tmp_base()))
     app_proc: subprocess.Popen | None = None
     xvfb_proc: subprocess.Popen | None = None
     skipped = ""
     try:
+        state_before: dict[str, str] = {}
+        cli = args.fixture_cli
+        if real:
+            cli = default_real_cli()
+            if not cli.is_file():
+                raise HarnessError(
+                    f"--real-gpu-read-only needs the staged CLI at {cli}; "
+                    "run `npm run stage` first"
+                )
+            targets = real_rocm_watch_targets()
+            state_before = state_inventory(targets)
+            recorded = sum(1 for v in state_before.values() if v not in ("absent", "present"))
+            report.ok(
+                f"recorded real registry/config/cache: {recorded} file(s) "
+                f"under {len(targets)} watched path(s)"
+            )
         prepare(root, report)
         env = dict(os.environ)
         env.update(isolation_env(root))
-        staged = stage_binaries(root, args.app, args.fixture_cli, env, report)
+        staged = stage_binaries(root, args.app, cli, env, report, fixture=not real)
         xvfb_proc = ensure_display(env, args.xvfb, report)
         prefix = private_bus_prefix(env, report)
         app_proc = run_app(staged, root, env, args.timeout, report, prefix)
         stop_process(app_proc)
         app_proc = None
+        if real:
+            check_real_gpu(root / "bin" / ("rocm.exe" if os.name == "nt" else "rocm"),
+                           env, root, report)
         verify(root, args.scan, args.allow_unused, report)
+        if real:
+            check_state_unchanged(state_before, state_inventory(real_rocm_watch_targets()), report)
     except SmokeSkipped as reason:
         skipped = str(reason)
     except (HarnessError, OSError) as error:
@@ -844,6 +1017,7 @@ def self_test() -> int:
 
         report_crash_case(report, failures)
         report_env_case(tmp / "envcase", report, failures)
+        report_state_case(report, failures)
 
     if failures:
         report.fail(f"{len(failures)} self-test expectation(s) did not hold")
@@ -862,6 +1036,35 @@ REQUIRED_ENV_KEYS = (
     "HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_CACHE_HOME", "XDG_STATE_HOME",
     "USERPROFILE", "APPDATA", "LOCALAPPDATA",
 )
+
+
+def report_state_case(report: Report, failures: list[str]) -> None:
+    """The read-only inventory must name a changed and a created file.
+
+    Run against a synthetic registry, never the real one: the self-test has
+    to tamper with what it watches, and the point of the real mode is that
+    nothing ever tampers with the real one.
+    """
+    with tempfile.TemporaryDirectory(prefix="rocm-state-case-", dir=_tmp_base()) as name:
+        registry = Path(name) / "runtimes" / "registry"
+        registry.mkdir(parents=True)
+        record = registry / "runtime.json"
+        record.write_text("{}\n", encoding="utf-8")
+        absent = Path(name) / "cache"
+        before = state_inventory([registry, absent])
+        record.write_text('{"tampered": true}\n', encoding="utf-8")
+        (registry / "created.json").write_text("{}\n", encoding="utf-8")
+        result = Report()
+        check_state_unchanged(before, state_inventory([registry, absent]), result)
+        detail = "; ".join(result.failures)
+        if result.failures and str(record) in detail and "created.json" in detail:
+            report.ok("state inventory: changed and created files both named")
+        else:
+            failures.append("state inventory")
+            report.fail(
+                f"state inventory: expected the changed and created files to be "
+                f"named — {detail or 'no failure recorded'}"
+            )
 
 
 def report_crash_case(report: Report, failures: list[str]) -> None:
@@ -924,6 +1127,10 @@ def main() -> int:
                         help=f"app binary to launch (default {DEFAULT_APP})")
     parser.add_argument("--fixture-cli", type=Path, default=DEFAULT_FIXTURE_CLI, metavar="PATH",
                         help=f"fixture CLI staged as the sibling rocm (default {DEFAULT_FIXTURE_CLI})")
+    parser.add_argument("--real-gpu-read-only", action="store_true",
+                        help="stage the real staged rocm CLI instead of the fixture, require a "
+                             "real AMD GPU in its snapshot, and prove the real runtime "
+                             "registry/config/cache were untouched")
     parser.add_argument("--timeout", type=float, default=45.0, metavar="SECONDS",
                         help="how long the app gets to write isolated state (default 45)")
     parser.add_argument("--xvfb", default="auto", metavar="auto|never|:N",

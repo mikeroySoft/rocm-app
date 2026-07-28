@@ -140,6 +140,15 @@ export default function QuickStatus({ backend }: QuickStatusProps) {
         {facts.reason}
       </p>
 
+      {/* A poll that fails after facts exist keeps the facts on screen, but
+          says so: silently re-showing the last answer as if it were current
+          is actively misleading. */}
+      {failure !== null && (
+        <p className="quick__reason" role="alert" data-testid="quick-failure">
+          {failure}
+        </p>
+      )}
+
       <dl className="quick__facts" data-testid="quick-facts">
         <div className="quick__fact">
           <dt>Graphics card</dt>

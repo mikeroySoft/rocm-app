@@ -118,6 +118,12 @@ export default function Logs({ backend }: LogsProps) {
     setQuery((current) => ({ ...current }));
   }, []);
 
+  /** After a refused read: clear the refusal so the reading line returns. */
+  const retry = useCallback(() => {
+    setRefusal(null);
+    setQuery((current) => ({ ...current }));
+  }, []);
+
   /** The one button an excluding filter offers: back to everything. */
   const clearFilters = useCallback((cleared: LogQuery) => {
     setDraft("");
@@ -163,10 +169,13 @@ export default function Logs({ backend }: LogsProps) {
   const reveal = useCallback(
     (event: React.SyntheticEvent<HTMLDetailsElement>) => {
       if (event.currentTarget.open) {
-        update({ revealLocations: true });
+        // Not routed through `update`: revealing paths is a display choice,
+        // not a narrowing (the Rust model documents it that way), so the page
+        // the user was on survives.
+        setQuery((current) => ({ ...current, revealLocations: true }));
       }
     },
-    [update],
+    [],
   );
 
   const copy = useCallback(() => {
@@ -182,8 +191,9 @@ export default function Logs({ backend }: LogsProps) {
       setCopied("This computer did not offer a clipboard.");
       return;
     }
+    const when = formatWhen(selected.atUnixMs);
     const text = [
-      new Date(selected.atUnixMs).toISOString(),
+      when.iso ?? when.text,
       SEVERITY_LABELS[selected.severity],
       selected.source,
       selected.action,
@@ -237,9 +247,17 @@ export default function Logs({ backend }: LogsProps) {
       )}
 
       {view === null ? (
-        <p aria-busy="true" data-testid="logs-loading">
-          Reading what has happened&hellip;
-        </p>
+        refusal !== null ? (
+          // The refusal is already on screen above; a reading line beside it
+          // would promise progress that is not coming. Offer the way out.
+          <button type="button" data-testid="logs-retry" onClick={retry}>
+            Try again
+          </button>
+        ) : (
+          <p aria-busy="true" data-testid="logs-loading">
+            Reading what has happened&hellip;
+          </p>
+        )
       ) : (
         <>
           <section className="logs__filters" aria-labelledby="logs-filters-heading">
@@ -311,6 +329,13 @@ export default function Logs({ backend }: LogsProps) {
             </div>
           </section>
 
+          {view.bounds.truncated.length > 0 && (
+            <p className="dash__muted" data-testid="truncated">
+              Some files were too large to read fully, so the oldest records from{" "}
+              {view.bounds.truncated.map((id) => labelFor(view.sources, id)).join(", ")} are not
+              shown.
+            </p>
+          )}
           {view.empty === null ? (
             <ul className="logs__records" data-testid="records">
               {view.records.map((record) => (
@@ -326,9 +351,7 @@ export default function Logs({ backend }: LogsProps) {
                     }}
                   >
                     <span className="logs__source">{labelFor(view.sources, record.source)}</span>
-                    <time className="logs__time" dateTime={new Date(record.atUnixMs).toISOString()}>
-                      {new Date(record.atUnixMs).toLocaleString()}
-                    </time>
+                    <RecordTime atUnixMs={record.atUnixMs} />
                     <span className="logs__severity" data-severity={record.severity}>
                       {SEVERITY_LABELS[record.severity]}
                     </span>
@@ -383,7 +406,7 @@ export default function Logs({ backend }: LogsProps) {
                 </div>
                 <div className="dash__fact">
                   <dt>When</dt>
-                  <dd>{new Date(selected.atUnixMs).toLocaleString()}</dd>
+                  <dd>{formatWhen(selected.atUnixMs).text}</dd>
                 </div>
                 <div className="dash__fact">
                   <dt>How serious</dt>
@@ -636,6 +659,30 @@ function ExportOutcome({
 
 function labelFor(sources: readonly LogSource[], id: string): string {
   return sources.find((source) => source.id === id)?.label ?? id;
+}
+
+/**
+ * A record's timestamp, machine-readable when it can be.
+ *
+ * `atUnixMs` arrives as an unvalidated u64. Past ±8.64e15 — ECMAScript's
+ * date range — `toISOString` throws, and one bad record used to blank the
+ * whole window. Such a record degrades to text instead.
+ */
+function formatWhen(ms: number): { iso: string | null; text: string } {
+  if (!Number.isFinite(ms) || Math.abs(ms) > 8.64e15) {
+    return { iso: null, text: "Unknown time" };
+  }
+  const date = new Date(ms);
+  return { iso: date.toISOString(), text: date.toLocaleString() };
+}
+
+function RecordTime({ atUnixMs }: { readonly atUnixMs: number }) {
+  const when = formatWhen(atUnixMs);
+  return (
+    <time className="logs__time" dateTime={when.iso ?? undefined}>
+      {when.text}
+    </time>
+  );
 }
 
 function messageOf(cause: unknown): string {

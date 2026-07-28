@@ -45,8 +45,10 @@ that a WSL snapshot still carries no install offer after crossing into the
 renderer.
 
 **Renderer (vitest + Testing Library).** Runs against the fixture set with no
-backend present. `src/lib/backend.ts` resolves from local fixtures when
-`isTauri()` is false, which is what makes the UI testable without a WebView.
+backend present. `src/App.tsx` routes each surface to its typed seam in
+`src/lib/*.ts` (dashboard, onboarding, runtimes, tray, logs); when `isTauri()`
+is false each seam resolves from the generated fixtures, which is what makes
+the UI testable without a WebView.
 
 ## The rocm-cli contract
 

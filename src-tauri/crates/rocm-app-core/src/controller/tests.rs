@@ -743,3 +743,41 @@ fn controller_refreshes_the_snapshot_after_a_successful_mutation() {
         "the caller must not have to guess whether to refresh"
     );
 }
+
+/// A tray app plans for weeks. A plan past its TTL can never verify again, so
+/// keeping it — or the consumed id that pointed at it — is a slow leak, not a
+/// record.
+#[test]
+fn controller_prunes_expired_plans_and_their_consumed_ids() {
+    let h = Harness::healthy();
+
+    // Consume one plan so the consumed set has an entry that must outlive
+    // its own TTL only as long as its plan does.
+    let plan = h.plan_activate();
+    h.controller
+        .execute(&approval_for(&plan), &RecordingSink::new())
+        .expect("execute");
+
+    for _ in 0..50 {
+        h.clock.advance(super::PLAN_TTL_MS + 1);
+        let _ = h.plan_activate();
+    }
+
+    assert_eq!(
+        h.controller.issued.lock().expect("poisoned").len(),
+        1,
+        "only the newest, unexpired plan is retained"
+    );
+    assert!(
+        h.controller.consumed.lock().expect("poisoned").is_empty(),
+        "consumed ids of expired plans are dropped"
+    );
+
+    // An expired plan is still refused — pruning changed the bookkeeping,
+    // not the answer.
+    assert!(matches!(
+        h.controller
+            .execute(&approval_for(&plan), &RecordingSink::new()),
+        Err(ControllerError::PlanNotFound | ControllerError::PlanExpired)
+    ));
+}

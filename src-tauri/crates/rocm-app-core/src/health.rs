@@ -304,7 +304,7 @@ pub fn overview(
         next_step: next_step_for(snapshot),
         first_run: snapshot.active_runtime().is_none(),
         headline_facts: headline_facts(snapshot),
-        components: components_for(snapshot, app_version),
+        components: components_for(snapshot, app_version, now_unix_ms),
         driver: driver_advice(snapshot),
         telemetry: telemetry_panel(telemetry),
         notices: notices_for(snapshot, telemetry, &freshness),
@@ -518,42 +518,48 @@ fn freshness_of(observed_at_unix_ms: u64, now_unix_ms: u64) -> Freshness {
 /// not an age — nobody counts hours past two days, and past two weeks the
 /// exact count stops mattering at all.
 fn age_label(age_ms: u64) -> String {
-    const MINUTE: u64 = 60 * 1_000;
-    const HOUR: u64 = 60 * MINUTE;
-    const DAY: u64 = 24 * HOUR;
-    const JUST_NOW: u64 = 90 * 1_000;
-    const MINUTES_UNTIL: u64 = HOUR;
-    const HOURS_UNTIL: u64 = 48 * HOUR;
-    const DAYS_UNTIL: u64 = 14 * DAY;
+    if age_ms < JUST_NOW {
+        return "Checked just now".to_owned();
+    }
+    format!("Last checked {}", age_phrase(age_ms))
+}
+
+// Bucket boundaries shared by `age_label` and `age_phrase`.
+const MINUTE: u64 = 60 * 1_000;
+const HOUR: u64 = 60 * MINUTE;
+const DAY: u64 = 24 * HOUR;
+const JUST_NOW: u64 = 90 * 1_000;
+const MINUTES_UNTIL: u64 = HOUR;
+const HOURS_UNTIL: u64 = 48 * HOUR;
+const DAYS_UNTIL: u64 = 14 * DAY;
+
+/// The bare "<n> unit(s) ago" phrase, shared by the freshness line and the
+/// stale-component note so the two can never disagree about buckets.
+fn age_phrase(age_ms: u64) -> String {
     match age_ms {
-        0..JUST_NOW => "Checked just now".to_owned(),
+        0..JUST_NOW => "just now".to_owned(),
         JUST_NOW..MINUTES_UNTIL => {
             let minutes = age_ms / MINUTE;
-            format!(
-                "Last checked {minutes} minute{} ago",
-                if minutes == 1 { "" } else { "s" }
-            )
+            format!("{minutes} minute{} ago", if minutes == 1 { "" } else { "s" })
         }
         MINUTES_UNTIL..HOURS_UNTIL => {
             let hours = age_ms / HOUR;
-            format!(
-                "Last checked {hours} hour{} ago",
-                if hours == 1 { "" } else { "s" }
-            )
+            format!("{hours} hour{} ago", if hours == 1 { "" } else { "s" })
         }
         HOURS_UNTIL..DAYS_UNTIL => {
             let days = age_ms / DAY;
-            format!(
-                "Last checked {days} day{} ago",
-                if days == 1 { "" } else { "s" }
-            )
+            format!("{days} day{} ago", if days == 1 { "" } else { "s" })
         }
-        _ => "Last checked more than two weeks ago".to_owned(),
+        _ => "more than two weeks ago".to_owned(),
     }
 }
 
 /// One row per required kind, plus anything extra the producer reported.
-fn components_for(snapshot: &AppSnapshot, app_version: Option<&str>) -> Vec<ComponentRow> {
+fn components_for(
+    snapshot: &AppSnapshot,
+    app_version: Option<&str>,
+    now_unix_ms: u64,
+) -> Vec<ComponentRow> {
     let mut consumed = vec![false; snapshot.components.len()];
     let mut rows = Vec::with_capacity(REQUIRED_KINDS.len());
 
@@ -572,6 +578,7 @@ fn components_for(snapshot: &AppSnapshot, app_version: Option<&str>) -> Vec<Comp
                 &ComponentState::Installed {
                     version: app_version.unwrap_or_default().to_owned(),
                 },
+                now_unix_ms,
             ));
             if let Some(index) = snapshot.components.iter().position(|c| c.kind == kind) {
                 consumed[index] = true;
@@ -588,7 +595,7 @@ fn components_for(snapshot: &AppSnapshot, app_version: Option<&str>) -> Vec<Comp
         if let Some(index) = snapshot.components.iter().position(|c| c.kind == kind) {
             consumed[index] = true;
             let component = &snapshot.components[index];
-            rows.push(row_for(kind, &component.name, &component.state));
+            rows.push(row_for(kind, &component.name, &component.state, now_unix_ms));
         } else {
             rows.push(missing_row(kind));
         }
@@ -599,7 +606,7 @@ fn components_for(snapshot: &AppSnapshot, app_version: Option<&str>) -> Vec<Comp
     // reads as "not present", which is not what "not understood" means.
     for (index, component) in snapshot.components.iter().enumerate() {
         if !consumed[index] {
-            rows.push(row_for(component.kind, &component.name, &component.state));
+            rows.push(row_for(component.kind, &component.name, &component.state, now_unix_ms));
         }
     }
     rows
@@ -665,7 +672,12 @@ fn missing_row(kind: ComponentKind) -> ComponentRow {
     }
 }
 
-fn row_for(kind: ComponentKind, name: &str, state: &ComponentState) -> ComponentRow {
+fn row_for(
+    kind: ComponentKind,
+    name: &str,
+    state: &ComponentState,
+    now_unix_ms: u64,
+) -> ComponentRow {
     let (status, value, note) = match state {
         ComponentState::LatestCompatible { version } => (
             ComponentStatus::Ready,
@@ -694,8 +706,11 @@ fn row_for(kind: ComponentKind, name: &str, state: &ComponentState) -> Component
         } => (
             ComponentStatus::Stale,
             version.clone().unwrap_or_else(|| "Unknown".to_owned()),
+            // Humanized like the freshness line: raw epoch milliseconds on
+            // the Overview read as a bug, not a time.
             Some(format!(
-                "Last read at {checked_at_unix_ms} and not re-checked since."
+                "Last read {} and not re-checked since.",
+                age_phrase(now_unix_ms.saturating_sub(*checked_at_unix_ms))
             )),
         ),
         ComponentState::Unknown { reason } => (

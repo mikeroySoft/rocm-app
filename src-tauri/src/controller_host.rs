@@ -34,7 +34,7 @@ use rocm_app_core::controller::adapters::{
 };
 use rocm_app_core::controller::plan::{Approval, ChangePlan};
 use rocm_app_core::controller::progress::{ProgressEvent, ProgressSink};
-use rocm_app_core::controller::request::{FixId, OperationRequest};
+use rocm_app_core::controller::request::{ExportDestination, FixId, OperationRequest};
 use rocm_app_core::controller::{Freshness, RocmController};
 use rocm_app_core::diagnostics::{
     self, BundleReceipt, DiagnosisReport, DiagnosisView, LogPage, LogQuery, LogRecord, LogsView,
@@ -49,15 +49,21 @@ use rocm_app_core::shared::{AmdSmiCollector, amd_smi_binary};
 
 /// Locate the bundled `rocm` binary.
 ///
-/// Beside our own executable first: an installed app must use the CLI it
+/// Always beside our own executable: an installed app must use the CLI it
 /// shipped with, not whatever a user happens to have on `PATH`, or the app and
 /// the tool disagree about what a runtime key means.
 fn bundled_cli_path() -> PathBuf {
+    // Always the sibling path, even when no file is there yet: a bare file
+    // name falls back to `PATH` — and on Windows the working directory — so
+    // a writable folder could substitute the binary this app runs as itself.
+    // An absent sibling fails the spawn with `NotFound` and is reported
+    // honestly as `missing_cli` instead.
     std::env::current_exe()
         .ok()
         .and_then(|exe| exe.parent().map(|dir| dir.join(rocm_binary_name())))
-        .filter(|candidate| candidate.is_file())
-        .unwrap_or_else(|| PathBuf::from(rocm_binary_name()))
+        // Unreachable in practice; an empty path can never resolve through
+        // `PATH` or the working directory either, so it still fails closed.
+        .unwrap_or_default()
 }
 
 const fn rocm_binary_name() -> &'static str {
@@ -441,7 +447,10 @@ impl CliRunner for BundledCli {
             // Re-stamped by the controller; the adapter does not know the id.
             operation_id: rocm_app_core::controller::plan::PlanId::new(0, 0),
             stage: "execute".to_owned(),
-            message: format!("Running rocm {}", argv.join(" ")),
+            // A fixed phrase, never the argv: `--prefix <path>` carries the
+            // user's own folders, and this message reaches the primary
+            // progress line.
+            message: "Running the ROCm command-line tool".to_owned(),
             count: None,
         });
 
@@ -461,9 +470,9 @@ impl CliRunner for BundledCli {
             Ok(())
         } else {
             // The CLI's stderr is the why, in the CLI's own words, and it is
-            // what the failure screen shows. The argv echo stays out of it:
-            // command syntax belongs to the opt-in event log (the "execute"
-            // stage above) and the audit journal, not a primary surface.
+            // what the failure screen shows. The argv echo stays out of it —
+            // and out of the stage message above: command syntax belongs to
+            // the audit journal, not a primary surface.
             let stderr = String::from_utf8_lossy(&output.stderr);
             let stderr = stderr.trim();
             Err(AdapterError::Process {
@@ -994,6 +1003,11 @@ pub fn diagnostics_logs(
     state: tauri::State<'_, ControllerState>,
     query: LogQuery,
 ) -> Result<LogsView, CommandError> {
+    // Two of the query's fields are webview-supplied text that becomes argv;
+    // checked here at first touch, like every other request field.
+    query
+        .validate()
+        .map_err(rocm_app_core::controller::ControllerError::from)?;
     let page = state.diagnostics.logs(&query)?;
     let own = own_records(state.storage.as_ref());
     Ok(diagnostics::logs_view(&page, &own, &query))
@@ -1016,9 +1030,14 @@ pub fn diagnostics_export(
     destination: String,
     symptom: Option<String>,
 ) -> Result<BundleReceipt, CommandError> {
-    Ok(state
-        .diagnostics
-        .export_bundle(std::path::Path::new(&destination), symptom.as_deref())?)
+    // The destination becomes the argv element after `--out`; validated with
+    // the same rules as an install root, refused in the same typed shape.
+    let destination = ExportDestination::new(destination)
+        .map_err(rocm_app_core::controller::ControllerError::from)?;
+    Ok(state.diagnostics.export_bundle(
+        std::path::Path::new(destination.as_str()),
+        symptom.as_deref(),
+    )?)
 }
 
 /// Describe applying a fix, without applying it.
@@ -1368,5 +1387,93 @@ mod tests {
         // A default query asks for no filter at all.
         let bare = logs_argv(&LogQuery::default());
         assert_eq!(bare, ["app-logs", "--json", "--page", "0"]);
+    }
+
+    /// The CLI must always be the sibling of our own executable — a bare file
+    /// name falls back to `PATH`, and on Windows the working directory, which
+    /// would let a writable folder substitute the binary.
+    #[test]
+    fn controller_bundled_cli_path_is_always_beside_the_executable() {
+        let path = bundled_cli_path();
+        let exe = std::env::current_exe().expect("current_exe");
+        // No sibling `rocm` exists next to the test binary, so this asserts
+        // the *absent* sibling path is returned rather than a PATH fallback.
+        assert_eq!(path.parent(), exe.parent());
+        assert_eq!(
+            path.file_name().and_then(|n| n.to_str()),
+            Some(rocm_binary_name())
+        );
+    }
+
+    /// The Stage message is a fixed phrase. The argv carries the user's own
+    /// folders (`--prefix <home path>`), and this message reaches the primary
+    /// progress line.
+    #[test]
+    fn controller_stage_message_never_echoes_argv() {
+        use rocm_app_core::controller::progress::RecordingSink;
+        use rocm_app_core::controller::request::{Channel, InstallPath, RuntimeFamily};
+
+        let root = if cfg!(target_os = "windows") {
+            r"C:\Users\someone\private-folder"
+        } else {
+            "/home/someone/private-folder"
+        };
+        let request = OperationRequest::InstallRuntime {
+            channel: Channel::Release,
+            family: RuntimeFamily::new("gfx120X-all").expect("family"),
+            version: VersionSelector::Exact {
+                version: "7.14.0".to_owned(),
+            },
+            install_root: Some(InstallPath::new(root).expect("root")),
+        };
+        let runner = BundledCli {
+            binary: PathBuf::from("/nonexistent/rocm-app-test/rocm"),
+        };
+        let sink = RecordingSink::new();
+        // The spawn fails — there is no binary — but the stage event has
+        // already been emitted by then, which is all this test reads.
+        let _ = runner.run(&request, Some("7.14.0"), &sink);
+
+        let messages: Vec<String> = sink
+            .events()
+            .into_iter()
+            .filter_map(|event| match event {
+                ProgressEvent::Stage { message, .. } => Some(message),
+                _ => None,
+            })
+            .collect();
+        assert!(!messages.is_empty());
+        for message in &messages {
+            assert!(!message.contains("--prefix"), "{message}");
+            assert!(!message.contains("private-folder"), "{message}");
+        }
+    }
+
+    /// The export destination becomes the argv element after `--out`, so it
+    /// is validated with the same rules as an install root — one rejection
+    /// class per case.
+    #[test]
+    fn diagnostics_export_destination_is_validated_like_an_install_root() {
+        let long = format!("/home/user/{}", "a".repeat(4096));
+        for (destination, class) in [
+            ("", "empty"),
+            (long.as_str(), "oversized"),
+            ("/home/user/bundle\u{7}", "control character"),
+            ("--out-dir", "leading dash"),
+            ("relative/folder", "relative"),
+            ("/home/user/../../etc", "parent traversal"),
+            ("/usr", "protected root"),
+        ] {
+            assert!(
+                ExportDestination::new(destination).is_err(),
+                "accepted {class}: {destination:?}"
+            );
+        }
+        let good = if cfg!(target_os = "windows") {
+            r"C:\Users\someone\Documents\rocm-support"
+        } else {
+            "/home/someone/Documents/rocm-support"
+        };
+        assert!(ExportDestination::new(good).is_ok());
     }
 }

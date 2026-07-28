@@ -23,6 +23,7 @@ export default function Settings({ backend }: SettingsProps) {
   const [autostart, setAutostart] = useState<AutostartState | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [generation, setGeneration] = useState(0);
 
   useEffect(() => {
     // Liveness lives on an object rather than a `let`: the compiler narrows a
@@ -44,7 +45,13 @@ export default function Settings({ backend }: SettingsProps) {
     return () => {
       mounted.current = false;
     };
-  }, [backend]);
+  }, [backend, generation]);
+
+  /** After a refused read: clear the failure so the reading line returns. */
+  const retry = useCallback(() => {
+    setFailure(null);
+    setGeneration((n) => n + 1);
+  }, []);
 
   const toggle = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -74,9 +81,17 @@ export default function Settings({ backend }: SettingsProps) {
       </h1>
 
       {autostart === null ? (
-        <p aria-busy="true" data-testid="settings-loading">
-          Reading your settings&hellip;
-        </p>
+        failure !== null ? (
+          // The failure is already on screen below; a reading line beside it
+          // would promise progress that is not coming. Offer the way out.
+          <button type="button" data-testid="settings-retry" onClick={retry}>
+            Try again
+          </button>
+        ) : (
+          <p aria-busy="true" data-testid="settings-loading">
+            Reading your settings&hellip;
+          </p>
+        )
       ) : (
         <div className="settings__field">
           <label className="settings__toggle">

@@ -114,7 +114,14 @@ describe("activity empty states", () => {
     }
     expect(new Set(said.values()).size, "three empty states must not share a message").toBe(3);
     expect(said.get("first-run")).toMatch(/no filter to clear/i);
-    expect(said.get("unavailable")).toContain("could not read: ROCm command history");
+    // Asserted against the fixture's own words: the exact copy is owned by
+    // the Rust producer and changes with it; what this pins is that the
+    // detail names the unreadable source on screen.
+    const unavailable = fixtureLogs("unavailable").view.empty;
+    if (unavailable?.state !== "unavailable") {
+      throw new Error("the unavailable fixture no longer carries a detail");
+    }
+    expect(said.get("unavailable")).toContain(unavailable.detail);
   });
 
   it("restores the full list with the query the backend handed back", async () => {
@@ -476,5 +483,146 @@ describe("diagnose fix guard", () => {
 
     expect(await screen.findByTestId("diagnostics-refusal")).toHaveTextContent(/no plan/i);
     expect(screen.queryByTestId("fix-plan")).not.toBeInTheDocument();
+  });
+});
+
+describe("activity resilience", () => {
+  /** A refused read gets a retry, not a reading line that never ends. */
+  it("shows the refusal with a retry instead of a forever reading line", async () => {
+    const base = fixtureDiagnosticsBackend();
+    let failures = 1;
+    const backend: typeof base = {
+      ...base,
+      logs: (query) =>
+        failures-- > 0
+          ? Promise.reject(new Error("the records could not be read"))
+          : base.logs(query),
+    };
+    render(<Logs backend={backend} />);
+
+    expect(await screen.findByTestId("logs-refusal")).toHaveTextContent(/could not be read/);
+    expect(screen.queryByTestId("logs-loading")).not.toBeInTheDocument();
+
+    await userEvent.setup().click(screen.getByTestId("logs-retry"));
+    expect(await screen.findByTestId("sources")).toBeInTheDocument();
+  });
+
+  /**
+   * Regression: `atUnixMs` is an unvalidated u64, and one record outside
+   * ECMAScript's date range made `toISOString` throw and blanked the window.
+   */
+  it("degrades a record with an impossible timestamp instead of blanking", async () => {
+    const populated = fixtureLogs("populated").view;
+    const record = populated.records[0];
+    if (record === undefined) {
+      throw new Error("the populated fixture no longer has records");
+    }
+    const corrupt: LogsView = {
+      ...populated,
+      records: [{ ...record, atUnixMs: 2 ** 62 }, ...populated.records.slice(1)],
+    };
+    await showLogs({ logsView: corrupt });
+    const user = userEvent.setup();
+
+    const row = screen.getByTestId(`record-${record.id}`);
+    expect(row).toHaveTextContent("Unknown time");
+    await user.click(row);
+    expect(await screen.findByTestId("detail")).toHaveTextContent("Unknown time");
+  });
+
+  it("names the sources whose files were cut short", async () => {
+    const populated = fixtureLogs("populated").view;
+    const source = populated.sources[0];
+    if (source === undefined) {
+      throw new Error("the populated fixture no longer has sources");
+    }
+    const truncated: LogsView = {
+      ...populated,
+      bounds: { ...populated.bounds, truncated: [source.id] },
+    };
+    await showLogs({ logsView: truncated });
+    expect(screen.getByTestId("truncated")).toHaveTextContent(source.label);
+  });
+
+  /** Revealing paths is a display choice, not a narrowing: paging survives. */
+  it("keeps the page when file locations are revealed", async () => {
+    const populated = fixtureLogs("populated").view;
+    const more: LogsView = { ...populated, page: { ...populated.page, hasMore: true } };
+    const backend = await showLogs({ logsView: more });
+    const user = userEvent.setup();
+
+    await user.click(screen.getByTestId("next"));
+    await waitFor(() => {
+      expect(backend.calls.logs.at(-1)?.page).toBe(1);
+    });
+
+    await user.click(screen.getByText("Show file locations"));
+    await waitFor(() => {
+      expect(backend.calls.logs.at(-1)?.revealLocations).toBe(true);
+    });
+    expect(backend.calls.logs.at(-1)?.page).toBe(1);
+    expect(screen.getByTestId("page")).toHaveTextContent("Page 2");
+  });
+});
+
+describe("diagnose re-check and fix control", () => {
+  /**
+   * Regression: the read was keyed on the symptom alone, so a Re-check with
+   * unchanged text cleared the view and never re-ran the read — a permanent
+   * spinner.
+   */
+  it("returns a verdict when Re-check is pressed with the same symptom", async () => {
+    const backend = fixtureDiagnosticsBackend({ diagnosis: "matched" });
+    render(<Diagnostics backend={backend} />);
+    await screen.findByTestId("verdict");
+    const user = userEvent.setup();
+
+    await user.click(screen.getByTestId("recheck"));
+
+    expect(await screen.findByTestId("verdict")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(backend.calls.diagnoses).toEqual([undefined, undefined]);
+    });
+  });
+
+  /** The same way out the sibling mutation screens have. */
+  it("offers Stop while a fix is being applied", async () => {
+    const running: ProgressEvent = {
+      event: "stage",
+      operationId: FIX_PLAN.id,
+      stage: "apply",
+      message: "Applying the fix.",
+      count: null,
+    };
+    const backend = fixtureDiagnosticsBackend({
+      diagnosis: "high-confidence",
+      plan: FIX_PLAN,
+      events: [running],
+    });
+    render(<Diagnostics backend={backend} />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByTestId(`apply-${FIX_ID}`));
+    await user.click(await screen.findByTestId("confirm-fix"));
+
+    await user.click(await screen.findByTestId("stop"));
+    expect(backend.calls.cancels).toBe(1);
+  });
+
+  /** A match whose findings all fell away is not an empty promise. */
+  it("explains a matched diagnosis with no findings and offers the route", async () => {
+    const matched = fixtureDiagnosis("matched").view;
+    const empty: DiagnosisView = {
+      ...matched,
+      findings: [],
+      route: { target: "rocm-core", url: "https://example.invalid/report" },
+    };
+    render(<Diagnostics backend={fixtureDiagnosticsBackend({ diagnosisView: empty })} />);
+
+    const verdict = await screen.findByTestId("verdict");
+    expect(verdict).toHaveAttribute("data-state", "matched");
+    expect(screen.getByTestId("no-findings")).toHaveTextContent(/\S/);
+    expect(screen.getByTestId("route")).toHaveAttribute("href", "https://example.invalid/report");
+    expect(screen.queryByTestId("findings")).not.toBeInTheDocument();
   });
 });

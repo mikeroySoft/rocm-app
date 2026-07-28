@@ -276,7 +276,7 @@
         },
         "empty": {
           "state": "unavailable",
-          "detail": "could not read: ROCm command history, ROCm runtime changes"
+          "detail": "These logs could not be opened: ROCm command history, ROCm runtime changes."
         },
         "locations": null
       }

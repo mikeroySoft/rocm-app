@@ -379,6 +379,31 @@ fn health_distinguishes_the_four_absent_looking_states() {
     assert_eq!(unique.len(), labels.len());
 }
 
+/// The stale note reads like the freshness line, not like a debugger: raw
+/// epoch milliseconds on the Overview read as a bug, not a time.
+#[test]
+fn health_stale_component_note_is_humanized() {
+    let mut snapshot = snapshot_named("healthy");
+    snapshot.components = vec![ComponentReport {
+        kind: ComponentKind::Engine,
+        name: "lemonade".to_owned(),
+        state: ComponentState::Stale {
+            version: Some("1.2.3".to_owned()),
+            checked_at_unix_ms: NOW - 3 * 60 * 60_000,
+        },
+    }];
+    let o = overview(&snapshot, &live_telemetry(), NOW, Some(APP_VERSION));
+    let row = o
+        .components
+        .iter()
+        .find(|r| r.kind == ComponentKind::Engine)
+        .expect("engine row");
+    assert_eq!(
+        row.note.as_deref(),
+        Some("Last read 3 hours ago and not re-checked since.")
+    );
+}
+
 /// A second engine is appended, not silently swallowed by the first.
 #[test]
 fn health_extra_components_are_shown_not_dropped() {

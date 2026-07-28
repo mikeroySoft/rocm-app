@@ -131,7 +131,7 @@ export function approvalFor(plan: ChangePlan): Approval {
  */
 export function requireTauri(): void {
   if (!isTauri()) {
-    throw new Error("controller operations require the desktop backend");
+    throw new Error("ROCm App can only do this from the desktop app.");
   }
 }
 

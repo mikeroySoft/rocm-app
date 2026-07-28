@@ -309,6 +309,8 @@ export interface DiagnosticsBackend {
   /** Describes applying a fix. Applying it still needs an approval. */
   planFix(fixId: string): Promise<ChangePlan>;
   execute(approval: Approval, onEvent: (event: ProgressEvent) => void): Promise<void>;
+  /** Stop the running fix. Same controller, same semantics as the siblings. */
+  cancel(): Promise<void>;
 }
 
 export function desktopDiagnostics(): DiagnosticsBackend {
@@ -341,6 +343,7 @@ export function desktopDiagnostics(): DiagnosticsBackend {
     execute: async (approval, onEvent) => {
       await controller.execute(approval, onEvent);
     },
+    cancel: controller.cancel,
   };
 }
 
@@ -415,6 +418,8 @@ export interface DiagnosticsCalls {
   readonly fixPlans: string[];
   /** The only mutation either screen can perform. */
   readonly executions: Approval[];
+  /** Mutable on purpose: the fixture backend counts each stop request. */
+  cancels: number;
 }
 
 export interface FixtureDiagnostics extends DiagnosticsBackend {
@@ -472,6 +477,7 @@ export function fixtureDiagnosticsBackend(
     exports: [],
     fixPlans: [],
     executions: [],
+    cancels: 0,
   };
   return {
     calls,
@@ -500,6 +506,10 @@ export function fixtureDiagnosticsBackend(
       for (const event of options.events ?? []) {
         onEvent(event);
       }
+      return Promise.resolve();
+    },
+    cancel: () => {
+      calls.cancels += 1;
       return Promise.resolve();
     },
   };

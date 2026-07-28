@@ -34,6 +34,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::contract::{ContractError, ProducerIdentity};
+use crate::controller::request::{RequestError, validate_token};
 
 /// The only payload version this build understands.
 ///
@@ -82,19 +83,6 @@ impl Severity {
             Self::Warn => Some(3),
             Self::Error => Some(4),
             Self::Unrecognised => None,
-        }
-    }
-
-    /// Text form. Colour never carries this alone.
-    #[must_use]
-    pub const fn label(self) -> &'static str {
-        match self {
-            Self::Trace => "Trace",
-            Self::Debug => "Debug",
-            Self::Info => "Info",
-            Self::Warn => "Warning",
-            Self::Error => "Error",
-            Self::Unrecognised => "Severity not recognised",
         }
     }
 }
@@ -434,6 +422,53 @@ pub struct LogQuery {
 }
 
 impl LogQuery {
+    /// Bounds on the two webview-supplied text fields, checked at first touch.
+    ///
+    /// Everything else in the query is a closed type; `sources` and `search`
+    /// are free text that the host turns into argv elements, so they get the
+    /// same treatment as [`crate::controller::request`]'s newtypes — refused
+    /// here with a typed error, never inside the argv builder.
+    pub fn validate(&self) -> Result<(), RequestError> {
+        // More sources than the producer has log streams is not a filter,
+        // it is a hand-built payload.
+        const MAX_SOURCES: usize = 16;
+        const MAX_SEARCH: usize = 256;
+        if self.sources.len() > MAX_SOURCES {
+            return Err(RequestError::Invalid {
+                field: "sources",
+                detail: format!("lists more than {MAX_SOURCES} sources"),
+            });
+        }
+        for source in &self.sources {
+            // Source ids are simple tokens (`cli-activity`), so the same
+            // allowlist the runtime key uses applies unchanged.
+            validate_token("sources", source, 64)?;
+        }
+        if let Some(search) = self.search.as_deref() {
+            if search.len() > MAX_SEARCH {
+                return Err(RequestError::Invalid {
+                    field: "search",
+                    detail: format!("longer than {MAX_SEARCH} characters"),
+                });
+            }
+            if search.chars().any(char::is_control) {
+                return Err(RequestError::Invalid {
+                    field: "search",
+                    detail: "contains a control character".to_owned(),
+                });
+            }
+            // `logs_argv` passes the trimmed text as the element after
+            // `--search`; a leading dash would be read as a flag there.
+            if search.trim_start().starts_with('-') {
+                return Err(RequestError::Invalid {
+                    field: "search",
+                    detail: "must not start with '-'".to_owned(),
+                });
+            }
+        }
+        Ok(())
+    }
+
     /// Whether anything is being excluded right now.
     ///
     /// Drives the difference between "nothing has happened yet" and "your
@@ -652,7 +687,7 @@ fn empty_reason(page: &LogPage, query: &LogQuery, is_empty: bool) -> Option<Empt
     if !page.sources.is_empty() && page.sources.iter().all(|source| !source.available) {
         let names: Vec<&str> = page.sources.iter().map(|s| s.label.as_str()).collect();
         return Some(EmptyReason::Unavailable {
-            detail: format!("could not read: {}", names.join(", ")),
+            detail: format!("These logs could not be opened: {}.", names.join(", ")),
         });
     }
     if query.is_filtered() {

@@ -49,7 +49,11 @@ const fn is_safe_token_char(c: char) -> bool {
     c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.')
 }
 
-fn validate_token(field: &'static str, value: &str, max: usize) -> Result<(), RequestError> {
+pub(crate) fn validate_token(
+    field: &'static str,
+    value: &str,
+    max: usize,
+) -> Result<(), RequestError> {
     if value.is_empty() {
         return Err(RequestError::Invalid {
             field,
@@ -210,37 +214,7 @@ pub struct InstallPath(String);
 impl InstallPath {
     pub fn new(value: impl Into<String>) -> Result<Self, RequestError> {
         let value = value.into();
-        let invalid = |detail: &str| RequestError::Invalid {
-            field: "installRoot",
-            detail: detail.to_owned(),
-        };
-        if value.is_empty() {
-            return Err(invalid("must not be empty"));
-        }
-        if value.len() > 4096 {
-            return Err(invalid("longer than 4096 characters"));
-        }
-        if value.chars().any(char::is_control) {
-            return Err(invalid("contains a control character"));
-        }
-        // A leading dash is read as a flag by any argv consumer, and `--prefix`
-        // takes the next argument verbatim.
-        if value.starts_with('-') {
-            return Err(invalid("must not start with '-'"));
-        }
-        if !rocm_core::runtime_path_text_is_absolute_for_host(&value) {
-            return Err(invalid("must be a full path, not a relative one"));
-        }
-        // Rejected before normalisation: `..` in the value the user reviewed
-        // means the folder shown and the folder written are different strings.
-        if value.split(['/', '\\']).any(|component| component == "..") {
-            return Err(invalid("must not contain '..'"));
-        }
-        if rocm_core::runtime_install_root_is_protected(std::path::Path::new(&value)) {
-            return Err(invalid(
-                "is a system folder; choose a folder inside your own home folder",
-            ));
-        }
+        validate_path_text("installRoot", &value)?;
         Ok(Self(value))
     }
 
@@ -260,6 +234,66 @@ impl TryFrom<String> for InstallPath {
 impl From<InstallPath> for String {
     fn from(value: InstallPath) -> Self {
         value.0
+    }
+}
+
+/// One rule set for any absolute, user-owned folder that becomes a single
+/// argv element — the install root and the support-bundle destination. A
+/// second copy of these checks for one of them is the copy that goes stale
+/// when the other learns a new rejection.
+fn validate_path_text(field: &'static str, value: &str) -> Result<(), RequestError> {
+    let invalid = |detail: &str| RequestError::Invalid {
+        field,
+        detail: detail.to_owned(),
+    };
+    if value.is_empty() {
+        return Err(invalid("must not be empty"));
+    }
+    if value.len() > 4096 {
+        return Err(invalid("longer than 4096 characters"));
+    }
+    if value.chars().any(char::is_control) {
+        return Err(invalid("contains a control character"));
+    }
+    // A leading dash is read as a flag by any argv consumer, and `--prefix`
+    // and `--out` take the next argument verbatim.
+    if value.starts_with('-') {
+        return Err(invalid("must not start with '-'"));
+    }
+    if !rocm_core::runtime_path_text_is_absolute_for_host(value) {
+        return Err(invalid("must be a full path, not a relative one"));
+    }
+    // Rejected before normalisation: `..` in the value the user reviewed
+    // means the folder shown and the folder written are different strings.
+    if value.split(['/', '\\']).any(|component| component == "..") {
+        return Err(invalid("must not contain '..'"));
+    }
+    if rocm_core::runtime_install_root_is_protected(std::path::Path::new(value)) {
+        return Err(invalid(
+            "is a system folder; choose a folder inside your own home folder",
+        ));
+    }
+    Ok(())
+}
+
+/// An absolute, user-owned folder the support bundle may be written into.
+///
+/// Same rules as [`InstallPath`], through the same function: the destination
+/// reaches the CLI as the argv element after `--out`, so everything that makes
+/// a hostile install root dangerous applies to it unchanged.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExportDestination(String);
+
+impl ExportDestination {
+    pub fn new(value: impl Into<String>) -> Result<Self, RequestError> {
+        let value = value.into();
+        validate_path_text("destination", &value)?;
+        Ok(Self(value))
+    }
+
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
     }
 }
 

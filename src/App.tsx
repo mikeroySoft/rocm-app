@@ -180,7 +180,14 @@ function DesktopShell({ initialSurface }: { readonly initialSurface?: Surface | 
       .overview(false)
       .then((overview) => {
         if (live) {
-          setSurface(overview.firstRun ? "onboarding" : "dashboard");
+          // First run alone is not enough: on a host this app cannot change
+          // (WSL, an unsupported platform, an unrecognised GPU) the guided
+          // setup has no controls to offer, so landing there is a trap. The
+          // Overview explains its own limits; the verdict is the backend's
+          // word for "cannot be changed", so no second opinion is derived.
+          setSurface(
+            overview.firstRun && overview.verdict !== "unsupported" ? "onboarding" : "dashboard",
+          );
         }
       })
       .catch(() => {
@@ -194,6 +201,22 @@ function DesktopShell({ initialSurface }: { readonly initialSurface?: Surface | 
       live = false;
     };
   }, [dashboard, initialSurface]);
+
+  // Focus follows the surface, the same pattern OnboardingFlow applies to its
+  // steps: swapping surfaces without moving focus leaves a keyboard or
+  // screen-reader user on a heading that is no longer there. The heading
+  // belongs to the child surface, so the shell reaches for it after render
+  // rather than owning a duplicate.
+  useEffect(() => {
+    if (surface === null) {
+      return;
+    }
+    const heading = document.querySelector("h1");
+    if (heading instanceof HTMLElement) {
+      heading.tabIndex = -1;
+      heading.focus();
+    }
+  }, [surface]);
 
   // The tray hands a surface over rather than routing itself, so the shell
   // stays the only place that decides what is on screen.

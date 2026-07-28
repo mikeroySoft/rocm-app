@@ -2280,7 +2280,7 @@
             "value": "7.14.0",
             "status": "stale",
             "statusLabel": "Last known",
-            "note": "Last read at 1767139200000 and not re-checked since."
+            "note": "Last read 24 hours ago and not re-checked since."
           }
         ],
         "driver": {

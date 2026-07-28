@@ -312,7 +312,20 @@ impl RocmController {
             SnapshotFingerprint::of(&snapshot),
         );
 
-        self.issued.lock().expect("poisoned").push(plan.clone());
+        // Prune while planning: a tray app plans for weeks, and a set that
+        // only grows is a slow leak. A plan past its TTL is rejected by
+        // `verify` regardless, so dropping it — and the consumed ids that
+        // pointed at dropped plans — changes no observable behaviour.
+        {
+            let mut issued = self.issued.lock().expect("poisoned");
+            issued.retain(|p| !p.is_expired_at(now));
+            issued.push(plan.clone());
+            self.consumed
+                .lock()
+                .expect("poisoned")
+                .retain(|id| issued.iter().any(|p| p.id() == id));
+        }
+
         Ok(plan)
     }
 

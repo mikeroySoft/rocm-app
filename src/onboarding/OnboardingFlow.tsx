@@ -55,6 +55,10 @@ export default function OnboardingFlow({ backend, onFinished }: OnboardingFlowPr
   const [channel, setChannel] = useState<Channel | null>(null);
   const [exactVersion, setExactVersion] = useState("");
   const [showDetails, setShowDetails] = useState(false);
+  // While a plan request is in flight the button that started it is
+  // disabled: `plan` is idempotent but a double press queued two review
+  // screens, the second overwriting the first mid-read.
+  const [planning, setPlanning] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
   const heading = useRef<HTMLHeadingElement>(null);
@@ -115,6 +119,7 @@ export default function OnboardingFlow({ backend, onFinished }: OnboardingFlowPr
       return;
     }
     setRefusal(null);
+    setPlanning(true);
     const request = {
       ...view.recommendation.request,
       ...(view.recommendation.request.operation === "install-runtime"
@@ -133,6 +138,9 @@ export default function OnboardingFlow({ backend, onFinished }: OnboardingFlowPr
       })
       .catch((error: unknown) => {
         setRefusal(messageOf(error));
+      })
+      .finally(() => {
+        setPlanning(false);
       });
   }, [backend, view, channel, exactVersion, folder]);
 
@@ -217,13 +225,17 @@ export default function OnboardingFlow({ backend, onFinished }: OnboardingFlowPr
         />
       )}
 
-      {step === "location" && recommendation && (
+      {/* The location step stands without a Recommendation: a blocker whose
+          way out is "choose another folder" arrives with none, and routing it
+          to a step that required one rendered a heading over nothing. */}
+      {step === "location" && (
         <LocationCard
           recommendation={recommendation}
-          folder={folder ?? recommendation.targetFolder}
+          folder={folder ?? recommendation?.targetFolder ?? ""}
+          planning={planning}
           onFolder={setFolder}
-          onBack={() => setStep("recommend")}
-          onContinue={review}
+          onBack={() => setStep(recommendation ? "recommend" : "blocked")}
+          onContinue={recommendation ? review : recheck}
         />
       )}
 
@@ -371,12 +383,15 @@ function RecommendCard({
 function LocationCard({
   recommendation,
   folder,
+  planning,
   onFolder,
   onBack,
   onContinue,
 }: {
-  readonly recommendation: Recommendation;
+  /** `null` when a blocker sent the user here to pick another folder. */
+  readonly recommendation: Recommendation | null;
   readonly folder: string;
+  readonly planning: boolean;
   readonly onFolder: (folder: string) => void;
   readonly onBack: () => void;
   readonly onContinue: () => void;
@@ -396,7 +411,7 @@ function LocationCard({
           onChange={(event) => onFolder(event.target.value)}
         />
       </label>
-      {recommendation.folderChoices.length > 0 && (
+      {recommendation !== null && recommendation.folderChoices.length > 0 && (
         <div className="onboard__choices" role="group" aria-label="Suggested folders">
           {recommendation.folderChoices.map((choice) => (
             <button type="button" key={choice} onClick={() => onFolder(choice)}>
@@ -405,19 +420,28 @@ function LocationCard({
           ))}
         </div>
       )}
-      <p className="onboard__muted">
-        Needs about {formatBytes(recommendation.estimatedBytes)}
-        {recommendation.availableBytes === null
-          ? ""
-          : `, and ${formatBytes(recommendation.availableBytes)} is free there`}
-        .
-      </p>
+      {recommendation !== null && (
+        <p className="onboard__muted">
+          Needs about {formatBytes(recommendation.estimatedBytes)}
+          {recommendation.availableBytes === null
+            ? ""
+            : `, and ${formatBytes(recommendation.availableBytes)} is free there`}
+          .
+        </p>
+      )}
       <div className="onboard__actions">
         <button type="button" onClick={onBack}>
           Back
         </button>
-        <button type="button" className="onboard__primary" onClick={onContinue}>
-          Review the changes
+        <button
+          type="button"
+          className="onboard__primary"
+          disabled={planning}
+          onClick={onContinue}
+        >
+          {/* Without a recommendation there is nothing to review yet; the
+              chosen folder goes back through detection first. */}
+          {recommendation !== null ? "Review the changes" : "Check this folder"}
         </button>
       </div>
     </>

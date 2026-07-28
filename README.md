@@ -27,6 +27,11 @@ The app fails to compile on a target that is neither Windows nor Linux. A
 best-effort build on an unsupported host would ship something that cannot reach
 a GPU and cannot explain why.
 
+Hardware eligibility is decided by the GPU's ROCm family, not its marketing
+name: setup is offered only when the detected GPU maps to a TheRock family the
+managed runtime publishes builds for. An AMD GPU the mapping does not
+recognise is reported honestly — with the GPU named — and offered no install.
+
 ## What it will and will not do
 
 - **Drivers are read-only.** The app reports your installed driver version and
@@ -35,8 +40,12 @@ a GPU and cannot explain why.
 - **Managed ROCm runtimes install side by side.** "Change ROCm" validates and
   activates a runtime you already have installed; it does not mutate system
   drivers.
-- **Every mutation has a review step.** Install, update, activate, remove, fix,
-  autostart changes, and app self-update all show an explicit plan first.
+- **Every runtime change has a review step.** Install, update, activate,
+  remove, validate, and diagnosed fixes all show an explicit plan first, and
+  nothing runs until exactly that plan is approved. Start at login is a direct
+  settings toggle — Settings shows what the operating system reports, not what
+  was asked. The app has no silent self-update: new app builds arrive through
+  `rocm install app`, which has its own review and signature checks.
 - **Installing the app installs the CLI. Installing the CLI does not install the
   app** — only `rocm install app` does that.
 - **No CPU fallback.** GPU-required work fails loudly rather than silently
@@ -76,6 +85,47 @@ not anything is open.
   second one. Full probes are withheld while a change is running and resume
   once after it ends; metrics keep flowing so the tray stays alive during a long
   install.
+
+## What the version numbers mean
+
+Four version numbers appear in the product, and they move independently:
+
+| Number          | Where it appears                | What it is                                                             |
+| --------------- | ------------------------------- | ---------------------------------------------------------------------- |
+| App version     | Package name, inventory         | The `rocm-app` desktop package itself                                  |
+| CLI version     | Overview inventory              | The bundled `rocm` build the app ships and drives                      |
+| Contract schema | Error copy only                 | The `app-snapshot` JSON version; a future schema means "update the app" |
+| ROCm version    | Overview, Manage ROCm versions  | The managed runtime a change installs, activates, or removes           |
+
+The installer bundles a CLI it is compatible with and records the pairing in
+`compatibility.json`, so app and CLI versions move together on an installed
+machine.
+
+## Privacy and support data
+
+- **No telemetry.** The app sends nothing anywhere on its own. Network activity
+  happens inside the bundled CLI, when a reviewed plan runs or when the bounded
+  update check does.
+- **Local records only.** The Activity screen reads local log files. The app's
+  own audit ring keeps the last 200 operations and records operation, outcome,
+  and error code — never argv, paths, or URLs.
+- **Support bundles are explicit and redacted.** Exporting from the Activity
+  screen runs `rocm app-support-bundle`: a fixed allowlist of members, redacted
+  (usernames, hostnames, tokens) before writing. Nothing is uploaded; you choose
+  where the file goes. The allowlist and redaction policy are documented in
+  rocm-cli's `docs/support-bundle.md`.
+
+## When something is broken
+
+- **The app says the command-line tool is too old.** The bundled CLI predates
+  the app's contract. Reinstall the app package — it carries a matched CLI.
+- **The app says it is too old itself.** The CLI's snapshot schema is newer
+  than this app. Update the app: `rocm install app`.
+- **Something on this machine is wrong.** Use Diagnose: it matches known causes
+  against this computer and offers only fixes it can apply itself; anything
+  else names the change it cannot make for you.
+- **None of the above.** Export a support bundle from the Activity screen and
+  attach it to an issue. Its member list is fixed and its content is redacted.
 
 ## Layout
 
@@ -145,11 +195,11 @@ For a standalone binary that serves its own bundled frontend, build a release:
 npm run tauri build     # or: npm run build && cargo build --release --manifest-path src-tauri/Cargo.toml
 ```
 
-The app locates the `rocm` command-line tool **beside its own executable**
-first, and only then on `PATH`. A development build therefore talks to
-whichever `rocm` is on your `PATH`, which may not be the one in
-`../rocm-cli/target/debug`. Copy or symlink the CLI next to the app binary to
-pin it.
+The app runs the `rocm` command-line tool that sits **beside its own
+executable** — never one found elsewhere on `PATH`, so an installed app cannot
+be redirected to a stranger's CLI. For a self-built binary, copy or symlink a
+compatible CLI next to it; without a sibling the app reports the CLI as
+missing instead of guessing.
 
 See [docs/testing.md](docs/testing.md) for the full gate list.
 

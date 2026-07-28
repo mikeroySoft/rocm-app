@@ -11,7 +11,7 @@
  * screen the backend would never draw.
  */
 
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Dashboard from "./Dashboard";
@@ -188,12 +188,64 @@ describe("dashboard freshness and loading", () => {
     });
   });
 
-  it("marks data past the freshness window as out of date", async () => {
+  it("marks data past the freshness window as out of date exactly once", async () => {
     await show("stale");
     const freshness = screen.getByTestId("freshness");
     expect(freshness).toHaveAttribute("data-stale", "true");
-    expect(freshness).toHaveTextContent(/out of date/i);
+    // The staleness sentence lives in the notices; the freshness span says
+    // only when the data was read. A third " · out of date" said it thrice.
+    expect(freshness).not.toHaveTextContent(/out of date/i);
     expect(screen.getByTestId("notices")).toHaveTextContent(/more than a few minutes old/i);
+  });
+
+  /**
+   * Regression: with two loads in flight the last to *resolve* won, so a
+   * slow superseded probe could overwrite the answer a newer refresh had
+   * already painted.
+   */
+  it("drops a superseded response that resolves after a newer one", async () => {
+    const healthy = fixtureState("healthy").overview;
+    const attention = fixtureState("attention").overview;
+    const pending: ((overview: HealthOverview) => void)[] = [];
+    const source: DashboardSource = {
+      overview: () =>
+        new Promise((resolve) => {
+          pending.push(resolve);
+        }),
+    };
+    render(<Dashboard source={source} />);
+
+    // First generation: cached read answers, then its live probe hangs.
+    await waitFor(() => {
+      expect(pending).toHaveLength(1);
+    });
+    pending[0]!(healthy);
+    await screen.findByTestId("verdict");
+    await waitFor(() => {
+      expect(pending).toHaveLength(2);
+    });
+
+    // Second generation: the user asks again and gets a full answer.
+    await userEvent.setup().click(screen.getByTestId("refresh"));
+    await waitFor(() => {
+      expect(pending).toHaveLength(3);
+    });
+    pending[2]!(healthy);
+    await waitFor(() => {
+      expect(pending).toHaveLength(4);
+    });
+    pending[3]!(healthy);
+    await waitFor(() => {
+      expect(screen.getByTestId("verdict")).toHaveAttribute("data-value", "healthy");
+    });
+
+    // The stale first-generation probe finally resolves — with old news.
+    // Flush the microtask queue so a missing guard would have painted it.
+    pending[1]!(attention);
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(screen.getByTestId("verdict")).toHaveAttribute("data-value", "healthy");
   });
 
   it("re-reads on demand", async () => {

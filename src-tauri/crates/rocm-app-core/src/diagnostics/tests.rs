@@ -400,7 +400,6 @@ fn diagnostics_a_severity_filter_never_hides_an_unrecognised_record() {
     let unknown: Severity = serde_json::from_str("\"catastrophe\"").expect("decodes");
     assert_eq!(unknown, Severity::Unrecognised);
     assert_eq!(unknown.rank(), None);
-    assert!(!unknown.label().is_empty());
 
     let payload = page(
         false,
@@ -437,6 +436,61 @@ fn diagnostics_a_severity_filter_never_hides_an_unrecognised_record() {
     );
     assert_eq!(view.records.len(), 2);
     assert_eq!(merged.records.len(), 1, "unrecognised severity was hidden");
+}
+
+/// The two free-text query fields become argv in the host; hostile shapes are
+/// refused at first touch, and a normal UI-built query passes untouched.
+#[test]
+fn diagnostics_log_query_bounds_are_enforced() {
+    let refused = |query: &LogQuery, why: &str| {
+        assert!(query.validate().is_err(), "accepted {why}");
+    };
+    refused(
+        &LogQuery {
+            sources: (0..17).map(|i| format!("source-{i}")).collect(),
+            ..LogQuery::default()
+        },
+        "an oversized source list",
+    );
+    refused(
+        &LogQuery {
+            sources: vec!["cli-audit; rm -rf /".to_owned()],
+            ..LogQuery::default()
+        },
+        "a non-token source",
+    );
+    refused(
+        &LogQuery {
+            search: Some("a".repeat(257)),
+            ..LogQuery::default()
+        },
+        "an oversized search",
+    );
+    refused(
+        &LogQuery {
+            search: Some("line one\nline two".to_owned()),
+            ..LogQuery::default()
+        },
+        "a control character in the search",
+    );
+    refused(
+        &LogQuery {
+            search: Some("--reveal-locations".to_owned()),
+            ..LogQuery::default()
+        },
+        "a search that reads as a flag",
+    );
+
+    let normal = LogQuery {
+        sources: vec!["cli-audit".to_owned(), APP_AUDIT_SOURCE.to_owned()],
+        min_severity: Some(Severity::Warn),
+        since_unix_ms: Some(NOW),
+        search: Some("gfx1201 timeout".to_owned()),
+        page: 2,
+        page_size: Some(50),
+        reveal_locations: true,
+    };
+    assert_eq!(normal.validate(), Ok(()));
 }
 
 /// A page smaller than the merged set still reports there is more, or the user

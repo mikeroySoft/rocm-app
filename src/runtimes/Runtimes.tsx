@@ -35,6 +35,10 @@ export default function Runtimes({ backend }: RuntimesProps) {
   const [stage, setStage] = useState<Stage>({ step: "list" });
   const [refusal, setRefusal] = useState<string | null>(null);
   const [generation, setGeneration] = useState(0);
+  // While a plan request is in flight the buttons that started it are
+  // disabled: `plan` is idempotent but a double press queued two review
+  // screens, the second overwriting the first mid-read.
+  const [planning, setPlanning] = useState(false);
 
   useEffect(() => {
     const mounted = { current: true };
@@ -58,6 +62,7 @@ export default function Runtimes({ backend }: RuntimesProps) {
   const review = useCallback(
     (request: OperationRequest) => {
       setRefusal(null);
+      setPlanning(true);
       void backend
         .plan(request)
         .then((plan) => {
@@ -65,6 +70,9 @@ export default function Runtimes({ backend }: RuntimesProps) {
         })
         .catch((cause: unknown) => {
           setRefusal(messageOf(cause));
+        })
+        .finally(() => {
+          setPlanning(false);
         });
     },
     [backend],
@@ -110,6 +118,12 @@ export default function Runtimes({ backend }: RuntimesProps) {
     setGeneration((n) => n + 1);
   }, []);
 
+  /** After a refused read: clear the refusal so the reading line returns. */
+  const retry = useCallback(() => {
+    setRefusal(null);
+    setGeneration((n) => n + 1);
+  }, []);
+
   if (stage.step === "review") {
     return <Review plan={stage.plan} onBack={() => setStage({ step: "list" })} onApply={apply} />;
   }
@@ -133,9 +147,17 @@ export default function Runtimes({ backend }: RuntimesProps) {
       )}
 
       {view === null ? (
-        <p aria-busy="true" data-testid="loading">
-          Reading what is installed&hellip;
-        </p>
+        refusal !== null ? (
+          // The refusal is already on screen above; a reading line beside it
+          // would promise progress that is not coming. Offer the way out.
+          <button type="button" data-testid="retry" onClick={retry}>
+            Try again
+          </button>
+        ) : (
+          <p aria-busy="true" data-testid="loading">
+            Reading what is installed&hellip;
+          </p>
+        )
       ) : (
         <>
           <section className="dash__panel" aria-labelledby="runtimes-update" data-testid="update">
@@ -145,17 +167,29 @@ export default function Runtimes({ backend }: RuntimesProps) {
             <p className="dash__body" data-state={view.update.state}>
               {view.updateMessage}
             </p>
-            {view.updateRequest !== null && (
+            {view.updateRequest !== null ? (
               <button
                 type="button"
                 className="dash__primary"
                 data-testid="update-action"
+                disabled={planning}
                 onClick={() => {
                   review(view.updateRequest as OperationRequest);
                 }}
               >
                 Get the newer version
               </button>
+            ) : (
+              view.update.state === "available" && (
+                // An update it cannot apply still deserves a sentence: a
+                // message that says "newer version" with no button and no
+                // reason reads as a broken screen.
+                <p className="dash__muted" data-testid="update-blocked">
+                  {view.mutable
+                    ? BLOCK_MESSAGES["not-offered"]
+                    : BLOCK_MESSAGES["unsupported-host"]}
+                </p>
+              )
             )}
           </section>
 
@@ -166,7 +200,7 @@ export default function Runtimes({ backend }: RuntimesProps) {
           ) : (
             <ul className="runtimes" data-testid="rows">
               {view.rows.map((row) => (
-                <Row key={row.key} row={row} onAction={review} />
+                <Row key={row.key} row={row} onAction={review} busy={planning} />
               ))}
             </ul>
           )}
@@ -186,9 +220,12 @@ const ACTION_LABEL: Readonly<Record<string, string>> = {
 function Row({
   row,
   onAction,
+  busy,
 }: {
   readonly row: RuntimeRow;
   readonly onAction: (request: OperationRequest) => void;
+  /** True while a plan is being fetched; every action button waits. */
+  readonly busy: boolean;
 }) {
   return (
     <li className="runtimes__row" data-testid={`row-${row.version}`}>
@@ -215,6 +252,7 @@ function Row({
             key={action}
             type="button"
             data-testid={`action-${row.version}-${action}`}
+            disabled={busy}
             onClick={() => {
               onAction(requestFor(action, row.key));
             }}
@@ -245,6 +283,10 @@ function Row({
           <div className="dash__fact">
             <dt>Builds</dt>
             <dd>{row.channel}</dd>
+          </div>
+          <div className="dash__fact">
+            <dt>Format</dt>
+            <dd>{row.format}</dd>
           </div>
           <div className="dash__fact">
             <dt>Package family</dt>

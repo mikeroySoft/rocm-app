@@ -41,6 +41,7 @@ export default function Diagnostics({ backend }: DiagnosticsProps) {
   const [draft, setDraft] = useState("");
   const [stage, setStage] = useState<Stage>({ step: "report" });
   const [refusal, setRefusal] = useState<string | null>(null);
+  const [generation, setGeneration] = useState(0);
 
   useEffect(() => {
     // Liveness lives on an object rather than a `let`: the compiler narrows a
@@ -63,7 +64,10 @@ export default function Diagnostics({ backend }: DiagnosticsProps) {
     return () => {
       mounted.current = false;
     };
-  }, [backend, symptom]);
+    // `generation` re-runs the read when Re-check is pressed with the same
+    // symptom: the view is cleared before the key is set, so a key that does
+    // not change would otherwise leave the spinner up forever.
+  }, [backend, symptom, generation]);
 
   const recheck = useCallback(
     (event: React.FormEvent<HTMLFormElement>) => {
@@ -71,6 +75,7 @@ export default function Diagnostics({ backend }: DiagnosticsProps) {
       const wanted = draft.trim();
       setView(null);
       setSymptom(wanted === "" ? null : wanted);
+      setGeneration((n) => n + 1);
     },
     [draft],
   );
@@ -177,6 +182,14 @@ export default function Diagnostics({ backend }: DiagnosticsProps) {
           {latest === undefined ? "Starting." : describe(latest)}
         </p>
         <div className="onboard__bar" role="progressbar" aria-label="Applying the fix" />
+        {/* No Back and no Close while a fix is running, same as the sibling
+            mutation screens: the only way out is to stop it, and stopping
+            still ends in a visible result. */}
+        <div className="onboard__actions">
+          <button type="button" onClick={() => void backend.cancel()} data-testid="stop">
+            Stop
+          </button>
+        </div>
       </main>
     );
   }
@@ -296,6 +309,26 @@ function Verdict({
         </section>
       );
     case "matched":
+      // A match whose findings were all filtered out is a promise with no
+      // content: the headline says a cause was found and the body would be an
+      // empty list. Fall back to the no-match answer, report route included.
+      if (view.findings.length === 0) {
+        return (
+          <section className="diagnostics__verdict" data-testid="verdict" data-state="matched">
+            <p className="dash__body" data-testid="no-findings">
+              ROCm App matched the symptom, but has no finding it can stand behind on this
+              computer.
+            </p>
+            {view.route !== null && (
+              <p className="dash__links">
+                <a href={view.route.url} data-testid="route" title={view.route.target}>
+                  Report this problem
+                </a>
+              </p>
+            )}
+          </section>
+        );
+      }
       return (
         <section className="diagnostics__verdict" data-testid="verdict" data-state="matched">
           <ul className="diagnostics__findings" data-testid="findings">

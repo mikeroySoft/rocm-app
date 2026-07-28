@@ -49,11 +49,22 @@ export default function Dashboard({
   const [generation, setGeneration] = useState(0);
 
   const load = useCallback(
-    async (refresh: boolean) => {
+    async (refresh: boolean, isCurrent: () => boolean) => {
       try {
-        setOverview(await source.overview(refresh));
+        const next = await source.overview(refresh);
+        // A response from a superseded request is dropped, not rendered: with
+        // two loads in flight the last to *resolve* used to win, so a slow
+        // stale probe could overwrite the answer a newer refresh already
+        // painted.
+        if (!isCurrent()) {
+          return;
+        }
+        setOverview(next);
         setError(null);
       } catch (cause: unknown) {
+        if (!isCurrent()) {
+          return;
+        }
         setError(asOverviewError(cause));
       }
     },
@@ -68,13 +79,14 @@ export default function Dashboard({
     // narrowing a local `boolean` across the awaits below and then reports the
     // unmount guard as dead code, which is exactly the guard that matters.
     const mounted = { current: true };
+    const isCurrent = () => mounted.current;
     void (async () => {
-      await load(false);
+      await load(false, isCurrent);
       if (!mounted.current) {
         return;
       }
       setRefreshing(true);
-      await load(true);
+      await load(true, isCurrent);
       // Unconditional: React 19 ignores a state update on an unmounted tree,
       // and a second guard here reads as dead code to the compiler.
       setRefreshing(false);
@@ -151,8 +163,10 @@ export default function Dashboard({
             data-testid="freshness"
             data-stale={overview.freshness.stale}
           >
+            {/* Staleness is already said by the label and the notices row;
+                a third " · out of date" here repeated it. `data-stale` stays
+                for styling and for tests. */}
             {overview.freshness.label}
-            {overview.freshness.stale ? " · out of date" : ""}
           </span>
           {/*
             One polite live region for the refresh state. Announcing the whole
@@ -238,7 +252,12 @@ function Telemetry({ panel }: { readonly panel: TelemetryPanel }) {
                         role="img"
                         aria-label={`${metric.label}: ${metric.value.text}`}
                       >
-                        <span style={{ inlineSize: `${(metric.value.ratio * 100).toFixed(0)}%` }} />
+                        {/* SVG presentation attributes, not an inline style:
+                            the CSP has no style-src 'unsafe-inline', and an
+                            inline `style` would be silently dropped. */}
+                        <svg aria-hidden="true" preserveAspectRatio="none">
+                          <rect width={`${(metric.value.ratio * 100).toFixed(0)}%`} height="100%" />
+                        </svg>
                       </span>
                     )}
                   </>

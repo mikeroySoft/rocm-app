@@ -654,11 +654,17 @@ code {
   overflow: hidden;
 }
 
-.dash__gauge > span {
+/* The fill is an SVG rect because the CSP forbids inline styles; its width
+   rides on the rect's own presentation attribute. */
+.dash__gauge > svg {
   display: block;
+  inline-size: 100%;
   block-size: 100%;
-  border-radius: inherit;
-  background: var(--accent);
+}
+
+.dash__gauge rect {
+  fill: var(--accent);
+  rx: 3px;
 }
 
 .dash__panel {
