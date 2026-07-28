@@ -330,6 +330,10 @@ export async function startDriver(
   }
 
   const log = join(logDir, "tauri-driver.log");
+  // Created empty up front: a driver that says nothing before dying leaves
+  // no file at all otherwise, and a failure artifact with no driver log
+  // reads as an upload bug instead of the silence it is.
+  writeFileSync(log, "");
   // Detached, so the whole tree — dbus-daemon, tauri-driver, and the native
   // WebDriver it spawns — is one process group we can take down together.
   // Signalling only the wrapper orphans the two processes holding the ports.

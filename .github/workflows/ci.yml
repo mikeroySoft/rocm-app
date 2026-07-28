@@ -396,14 +396,20 @@ jobs:
           env -u CI npx tauri build --no-bundle
           cargo build --release --manifest-path src-tauri/Cargo.toml -p rocm-fixture-cli
 
+      - name: Fresh-user isolation smoke
+        # Runs BEFORE the WebDriver scenarios on this platform, deliberately:
+        # it launches the bare app under the isolated roots and reports the
+        # app's own failure, where a driver-mediated launch of a crashing app
+        # only ever says "Microsoft Edge failed to start: crashed". If this
+        # step is green and the scenarios are not, the fault is in the
+        # driver/WebView2 seam, not the app.
+        run: python scripts/fresh_user_smoke.py
+
       - name: Desktop scenarios
         run: npm run test:e2e
 
       - name: Harness failure path
         run: npm run test:e2e:fixture
-
-      - name: Fresh-user isolation smoke
-        run: python scripts/fresh_user_smoke.py
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
