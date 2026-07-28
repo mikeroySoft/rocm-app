@@ -215,9 +215,12 @@ def main() -> int:
         xvfb = smoke.ensure_display(env, "auto", report)
 
         registry = root / "tray-registry.json"
+        # Its own session, or stop_process()'s group kill takes this harness
+        # down with it — the app and Xvfb already detach, the watcher must too.
         watcher = subprocess.Popen(
             [sys.executable, str(REPO / "scripts" / "statusnotifierwatcher.py"), str(registry)],
             env=env,
+            start_new_session=True,
         )
         deadline = time.monotonic() + 15
         while not registry.exists() and time.monotonic() < deadline:

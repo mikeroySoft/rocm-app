@@ -316,8 +316,7 @@ function Verdict({
         return (
           <section className="diagnostics__verdict" data-testid="verdict" data-state="matched">
             <p className="dash__body" data-testid="no-findings">
-              ROCm App matched the symptom, but has no finding it can stand behind on this
-              computer.
+              ROCm App matched the symptom, but has no finding it can stand behind on this computer.
             </p>
             {view.route !== null && (
               <p className="dash__links">

@@ -16,6 +16,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import Runtimes from "./Runtimes";
 import { BLOCK_MESSAGES, FIXTURES, fixtureRuntimes, fixtureState } from "../lib/runtimes";
+import type { RuntimesView } from "../lib/runtimes";
 import type { ChangePlan, ProgressEvent } from "../lib/controller";
 
 const EVERY_STATE = FIXTURES.states.map((s) => s.name);
@@ -77,6 +78,34 @@ describe("runtimes list", () => {
     const row = screen.getByTestId("row-7.14.0");
     expect(row).toHaveTextContent(/Built for your graphics card/i);
     expect(row).toHaveTextContent(/on disk/i);
+  });
+
+  /**
+   * Regression: a refused read used to leave "Reading what is installed…"
+   * on screen forever next to the refusal. The reading line goes, a retry
+   * comes, and the retry actually re-reads.
+   */
+  it("offers a retry instead of a stuck reading line when the read fails", async () => {
+    const base = fixtureRuntimes("installed");
+    let reads = 0;
+    const backend: typeof base = {
+      ...base,
+      view: (refresh) => {
+        reads += 1;
+        return reads === 1
+          ? Promise.reject(new Error("the desktop backend is not reachable"))
+          : base.view(refresh);
+      },
+    };
+    render(<Runtimes backend={backend} />);
+    const user = userEvent.setup();
+
+    expect(await screen.findByTestId("refusal")).toHaveTextContent(/not reachable/i);
+    expect(screen.getByTestId("retry")).toBeInTheDocument();
+    expect(screen.queryByTestId("loading")).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("retry"));
+    expect(await screen.findByTestId("rows")).toBeInTheDocument();
   });
 });
 
@@ -158,6 +187,27 @@ describe("runtimes updates", () => {
 
     render(<Runtimes backend={fixtureRuntimes("update-available")} />);
     expect(await screen.findByTestId("update-action")).toBeInTheDocument();
+  });
+
+  /**
+   * Regression: "a newer version is available" with no button and no reason
+   * read as a broken screen. When the backend offers no update request the
+   * sentence says why, and which why depends on whether the host is mutable.
+   */
+  it("explains an available update it cannot offer instead of hiding it", async () => {
+    const available = fixtureState("update-available").view;
+    const cases: readonly [RuntimesView, string][] = [
+      [{ ...available, updateRequest: null, mutable: false }, BLOCK_MESSAGES["unsupported-host"]],
+      [{ ...available, updateRequest: null, mutable: true }, BLOCK_MESSAGES["not-offered"]],
+    ];
+    for (const [view, message] of cases) {
+      const backend = { ...fixtureRuntimes("update-available"), view: () => Promise.resolve(view) };
+      const { unmount } = render(<Runtimes backend={backend} />);
+      await screen.findByTestId("update");
+      expect(screen.getByTestId("update-blocked")).toHaveTextContent(message);
+      expect(screen.queryByTestId("update-action")).not.toBeInTheDocument();
+      unmount();
+    }
   });
 });
 
@@ -293,6 +343,42 @@ describe("runtimes review and apply", () => {
     for (const escape of [/back/i, /close/i]) {
       expect(screen.queryByRole("button", { name: escape })).not.toBeInTheDocument();
     }
+  });
+
+  /**
+   * Regression: `plan` is idempotent but a double press queued two review
+   * screens, the second overwriting the first mid-read. While a plan is in
+   * flight every action button waits, and only one plan is ever requested.
+   */
+  it("ignores a second press while the plan is still being fetched", async () => {
+    const base = fixtureRuntimes("installed");
+    let planCalls = 0;
+    let release: (plan: ChangePlan) => void = () => {};
+    const backend: typeof base = {
+      ...base,
+      plan: () =>
+        new Promise<ChangePlan>((resolve) => {
+          planCalls += 1;
+          release = resolve;
+        }),
+    };
+    render(<Runtimes backend={backend} />);
+    await screen.findByTestId("rows");
+    const user = userEvent.setup();
+
+    const action = screen.getByTestId("action-7.13.0-activate");
+    await user.click(action);
+    expect(planCalls).toBe(1);
+    // Every row action waits, not just the pressed one.
+    for (const button of within(screen.getByTestId("rows")).getAllByRole("button")) {
+      expect(button).toBeDisabled();
+    }
+
+    await user.click(action);
+    expect(planCalls).toBe(1);
+
+    release(ACTIVATION_PLAN);
+    expect(await screen.findByTestId("plan-steps")).toBeInTheDocument();
   });
 });
 

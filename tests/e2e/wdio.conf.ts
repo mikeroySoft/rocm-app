@@ -70,9 +70,11 @@ export const config: WebdriverIO.Config = {
   capabilities: [
     {
       maxInstances: 1,
-      // tauri-driver reads this from `capabilities.alwaysMatch` only, and
-      // accepts nothing but `application` and `args`. The environment the app
-      // needs is set on the tauri-driver process instead; see harness.ts.
+      // tauri-driver reads this from `capabilities.alwaysMatch` only. It
+      // accepts `application`, `args`, and (Windows-only) `webviewOptions`,
+      // which it forwards verbatim as `ms:edgeOptions.webviewOptions`. The
+      // environment the app needs is set on the tauri-driver process instead;
+      // see harness.ts.
       "tauri:options": { application: "", args: [] },
     } as WebdriverIO.Capabilities,
   ],
@@ -123,6 +125,14 @@ export const config: WebdriverIO.Config = {
       // scripts/wayland_desktop_check.py, which WebKitWebDriver cannot drive.
       env["DISPLAY"] = process.env["DISPLAY"];
       env["GDK_BACKEND"] = "x11";
+      // Reusing an external X display needs its auth cookie. The isolated
+      // env replaces HOME, so the ~/.Xauthority default silently vanishes and
+      // GTK dies with "Authorization required" — forward the real cookie
+      // path. The harness's own Xvfb runs with no auth and needs nothing.
+      const xauthority = process.env["XAUTHORITY"] ?? join(homedir(), ".Xauthority");
+      if (existsSync(xauthority)) {
+        env["XAUTHORITY"] = xauthority;
+      }
     }
     env["ROCM_FIXTURE_DIR"] = join(stateRoot, "fixture");
     env["ROCM_FIXTURE_JOURNAL"] = join(stateRoot, "fixture-journal.jsonl");
@@ -138,12 +148,36 @@ export const config: WebdriverIO.Config = {
     driver = await startDriver(env, join(root, "logs"), PORT);
 
     const application = join(stateRoot, "bin", WINDOWS ? "rocm-app.exe" : "rocm-app");
+    // Windows: Tauri puts the WebView2 user data folder under
+    // %LOCALAPPDATA%\<identifier>\EBWebView, and the isolation above moves
+    // LOCALAPPDATA into the sandbox. msedgedriver watches its *default*
+    // location (beside the exe) for DevToolsActivePort, so without this hint
+    // the app launches fine while every session dies with "Microsoft Edge
+    // failed to start: crashed" — the driver is watching an empty folder.
+    const webviewOptions = WINDOWS
+      ? {
+          userDataFolder: join(
+            env["LOCALAPPDATA"] ?? join(stateRoot, "localappdata"),
+            "com.mikeroysoft.rocm-app",
+            "EBWebView",
+          ),
+        }
+      : undefined;
+    if (webviewOptions) {
+      mkdirSync(webviewOptions.userDataFolder, { recursive: true });
+    }
     for (const capability of capabilities as WebdriverIO.Capabilities[]) {
       const options = (
-        capability as unknown as Record<string, { application: string } | undefined>
+        capability as unknown as Record<
+          string,
+          { application: string; webviewOptions?: { userDataFolder: string } } | undefined
+        >
       )["tauri:options"];
       if (options) {
         options.application = application;
+        if (webviewOptions) {
+          options.webviewOptions = webviewOptions;
+        }
       }
     }
   },

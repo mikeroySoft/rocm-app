@@ -48,29 +48,29 @@ It may not:
 
 ## Components
 
-| Layer        | Component                          | Responsibility                                                                    | Status                                   |
-| ------------ | ---------------------------------- | --------------------------------------------------------------------------------- | ---------------------------------------- |
-| Presentation | `src/App.tsx`                      | Route between onboarding, overview, runtimes, activity, diagnostics, settings | Implemented                              |
-| Presentation | `src/lib/*.ts` backends            | One typed seam per surface (dashboard, onboarding, runtimes, tray, logs)       | Implemented                              |
-| Desktop      | `src-tauri/src/lib.rs`             | Construct controller state and register typed Tauri commands                      | Implemented                              |
-| Desktop      | `src-tauri/src/controller_host.rs` | Implement production adapters and renderer-safe command responses                 | Implemented                              |
-| Desktop      | `src-tauri/src/tray_host.rs`       | Own the tray icon, quick window, notifications, and autostart plumbing         | Implemented                              |
-| Domain       | `rocm-app-core::contract`          | Decode schema version 1 and fail closed on unknown action/support vocabulary      | Implemented                              |
-| Domain       | `rocm-app-core::platform`          | Classify native Windows, native Linux, WSL, and unsupported hosts                 | Implemented                              |
-| Domain       | `rocm-app-core::onboarding`        | Produce a pure ready-or-blocked first-run recommendation                          | Implemented                              |
-| Domain       | `rocm-app-core::health`            | Derive the whole Overview from typed snapshot fields                           | Implemented                              |
-| Domain       | `rocm-app-core::runtimes`          | Version table, action guards, and update standing                              | Implemented                              |
-| Domain       | `rocm-app-core::tray`              | Status mapping, menu shape, icon rasterisation, probe schedule                 | Implemented                              |
-| Domain       | `rocm-app-core::diagnostics`       | Bounded log reads, diagnosis views, fix eligibility                            | Implemented                              |
-| Domain       | `rocm-app-core::controller`        | Cache snapshots, issue plans, verify approvals, serialize mutations, and re-probe | Implemented                              |
-| Domain       | `controller::request`              | Define the only six operations the webview can request                        | Implemented                              |
-| Domain       | `controller::plan`                 | Bind an immutable plan to request, digest, TTL, and snapshot fingerprint          | Implemented                              |
-| Domain       | `controller::progress`             | Emit started/stage plus exactly one terminal event                                | Implemented                              |
-| Host         | `BundledCliInspector`              | Run the bundled CLI's `app-snapshot` contract command                             | Implemented                              |
-| Host         | `BundledCli`                       | Map typed operations to explicit argv and spawn without a shell                   | Implemented                              |
-| Host         | `SnapshotCatalog`                  | Resolve concrete versions from the snapshot's trusted update report               | Implemented                              |
-| Host         | `FileStorage`                      | Persist app-owned data with atomic replacement                                    | Implemented                              |
-| Host         | `DesktopNotifier`                  | Deliver transition notifications natively and persist the last one announced  | Implemented                              |
+| Layer        | Component                          | Responsibility                                                                    | Status      |
+| ------------ | ---------------------------------- | --------------------------------------------------------------------------------- | ----------- |
+| Presentation | `src/App.tsx`                      | Route between onboarding, overview, runtimes, activity, diagnostics, settings     | Implemented |
+| Presentation | `src/lib/*.ts` backends            | One typed seam per surface (dashboard, onboarding, runtimes, tray, logs)          | Implemented |
+| Desktop      | `src-tauri/src/lib.rs`             | Construct controller state and register typed Tauri commands                      | Implemented |
+| Desktop      | `src-tauri/src/controller_host.rs` | Implement production adapters and renderer-safe command responses                 | Implemented |
+| Desktop      | `src-tauri/src/tray_host.rs`       | Own the tray icon, quick window, notifications, and autostart plumbing            | Implemented |
+| Domain       | `rocm-app-core::contract`          | Decode schema version 1 and fail closed on unknown action/support vocabulary      | Implemented |
+| Domain       | `rocm-app-core::platform`          | Classify native Windows, native Linux, WSL, and unsupported hosts                 | Implemented |
+| Domain       | `rocm-app-core::onboarding`        | Produce a pure ready-or-blocked first-run recommendation                          | Implemented |
+| Domain       | `rocm-app-core::health`            | Derive the whole Overview from typed snapshot fields                              | Implemented |
+| Domain       | `rocm-app-core::runtimes`          | Version table, action guards, and update standing                                 | Implemented |
+| Domain       | `rocm-app-core::tray`              | Status mapping, menu shape, icon rasterisation, probe schedule                    | Implemented |
+| Domain       | `rocm-app-core::diagnostics`       | Bounded log reads, diagnosis views, fix eligibility                               | Implemented |
+| Domain       | `rocm-app-core::controller`        | Cache snapshots, issue plans, verify approvals, serialize mutations, and re-probe | Implemented |
+| Domain       | `controller::request`              | Define the only six operations the webview can request                            | Implemented |
+| Domain       | `controller::plan`                 | Bind an immutable plan to request, digest, TTL, and snapshot fingerprint          | Implemented |
+| Domain       | `controller::progress`             | Emit started/stage plus exactly one terminal event                                | Implemented |
+| Host         | `BundledCliInspector`              | Run the bundled CLI's `app-snapshot` contract command                             | Implemented |
+| Host         | `BundledCli`                       | Map typed operations to explicit argv and spawn without a shell                   | Implemented |
+| Host         | `SnapshotCatalog`                  | Resolve concrete versions from the snapshot's trusted update report               | Implemented |
+| Host         | `FileStorage`                      | Persist app-owned data with atomic replacement                                    | Implemented |
+| Host         | `DesktopNotifier`                  | Deliver transition notifications natively and persist the last one announced      | Implemented |
 
 ## Runtime flows
 

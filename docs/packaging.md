@@ -12,11 +12,11 @@ artifacts rather than in intent.
 
 ## What ships
 
-| Target         | Artifact                           | Built where                     |
-| -------------- | ---------------------------------- | ------------------------------- |
+| Target         | Artifact                           | Built where                         |
+| -------------- | ---------------------------------- | ----------------------------------- |
 | Linux x86_64   | `rocm-app_<version>_amd64.deb`     | any x86_64/amd64 Linux host, and CI |
 | Linux x86_64   | `rocm-app-<version>-1.x86_64.rpm`  | any x86_64/amd64 Linux host, and CI |
-| Windows x86_64 | `rocm-app_<version>_x64-setup.exe` | **`windows-latest` in CI only** |
+| Windows x86_64 | `rocm-app_<version>_x64-setup.exe` | **`windows-latest` in CI only**     |
 
 NSIS bundling needs a Windows host — the bundler downloads and runs `makensis`
 there. The development machine this project is built on has neither, so Windows

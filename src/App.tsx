@@ -15,7 +15,7 @@
  */
 
 import { listen } from "@tauri-apps/api/event";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Dashboard from "./dashboard/Dashboard";
 import {
   desktopSource,
@@ -207,8 +207,16 @@ function DesktopShell({ initialSurface }: { readonly initialSurface?: Surface | 
   // screen-reader user on a heading that is no longer there. The heading
   // belongs to the child surface, so the shell reaches for it after render
   // rather than owning a duplicate.
+  const landed = useRef(false);
   useEffect(() => {
     if (surface === null) {
+      return;
+    }
+    // The landing surface must not steal focus: a fresh window reads from the
+    // top, nav first, exactly as the tab-order suite pins. Only a *change* of
+    // surface moves focus to the incoming heading.
+    if (!landed.current) {
+      landed.current = true;
       return;
     }
     const heading = document.querySelector("h1");

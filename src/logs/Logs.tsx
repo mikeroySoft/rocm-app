@@ -166,17 +166,14 @@ export default function Logs({ backend }: LogsProps) {
     [query.sources, update],
   );
 
-  const reveal = useCallback(
-    (event: React.SyntheticEvent<HTMLDetailsElement>) => {
-      if (event.currentTarget.open) {
-        // Not routed through `update`: revealing paths is a display choice,
-        // not a narrowing (the Rust model documents it that way), so the page
-        // the user was on survives.
-        setQuery((current) => ({ ...current, revealLocations: true }));
-      }
-    },
-    [],
-  );
+  const reveal = useCallback((event: React.SyntheticEvent<HTMLDetailsElement>) => {
+    if (event.currentTarget.open) {
+      // Not routed through `update`: revealing paths is a display choice,
+      // not a narrowing (the Rust model documents it that way), so the page
+      // the user was on survives.
+      setQuery((current) => ({ ...current, revealLocations: true }));
+    }
+  }, []);
 
   const copy = useCallback(() => {
     if (selected === null) {

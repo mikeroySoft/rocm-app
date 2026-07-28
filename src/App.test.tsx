@@ -9,7 +9,8 @@
  * Each surface's own behaviour is covered by its own suite.
  */
 
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import { fixtureState } from "./lib/dashboard";
@@ -71,5 +72,23 @@ describe("App shell", () => {
     render(<App />);
     expect(await screen.findByRole("button", { name: "Activity" })).toBeInTheDocument();
     expect(await screen.findByTestId("verdict")).toHaveAttribute("data-value", "unsupported");
+  });
+
+  /**
+   * Regression: swapping surfaces without moving focus left a keyboard or
+   * screen-reader user on a heading that was no longer there. The shell now
+   * reaches for the new surface's h1 after render.
+   */
+  it("moves focus to the new surface's heading on a route change", async () => {
+    render(<App initialSurface="dashboard" />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("button", { name: "Activity" }));
+
+    const heading = await screen.findByRole("heading", { level: 1, name: "Activity" });
+    await waitFor(() => {
+      expect(document.activeElement).toBe(heading);
+    });
+    expect(heading).toHaveAttribute("tabindex", "-1");
   });
 });

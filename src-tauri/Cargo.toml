@@ -25,9 +25,9 @@ publish = false
 # health semantics defined by these crates; a moving pin lets that meaning
 # change underneath a released installer, which is this project's single
 # largest cross-repository risk.
-rocm-core = { git = "https://github.com/mikeroysoft/rocm-cli", rev = "cae77819a58ee8448a14160ce989832f500e6cc4" }
-rocm-dash-collectors = { git = "https://github.com/mikeroysoft/rocm-cli", rev = "cae77819a58ee8448a14160ce989832f500e6cc4" }
-rocm-dash-core = { git = "https://github.com/mikeroysoft/rocm-cli", rev = "cae77819a58ee8448a14160ce989832f500e6cc4" }
+rocm-core = { git = "https://github.com/mikeroysoft/rocm-cli", rev = "3896fae205fc8cbab336582ace21894258e1a3a6" }
+rocm-dash-collectors = { git = "https://github.com/mikeroysoft/rocm-cli", rev = "3896fae205fc8cbab336582ace21894258e1a3a6" }
+rocm-dash-core = { git = "https://github.com/mikeroysoft/rocm-cli", rev = "3896fae205fc8cbab336582ace21894258e1a3a6" }
 
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

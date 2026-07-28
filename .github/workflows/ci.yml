@@ -25,7 +25,7 @@ env:
   # app's Cargo.toml pins for its shared crates; the packaged binaries and the
   # linked crates then come from the same source.
   ROCM_CLI_GIT_URL: https://github.com/mikeroysoft/rocm-cli
-  ROCM_CLI_REV: cae77819a58ee8448a14160ce989832f500e6cc4
+  ROCM_CLI_REV: 3896fae205fc8cbab336582ace21894258e1a3a6
   CARGO_TERM_COLOR: always
 
 jobs:
@@ -429,6 +429,45 @@ jobs:
         # step is green and the scenarios are not, the fault is in the
         # driver/WebView2 seam, not the app.
         run: python scripts/fresh_user_smoke.py
+
+      - name: WebView2 attach probe
+        # Pure diagnosis, never a gate. Drives msedgedriver DIRECTLY (no
+        # tauri-driver, no wdio) with the exact session JSON tauri-driver
+        # 2.0.6 emits, once without and once with the webviewOptions
+        # userDataFolder hint. Tauri keeps the WebView2 user data folder
+        # under %LOCALAPPDATA%\<identifier>\EBWebView while the driver
+        # watches its default next to the exe for DevToolsActivePort, which
+        # is the standing "failed to start: crashed" suspect. The verbose
+        # driver log lands in test-results/e2e so the failure artifact
+        # carries msedgedriver's own words either way.
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Continue"
+          New-Item -ItemType Directory -Force test-results/e2e | Out-Null
+          $log = Join-Path $pwd "test-results/e2e/probe-msedgedriver.log"
+          $driver = Start-Process msedgedriver -ArgumentList "--port=9525","--verbose","--log-path=$log" -PassThru
+          Start-Sleep -Seconds 3
+          $exe = Join-Path $pwd "src-tauri/target/release/rocm-app.exe"
+          $udf = Join-Path $env:LOCALAPPDATA "com.mikeroysoft.rocm-app/EBWebView"
+          New-Item -ItemType Directory -Force $udf | Out-Null
+          function Probe($label, $edgeOptions) {
+            $body = @{ capabilities = @{ alwaysMatch = @{
+              "browserName" = "webview2"; "ms:edgeChromium" = $true; "ms:edgeOptions" = $edgeOptions
+            } } } | ConvertTo-Json -Depth 8
+            try {
+              $r = Invoke-RestMethod -Method Post -Uri http://127.0.0.1:9525/session -Body $body -ContentType "application/json" -TimeoutSec 90
+              "probe ${label}: SESSION CREATED"
+              Invoke-RestMethod -Method Delete -Uri "http://127.0.0.1:9525/session/$($r.value.sessionId)" -TimeoutSec 30 | Out-Null
+            } catch {
+              "probe ${label}: FAILED — $($_.ErrorDetails.Message ?? $_.Exception.Message)"
+            }
+          }
+          Probe "A (tauri-driver shape, no webviewOptions)" @{ binary = $exe; args = @() }
+          Probe "B (with userDataFolder hint)" @{ binary = $exe; args = @(); webviewOptions = @{ userDataFolder = $udf } }
+          Stop-Process -Id $driver.Id -Force -ErrorAction SilentlyContinue
+          "---- last 40 verbose driver lines ----"
+          if (Test-Path $log) { Get-Content $log -Tail 40 }
 
       - name: Desktop scenarios
         run: npm run test:e2e

@@ -186,6 +186,51 @@ describe("compact tray window", () => {
     expect(await screen.findByTestId("quick-failure")).toHaveTextContent(/not reachable/i);
     expect(screen.getByRole("button", { name: "Open ROCm App" })).toBeEnabled();
   });
+
+  /**
+   * Regression: a poll that failed after facts existed used to say nothing —
+   * the panel silently re-showed the last answer as if it were current. The
+   * facts stay, but the failure is announced above them.
+   */
+  it("keeps the stale facts on screen and says the poll failed", async () => {
+    vi.useFakeTimers();
+    try {
+      const base = fixtureTray("healthy");
+      let polls = 0;
+      const flaky: TrayBackend = {
+        ...base,
+        quickStatus: () => {
+          polls += 1;
+          return polls === 1
+            ? base.quickStatus()
+            : Promise.reject(new Error("the tray backend stopped answering"));
+        },
+      };
+      render(<QuickStatus backend={flaky} />);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(screen.getByTestId("quick-status")).toHaveTextContent(
+        fixtureQuickStatus("healthy").statusLabel,
+      );
+      expect(screen.queryByTestId("quick-failure")).not.toBeInTheDocument();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2100);
+      });
+      const failure = screen.getByTestId("quick-failure");
+      expect(failure).toHaveTextContent(/stopped answering/i);
+      expect(screen.getByRole("alert")).toBe(failure);
+      // The last known facts are still there, below the failure.
+      const facts = screen.getByTestId("quick-facts");
+      expect(screen.getByTestId("quick-gpu")).toHaveTextContent(fixtureQuickStatus("healthy").gpu);
+      expect(
+        failure.compareDocumentPosition(facts) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe("tray settings", () => {
@@ -245,6 +290,35 @@ describe("tray settings", () => {
     expect(await screen.findByTestId("settings-failure")).toHaveTextContent(/refused/i);
     expect(screen.getByTestId("autostart")).toHaveProperty("checked", false);
     expect(screen.getByTestId("autostart")).toBeEnabled();
+  });
+
+  /**
+   * Regression: a refused first read used to leave "Reading your settings…"
+   * on screen forever next to the failure. The reading line goes, a retry
+   * comes, and the retry actually re-reads.
+   */
+  it("offers a retry instead of a stuck reading line when the read fails", async () => {
+    const base = fixtureTray("healthy", { autostart: fixtureAutostart(0) });
+    let reads = 0;
+    const backend: TrayBackend = {
+      ...base,
+      autostart: () => {
+        reads += 1;
+        return reads === 1
+          ? Promise.reject(new Error("the desktop backend is not reachable"))
+          : base.autostart();
+      },
+    };
+    render(<Settings backend={backend} />);
+    const user = userEvent.setup();
+
+    expect(await screen.findByTestId("settings-failure")).toHaveTextContent(/not reachable/i);
+    expect(screen.getByTestId("settings-retry")).toBeInTheDocument();
+    expect(screen.queryByTestId("settings-loading")).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("settings-retry"));
+    expect(await screen.findByTestId("autostart")).toHaveProperty("checked", true);
+    expect(screen.queryByTestId("settings-failure")).not.toBeInTheDocument();
   });
 });
 

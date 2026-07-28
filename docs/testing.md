@@ -24,12 +24,36 @@ Every one of these must exit 0 before a change is considered done.
 | Harness failure path                | `npm run test:e2e:fixture`                                                       |
 | Visual matrix and contact sheets    | `npm run test:visual`                                                            |
 | Accessibility and keyboard flows    | `npm run test:a11y`                                                              |
+| Installed idle budget               | `python3 scripts/idle_budget.py`                                                 |
 | Isolation harness                   | `python3 scripts/fresh_user_smoke.py --self-test`                                |
 | Native Wayland desktop              | `python3 scripts/wayland_desktop_check.py`                                       |
 
 `src-tauri/Cargo.toml` declares `default-members = [".", "crates/rocm-app-core"]`,
 so the two `cargo` gates cover the domain crate as well as the Tauri shell.
 Without that, `rocm-app-core`'s suite would silently never run.
+
+## Measured budgets (reference Linux machine)
+
+`python3 scripts/idle_budget.py` extracts the built `.deb`, launches the
+installed binary hidden on a private session bus with a StatusNotifierWatcher
+stand-in and fully isolated user-state roots, then samples the whole process
+tree — app, WebKit helpers, and probe children (reaped children included via
+`cutime`/`cstime`) — for ten minutes and fails on a breached budget. The
+product budgets, and what the reference machine (i9-14900KF, Radeon AI PRO
+R9700, installed release deb) measured:
+
+| Budget                                                          | Limit     | Measured |
+| --------------------------------------------------------------- | --------- | -------- |
+| Idle CPU, 10-minute average                                     | < 1%      | 0.30%    |
+| Tree RSS peak (shared pages double-counted across ~6 processes) | < 768 MiB | 614 MiB  |
+| Tray icon registered after launch                               | < 3 s     | 0.45 s   |
+| First health probe finished                                     | < 10 s    | 0.78 s   |
+| Concurrent health probes                                        | ≤ 1       | 0        |
+
+The RSS number is a deliberate over-count: summing resident sets across the
+webview helper processes counts every shared library once per process. It is
+used anyway because it only errs high — a budget met on the over-count is met
+in reality.
 
 ## Test layers
 

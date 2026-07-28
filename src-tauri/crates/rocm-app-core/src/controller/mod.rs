@@ -320,10 +320,12 @@ impl RocmController {
             let mut issued = self.issued.lock().expect("poisoned");
             issued.retain(|p| !p.is_expired_at(now));
             issued.push(plan.clone());
+            let live: Vec<PlanId> = issued.iter().map(|p| p.id().clone()).collect();
+            drop(issued);
             self.consumed
                 .lock()
                 .expect("poisoned")
-                .retain(|id| issued.iter().any(|p| p.id() == id));
+                .retain(|id| live.contains(id));
         }
 
         Ok(plan)

@@ -433,12 +433,7 @@ function LocationCard({
         <button type="button" onClick={onBack}>
           Back
         </button>
-        <button
-          type="button"
-          className="onboard__primary"
-          disabled={planning}
-          onClick={onContinue}
-        >
+        <button type="button" className="onboard__primary" disabled={planning} onClick={onContinue}>
           {/* Without a recommendation there is nothing to review yet; the
               chosen folder goes back through detection first. */}
           {recommendation !== null ? "Review the changes" : "Check this folder"}

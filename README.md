@@ -90,12 +90,12 @@ not anything is open.
 
 Four version numbers appear in the product, and they move independently:
 
-| Number          | Where it appears                | What it is                                                             |
-| --------------- | ------------------------------- | ---------------------------------------------------------------------- |
-| App version     | Package name, inventory         | The `rocm-app` desktop package itself                                  |
-| CLI version     | Overview inventory              | The bundled `rocm` build the app ships and drives                      |
-| Contract schema | Error copy only                 | The `app-snapshot` JSON version; a future schema means "update the app" |
-| ROCm version    | Overview, Manage ROCm versions  | The managed runtime a change installs, activates, or removes           |
+| Number          | Where it appears               | What it is                                                              |
+| --------------- | ------------------------------ | ----------------------------------------------------------------------- |
+| App version     | Package name, inventory        | The `rocm-app` desktop package itself                                   |
+| CLI version     | Overview inventory             | The bundled `rocm` build the app ships and drives                       |
+| Contract schema | Error copy only                | The `app-snapshot` JSON version; a future schema means "update the app" |
+| ROCm version    | Overview, Manage ROCm versions | The managed runtime a change installs, activates, or removes            |
 
 The installer bundles a CLI it is compatible with and records the pairing in
 `compatibility.json`, so app and CLI versions move together on an installed

@@ -248,6 +248,27 @@ describe("onboarding blocked states", () => {
     const shortfall = await screen.findByTestId("space-shortfall");
     expect(shortfall).toHaveTextContent(/needs 14 GB, has 3 GB/i);
   });
+
+  /**
+   * Regression: the "choose another folder" way out routed to a location step
+   * that required a Recommendation, and a blocker arrives with none — the
+   * step rendered a heading over nothing, with no way back and no way on.
+   */
+  it("routes a blocked folder to a working location step and back", async () => {
+    start("protected-folder");
+    const user = userEvent.setup();
+    await user.click(await screen.findByTestId("next-action"));
+
+    // A real step: an input to type into and a way back out.
+    expect(await screen.findByTestId("folder-input")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Back" })).toBeInTheDocument();
+    // Nothing to review yet — the chosen folder goes back through detection.
+    expect(screen.getByRole("button", { name: "Check this folder" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /review the changes/i })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Back" }));
+    expect(await screen.findByTestId("blocker")).toHaveAttribute("data-code", "protected-folder");
+  });
 });
 
 describe("onboarding copy and accessibility", () => {
