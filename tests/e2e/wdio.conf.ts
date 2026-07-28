@@ -188,6 +188,33 @@ export const config: WebdriverIO.Config = {
     process.env["ROCM_E2E_SCENARIO"] = scenario;
   },
 
+  async before() {
+    if (!WINDOWS) {
+      return;
+    }
+    // msedgedriver's initial browsing context on a two-webview app is
+    // whichever Chromium target it enumerated first — the hidden quick
+    // panel, or a startup target that is already gone, which surfaces as
+    // "no such window: target window already closed" before any spec ran.
+    // Land deterministically on the main window. WebKitWebDriver on Linux
+    // starts on the main window already.
+    await browser.waitUntil(
+      async () => (await browser.getWindowHandles()).length > 0,
+      { timeout: 15000, timeoutMsg: "the app exposed no window handles" },
+    );
+    for (const handle of await browser.getWindowHandles()) {
+      try {
+        await browser.switchToWindow(handle);
+        const url = await browser.getUrl();
+        if (!url.includes("window=quick")) {
+          return;
+        }
+      } catch {
+        // A dead target; try the next handle.
+      }
+    }
+  },
+
   async afterTest(test, _context, result) {
     if (result.passed) {
       return;
