@@ -26,8 +26,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::contract::{
-    AppSnapshot, AvailableVersionsState, EligibleAction, InstallSource, RuntimeRecord,
-    RuntimeValidation, SourceTrust, UpdateState, VersionTier,
+    AppSnapshot, AvailableVersionsState, EligibleAction, InstallSource, LegacyRocmInstall,
+    LegacyRocmOrigin, RuntimeRecord, RuntimeValidation, SourceTrust, UpdateState, VersionTier,
 };
 use crate::controller::request::{
     Channel, OperationRequest, RuntimeFamily, RuntimeKey, VersionSelector,
@@ -245,6 +245,9 @@ pub struct RuntimesView {
     /// The pickable versions this machine could get, per the producer's
     /// catalog. Always present; its `state` says how much to trust it.
     pub catalog: CatalogView,
+    /// Unmanaged ROCm installs found beside the managed ones, each with
+    /// copy-paste removal guidance. Display-only: the app never runs these.
+    pub unmanaged: Vec<UnmanagedRow>,
     /// True when this host may be changed at all.
     pub mutable: bool,
 }
@@ -317,6 +320,53 @@ pub struct CatalogView {
     pub entries: Vec<CatalogEntry>,
 }
 
+/// One unmanaged ROCm install, with the removal guidance a person can
+/// copy into their own terminal.
+///
+/// The app never executes any of this — no privilege escalation lives in
+/// this product (#21). The person runs the commands themselves, then
+/// installs a managed version from the catalog.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UnmanagedRow {
+    pub path: String,
+    /// Plain-language origin, e.g. "Installed with apt".
+    pub origin_label: String,
+    pub guidance: RemovalGuidance,
+    /// Present only when following the guidance deletes files permanently.
+    pub warning: Option<String>,
+}
+
+/// What to show a person who wants an unmanaged install gone.
+///
+/// The load-bearing rule, pinned by tests: `LooseDelete` — the only variant
+/// whose copy destroys data — is reachable *only* from a clean `Loose`
+/// verdict. Every uncertain, unrecognised, or fact-starved classification
+/// falls back to `Diagnostic`, which never removes anything.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(
+    tag = "kind",
+    rename_all = "kebab-case",
+    rename_all_fields = "camelCase"
+)]
+pub enum RemovalGuidance {
+    /// Package-owned: the named manager removes exactly these packages.
+    Packages {
+        package_manager: String,
+        commands: Vec<String>,
+    },
+    /// An unpackaged tree: optional ownership pre-check, then delete the
+    /// literal path — never a glob.
+    LooseDelete {
+        precheck_commands: Vec<String>,
+        delete_command: String,
+    },
+    /// A Windows installer root: no shell command, Settings steps instead.
+    WindowsSteps { steps: Vec<String> },
+    /// Ownership undetermined: commands that *investigate*, never remove.
+    Diagnostic { commands: Vec<String> },
+}
+
 /// Disk usage the host measured, keyed by install root.
 pub type DiskUsage = std::collections::BTreeMap<String, u64>;
 
@@ -348,7 +398,124 @@ pub fn view(snapshot: &AppSnapshot, disk: &DiskUsage) -> RuntimesView {
         update,
         update_request,
         catalog: catalog_for(snapshot),
+        unmanaged: snapshot.legacy_rocm.iter().map(unmanaged_row).collect(),
         mutable,
+    }
+}
+
+/// Quote a path for a copy-paste shell line when it needs it.
+///
+/// The path ultimately comes from `ROCM_PATH` — user-controlled — and an
+/// unquoted space in a `rm -rf` line truncates the target. Plain
+/// `/opt/rocm`-shaped paths stay bare so the common copy reads clean.
+fn shell_quote(path: &str) -> String {
+    let safe = !path.is_empty()
+        && path
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'/' | b'.' | b'_' | b'-' | b'+'));
+    if safe {
+        path.to_owned()
+    } else {
+        format!("'{}'", path.replace('\'', r"'\''"))
+    }
+}
+
+/// The ownership probes a person can run themselves. Investigate-only.
+fn diagnostic_commands(path: &str) -> Vec<String> {
+    let quoted = shell_quote(path);
+    vec![format!("dpkg -S {quoted}"), format!("rpm -qf {quoted}")]
+}
+
+/// Classify one producer-reported unmanaged install into guidance.
+///
+/// Fail-safe by construction: any combination this function does not fully
+/// understand — a package origin with no package names, an rpm frontend it
+/// has never heard of, an unrecognised origin — degrades to `Diagnostic`.
+fn unmanaged_row(install: &LegacyRocmInstall) -> UnmanagedRow {
+    use LegacyRocmOrigin as Origin;
+
+    let path = install.path.clone();
+    let diagnostic = |label: &str| {
+        (
+            label.to_owned(),
+            RemovalGuidance::Diagnostic {
+                commands: diagnostic_commands(&path),
+            },
+            None,
+        )
+    };
+
+    let (origin_label, guidance, warning) = match install.origin {
+        Origin::Deb | Origin::Rpm if install.packages.is_empty() => {
+            // A package origin without package names cannot build a removal
+            // command worth trusting. Investigate instead.
+            diagnostic("Installed from system packages")
+        }
+        Origin::Deb => {
+            let packages = install.packages.join(" ");
+            (
+                "Installed with apt".to_owned(),
+                RemovalGuidance::Packages {
+                    package_manager: "apt".to_owned(),
+                    commands: vec![
+                        format!("sudo apt purge {packages}"),
+                        "sudo apt autoremove".to_owned(),
+                    ],
+                },
+                None,
+            )
+        }
+        Origin::Rpm => match install.package_manager.as_deref() {
+            Some(pm @ ("dnf" | "zypper")) => {
+                let packages = install.packages.join(" ");
+                (
+                    format!("Installed with {pm}"),
+                    RemovalGuidance::Packages {
+                        package_manager: pm.to_owned(),
+                        commands: vec![format!("sudo {pm} remove {packages}")],
+                    },
+                    None,
+                )
+            }
+            // An rpm system whose frontend this build does not know: a
+            // guessed command would be wrong on exactly that system.
+            _ => diagnostic("Installed from system packages"),
+        },
+        Origin::Loose => {
+            let quoted = shell_quote(&path);
+            (
+                "Unpackaged files".to_owned(),
+                RemovalGuidance::LooseDelete {
+                    precheck_commands: diagnostic_commands(&path),
+                    delete_command: format!("sudo rm -rf {quoted}"),
+                },
+                Some(format!(
+                    "This permanently deletes everything under {path}. \
+                     Run the check above first and make sure nothing else lives there."
+                )),
+            )
+        }
+        Origin::Windows => (
+            "Installed by the ROCm installer".to_owned(),
+            RemovalGuidance::WindowsSteps {
+                steps: vec![
+                    "Open Settings, then Apps, then Installed apps.".to_owned(),
+                    "Find the entry named \"AMD ROCm\" or \"AMD HIP SDK\".".to_owned(),
+                    "Choose Uninstall and follow the prompts.".to_owned(),
+                ],
+            },
+            None,
+        ),
+        Origin::Unknown | Origin::Unrecognised => {
+            diagnostic("Could not determine how it was installed")
+        }
+    };
+
+    UnmanagedRow {
+        path,
+        origin_label,
+        guidance,
+        warning,
     }
 }
 

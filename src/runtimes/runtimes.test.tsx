@@ -474,6 +474,56 @@ describe("runtimes catalog", () => {
     }
   });
 });
+describe("runtimes unmanaged", () => {
+  it("shows no unmanaged section when nothing unmanaged was detected", async () => {
+    await show("installed");
+    expect(screen.queryByTestId("unmanaged")).not.toBeInTheDocument();
+  });
+
+  /**
+   * Criterion (#23): each detected install renders its origin's decided
+   * command set, and the section connects removal to installing a managed
+   * version from the catalog.
+   */
+  it("renders per-origin guidance and points at the catalog", async () => {
+    await show("unmanaged");
+    const section = screen.getByTestId("unmanaged");
+    expect(section).toHaveTextContent(/get another version/i);
+    expect(section).toHaveTextContent(/never runs these commands/i);
+
+    const rows = within(section).getAllByTestId("unmanaged-row");
+    expect(rows).toHaveLength(3);
+
+    const [deb, loose, unknown] = rows as [HTMLElement, HTMLElement, HTMLElement];
+    expect(deb).toHaveTextContent("/opt/rocm");
+    expect(deb).toHaveTextContent("Installed with apt");
+    expect(deb).toHaveTextContent("sudo apt purge comgr hip-runtime-amd");
+    expect(deb).toHaveTextContent("sudo apt autoremove");
+    expect(within(deb).queryByTestId("unmanaged-warning")).not.toBeInTheDocument();
+
+    expect(loose).toHaveTextContent("dpkg -S /usr/local/rocm");
+    expect(loose).toHaveTextContent("sudo rm -rf /usr/local/rocm");
+    expect(within(loose).getByTestId("unmanaged-warning")).toHaveTextContent(/permanently/i);
+
+    // The safety half, as the user sees it: an undetermined install gets
+    // commands that investigate, never ones that remove.
+    expect(unknown).toHaveTextContent("dpkg -S /srv/rocm-mystery");
+    expect(unknown.textContent).not.toContain("rm -rf");
+    expect(unknown.textContent).not.toContain("purge");
+  });
+
+  it("copies a command block when the computer offers a clipboard", async () => {
+    await show("unmanaged");
+    const user = userEvent.setup();
+
+    const deb = screen.getAllByTestId("unmanaged-row")[0] as HTMLElement;
+    await user.click(within(deb).getByRole("button", { name: "Copy commands" }));
+
+    expect(within(deb).getByTestId("command-copied")).toHaveTextContent("Copied.");
+    const copied = await navigator.clipboard.readText();
+    expect(copied).toBe("sudo apt purge comgr hip-runtime-amd\nsudo apt autoremove");
+  });
+});
 
 describe("runtimes audit trail", () => {
   /** Criterion: every mutation is recorded, and the record is safe to share. */

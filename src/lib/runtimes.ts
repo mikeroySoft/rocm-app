@@ -93,6 +93,28 @@ export interface CatalogView {
   readonly checkedAtUnixMs: number | null;
   readonly entries: readonly CatalogEntry[];
 }
+/**
+ * What to show a person who wants an unmanaged install gone.
+ *
+ * Display-only text: the app never runs any of it. `loose-delete` — the only
+ * destructive copy — is produced by the core exclusively from a clean
+ * "no package owns this" verdict; everything uncertain arrives as
+ * `diagnostic`, which only investigates.
+ */
+export type RemovalGuidance =
+  | { kind: "packages"; packageManager: string; commands: readonly string[] }
+  | { kind: "loose-delete"; precheckCommands: readonly string[]; deleteCommand: string }
+  | { kind: "windows-steps"; steps: readonly string[] }
+  | { kind: "diagnostic"; commands: readonly string[] };
+
+/** One unmanaged ROCm install, with its copy-paste removal guidance. */
+export interface UnmanagedRow {
+  readonly path: string;
+  readonly originLabel: string;
+  readonly guidance: RemovalGuidance;
+  /** Present only when following the guidance deletes files permanently. */
+  readonly warning: string | null;
+}
 
 export interface RuntimesView {
   readonly rows: readonly RuntimeRow[];
@@ -100,6 +122,7 @@ export interface RuntimesView {
   readonly updateMessage: string;
   readonly updateRequest: OperationRequest | null;
   readonly catalog: CatalogView;
+  readonly unmanaged: readonly UnmanagedRow[];
   readonly mutable: boolean;
 }
 

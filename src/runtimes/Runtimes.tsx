@@ -25,6 +25,7 @@ import type {
   RuntimeRow,
   RuntimesBackend,
   RuntimesView,
+  UnmanagedRow,
 } from "../lib/runtimes";
 
 type Stage =
@@ -218,6 +219,8 @@ export default function Runtimes({ backend }: RuntimesProps) {
             onInstall={review}
             busy={planning}
           />
+
+          <Unmanaged rows={view.unmanaged} />
         </>
       )}
     </main>
@@ -328,6 +331,161 @@ function Catalog({
         </>
       )}
     </section>
+  );
+}
+/**
+ * Unmanaged ROCm found beside the managed installs: what it is, and the
+ * copy-paste way out.
+ *
+ * Everything here is display-only. The app never escalates privileges and
+ * never runs a removal itself — the person reviews the commands and runs
+ * them in their own terminal (#21). The destructive copy (`loose-delete`)
+ * only ever arrives from the core after a clean "no package owns this"
+ * verdict; uncertain classifications arrive as investigate-only diagnostics.
+ */
+function Unmanaged({ rows }: { readonly rows: readonly UnmanagedRow[] }) {
+  if (rows.length === 0) {
+    return null;
+  }
+  return (
+    <section className="dash__panel" aria-labelledby="runtimes-unmanaged" data-testid="unmanaged">
+      <h2 id="runtimes-unmanaged" className="dash__subtitle">
+        ROCm installed outside ROCm App
+      </h2>
+      <p className="dash__body">
+        This computer also has ROCm that ROCm App does not manage. It can stay, but two installs
+        side by side can shadow each other. To move to a managed version, remove the old one with
+        the steps below, then install a version from &ldquo;Get another version&rdquo; above.
+      </p>
+      <ul className="runtimes">
+        {rows.map((row) => (
+          <UnmanagedCard key={row.path} row={row} />
+        ))}
+      </ul>
+      <p className="dash__muted">
+        ROCm App never runs these commands itself. Review them, then run them in your own terminal.
+      </p>
+    </section>
+  );
+}
+
+function UnmanagedCard({ row }: { readonly row: UnmanagedRow }) {
+  return (
+    <li className="runtimes__row" data-testid="unmanaged-row" data-origin={row.originLabel}>
+      <p className="dash__body">
+        <code>{row.path}</code>
+      </p>
+      <p className="dash__muted">{row.originLabel}</p>
+      <Guidance row={row} />
+    </li>
+  );
+}
+
+/** The warning speaks before the copy it warns about, never after. */
+function Warning({ text }: { readonly text: string | null }) {
+  if (text === null) {
+    return null;
+  }
+  return (
+    <p className="dash__body" data-testid="unmanaged-warning">
+      <strong>{text}</strong>
+    </p>
+  );
+}
+
+function Guidance({ row }: { readonly row: UnmanagedRow }) {
+  const guidance = row.guidance;
+  switch (guidance.kind) {
+    case "packages":
+      return (
+        <>
+          <Warning text={row.warning} />
+          <CommandBlock
+            intro={`Remove the packages ${guidance.packageManager} installed:`}
+            commands={guidance.commands}
+          />
+        </>
+      );
+    case "loose-delete":
+      return (
+        <>
+          <CommandBlock
+            intro="No package owns this folder. Confirm that yourself first — both checks should report no owner:"
+            commands={guidance.precheckCommands}
+          />
+          <Warning text={row.warning} />
+          <CommandBlock intro="Then delete the folder:" commands={[guidance.deleteCommand]} />
+        </>
+      );
+    case "windows-steps":
+      return (
+        <>
+          <Warning text={row.warning} />
+          <ol className="dash__body" data-testid="unmanaged-steps">
+            {guidance.steps.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
+        </>
+      );
+    case "diagnostic":
+      return (
+        <>
+          <Warning text={row.warning} />
+          <CommandBlock
+            intro="ROCm App could not tell how this was installed, so it suggests no removal. These commands show which package owns it, if any:"
+            commands={guidance.commands}
+          />
+        </>
+      );
+  }
+}
+
+/** Commands to read and copy — never to run from here. */
+function CommandBlock({
+  intro,
+  commands,
+}: {
+  readonly intro: string;
+  readonly commands: readonly string[];
+}) {
+  const [copied, setCopied] = useState<string | null>(null);
+  const copy = useCallback(() => {
+    // Same guard as the Activity screen: a webview without a clipboard is a
+    // real configuration, and a Copy that throws into nothing is worse than
+    // one that says it could not copy.
+    const clipboard = navigator.clipboard as Clipboard | undefined;
+    if (clipboard === undefined) {
+      setCopied("This computer did not offer a clipboard.");
+      return;
+    }
+    void clipboard
+      .writeText(commands.join("\n"))
+      .then(() => {
+        setCopied("Copied.");
+      })
+      .catch(() => {
+        setCopied("This computer refused the clipboard.");
+      });
+  }, [commands]);
+
+  return (
+    <div data-testid="command-block">
+      <p className="dash__muted">{intro}</p>
+      {commands.map((command) => (
+        <p key={command}>
+          <code>{command}</code>
+        </p>
+      ))}
+      <button type="button" onClick={copy}>
+        {commands.length === 1 ? "Copy command" : "Copy commands"}
+      </button>
+      {copied !== null && (
+        <p className="dash__muted" role="status" data-testid="command-copied">
+          {copied}
+        </p>
+      )}
+    </div>
   );
 }
 

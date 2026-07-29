@@ -149,6 +149,11 @@ pub struct AppSnapshot {
     /// additive within schema v1, so absence decodes rather than fails.
     #[serde(default)]
     pub available_versions: Option<AvailableVersions>,
+    /// Unmanaged ROCm installs the producer detected, absent (empty) when
+    /// there are none or the CLI predates the block. Structured facts only —
+    /// the CLI never sends command text (#21), so removal copy lives here.
+    #[serde(default)]
+    pub legacy_rocm: Vec<LegacyRocmInstall>,
     pub eligible_actions: Vec<EligibleAction>,
 }
 
@@ -532,6 +537,38 @@ pub struct AvailableVersions {
     pub entries: Vec<AvailableVersionEntry>,
 }
 
+/// How an unmanaged ROCm got onto this machine.
+///
+/// An origin this build does not recognise decodes to `Unrecognised`, which
+/// the view treats exactly like `Unknown`: diagnostics only, never a removal
+/// command. Destructive copy must not be reachable from a guess.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum LegacyRocmOrigin {
+    Deb,
+    Rpm,
+    Loose,
+    Windows,
+    Unknown,
+    #[serde(other)]
+    Unrecognised,
+}
+
+/// One unmanaged ROCm install, as the producer classified it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LegacyRocmInstall {
+    pub path: String,
+    pub origin: LegacyRocmOrigin,
+    /// The manager that can remove `packages`: `apt`, `dnf`, or `zypper`.
+    /// Absent unless the origin is package-owned and a frontend was found.
+    #[serde(default)]
+    pub package_manager: Option<String>,
+    /// Exact owning package names — never wildcards.
+    #[serde(default)]
+    pub packages: Vec<String>,
+}
+
 /// A mutation the app may offer.
 ///
 /// No variant targets a driver, and an action this build does not recognise
@@ -872,6 +909,48 @@ mod tests {
         let catalog = snapshot.available_versions.expect("catalog present");
         assert_eq!(catalog.state, AvailableVersionsState::Unrecognised);
         assert_eq!(catalog.entries[0].tier, VersionTier::Unrecognised);
+    }
+
+    // -- Unmanaged ROCm ------------------------------------------------------
+
+    /// The attention golden carries the producer's classified unmanaged
+    /// installs exactly as #21 locked them: camelCase keys, kebab-case
+    /// origins, fact-free fields omitted.
+    #[test]
+    fn contract_attention_golden_carries_classified_legacy_rocm() {
+        let snapshot = decode(&golden("attention")).expect("decode");
+        assert_eq!(snapshot.legacy_rocm.len(), 3);
+
+        let deb = &snapshot.legacy_rocm[0];
+        assert_eq!(deb.path, "/opt/rocm");
+        assert_eq!(deb.origin, LegacyRocmOrigin::Deb);
+        assert_eq!(deb.package_manager.as_deref(), Some("apt"));
+        assert_eq!(deb.packages, vec!["comgr", "hip-runtime-amd"]);
+
+        assert_eq!(snapshot.legacy_rocm[1].origin, LegacyRocmOrigin::Loose);
+        assert_eq!(snapshot.legacy_rocm[1].package_manager, None);
+        assert!(snapshot.legacy_rocm[1].packages.is_empty());
+        assert_eq!(snapshot.legacy_rocm[2].origin, LegacyRocmOrigin::Unknown);
+    }
+
+    /// A producer with nothing unmanaged omits the block entirely — the shape
+    /// every pre-classification CLI emits forever — and that decodes empty.
+    #[test]
+    fn contract_absent_legacy_rocm_decodes_empty() {
+        let snapshot = decode(&golden("healthy")).expect("decode");
+        assert!(snapshot.legacy_rocm.is_empty());
+    }
+
+    /// An origin this build has never heard of decodes to `Unrecognised`
+    /// instead of failing the snapshot.
+    #[test]
+    fn contract_legacy_rocm_tolerates_unknown_origin() {
+        let mut value: serde_json::Value =
+            serde_json::from_str(&golden("attention")).expect("parse");
+        value["legacyRocm"][0]["origin"] = serde_json::json!("flatpak");
+
+        let snapshot = decode(&value.to_string()).expect("decode");
+        assert_eq!(snapshot.legacy_rocm[0].origin, LegacyRocmOrigin::Unrecognised);
     }
 
     // -- Driver is read-only -------------------------------------------------

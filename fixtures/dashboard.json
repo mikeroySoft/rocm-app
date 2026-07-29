@@ -155,6 +155,7 @@
             }
           ]
         },
+        "legacyRocm": [],
         "eligibleActions": [
           "install-runtime",
           "activate-runtime",
@@ -452,6 +453,7 @@
           }
         },
         "availableVersions": null,
+        "legacyRocm": [],
         "eligibleActions": [
           "install-runtime"
         ]
@@ -815,6 +817,29 @@
             }
           ]
         },
+        "legacyRocm": [
+          {
+            "path": "/opt/rocm",
+            "origin": "deb",
+            "packageManager": "apt",
+            "packages": [
+              "comgr",
+              "hip-runtime-amd"
+            ]
+          },
+          {
+            "path": "/usr/local/rocm",
+            "origin": "loose",
+            "packageManager": null,
+            "packages": []
+          },
+          {
+            "path": "/srv/rocm-mystery",
+            "origin": "unknown",
+            "packageManager": null,
+            "packages": []
+          }
+        ],
         "eligibleActions": [
           "install-runtime",
           "update-runtime",
@@ -1171,6 +1196,7 @@
             }
           ]
         },
+        "legacyRocm": [],
         "eligibleActions": [
           "install-runtime",
           "activate-runtime",
@@ -1544,6 +1570,7 @@
             }
           ]
         },
+        "legacyRocm": [],
         "eligibleActions": [
           "install-runtime",
           "activate-runtime",
@@ -1918,6 +1945,7 @@
             }
           ]
         },
+        "legacyRocm": [],
         "eligibleActions": []
       },
       "telemetry": {
@@ -2287,6 +2315,7 @@
             }
           ]
         },
+        "legacyRocm": [],
         "eligibleActions": [
           "install-runtime",
           "activate-runtime",
@@ -2659,6 +2688,7 @@
             }
           ]
         },
+        "legacyRocm": [],
         "eligibleActions": [
           "install-runtime",
           "activate-runtime",
@@ -2961,6 +2991,7 @@
           }
         },
         "availableVersions": null,
+        "legacyRocm": [],
         "eligibleActions": []
       },
       "telemetry": {
@@ -3268,6 +3299,7 @@
             }
           ]
         },
+        "legacyRocm": [],
         "eligibleActions": [
           "install-runtime",
           "activate-runtime",
@@ -3585,6 +3617,7 @@
             }
           ]
         },
+        "legacyRocm": [],
         "eligibleActions": [
           "install-runtime",
           "activate-runtime",

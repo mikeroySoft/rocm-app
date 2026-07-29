@@ -196,6 +196,20 @@ export interface AvailableVersions {
   readonly checkedAtUnixMs: number | null;
   readonly entries: readonly AvailableVersionEntry[];
 }
+export type LegacyRocmOrigin = "deb" | "rpm" | "loose" | "windows" | "unknown" | "unrecognised";
+
+/**
+ * One unmanaged ROCm install the producer classified (#21). Structured facts
+ * only — the CLI never sends command text; removal copy is built app-side.
+ */
+export interface LegacyRocmInstall {
+  readonly path: string;
+  readonly origin: LegacyRocmOrigin;
+  /** The manager that can remove `packages`; absent unless package-owned. */
+  readonly packageManager?: string;
+  /** Exact owning package names — never wildcards. */
+  readonly packages?: readonly string[];
+}
 
 export interface AppSnapshot {
   readonly schemaVersion: number;
@@ -213,6 +227,11 @@ export interface AppSnapshot {
    * never fetched one — an old CLI, or a machine that has not been online.
    */
   readonly availableVersions?: AvailableVersions;
+  /**
+   * Unmanaged ROCm installs the producer detected. Absent when there are
+   * none, or the CLI predates classification.
+   */
+  readonly legacyRocm?: readonly LegacyRocmInstall[];
   readonly eligibleActions: readonly EligibleAction[];
 }
 

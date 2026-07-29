@@ -160,6 +160,25 @@
       }
     ]
   },
+  "legacyRocm": [
+    {
+      "path": "/opt/rocm",
+      "origin": "deb",
+      "packageManager": "apt",
+      "packages": [
+        "comgr",
+        "hip-runtime-amd"
+      ]
+    },
+    {
+      "path": "/usr/local/rocm",
+      "origin": "loose"
+    },
+    {
+      "path": "/srv/rocm-mystery",
+      "origin": "unknown"
+    }
+  ],
   "eligibleActions": [
     "install-runtime",
     "update-runtime",

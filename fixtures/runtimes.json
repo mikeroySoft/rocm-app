@@ -110,6 +110,7 @@
             }
           ]
         },
+        "unmanaged": [],
         "mutable": true
       }
     },
@@ -227,6 +228,7 @@
             }
           ]
         },
+        "unmanaged": [],
         "mutable": true
       }
     },
@@ -342,6 +344,7 @@
             }
           ]
         },
+        "unmanaged": [],
         "mutable": true
       }
     },
@@ -459,6 +462,7 @@
             }
           ]
         },
+        "unmanaged": [],
         "mutable": true
       }
     },
@@ -576,6 +580,7 @@
             }
           ]
         },
+        "unmanaged": [],
         "mutable": true
       }
     },
@@ -725,6 +730,7 @@
             }
           ]
         },
+        "unmanaged": [],
         "mutable": true
       }
     },
@@ -838,6 +844,7 @@
             }
           ]
         },
+        "unmanaged": [],
         "mutable": true
       }
     },
@@ -955,6 +962,7 @@
             }
           ]
         },
+        "unmanaged": [],
         "mutable": false
       }
     },
@@ -1068,6 +1076,7 @@
             }
           ]
         },
+        "unmanaged": [],
         "mutable": true
       }
     },
@@ -1144,6 +1153,170 @@
           "checkedAtUnixMs": null,
           "entries": []
         },
+        "unmanaged": [],
+        "mutable": true
+      }
+    },
+    {
+      "name": "unmanaged",
+      "purpose": "unmanaged ROCm installs beside the managed one, with guided removal",
+      "view": {
+        "rows": [
+          {
+            "title": "ROCm 7.14.0",
+            "version": "7.14.0",
+            "badges": [
+              "In use"
+            ],
+            "compatibility": {
+              "state": "matches"
+            },
+            "check": "failed",
+            "checkLabel": "Failed its check",
+            "disk": "13 GB",
+            "actions": [
+              "validate"
+            ],
+            "blocked": [
+              {
+                "action": "activate",
+                "reason": "active"
+              },
+              {
+                "action": "remove",
+                "reason": "active"
+              }
+            ],
+            "key": "nightly-wheel-gfx120x-all-7-14-0",
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installRoot": "/tmp/rocm/runtime",
+            "source": "Downloaded from https://example.invalid/simple"
+          },
+          {
+            "title": "ROCm 7.13.0",
+            "version": "7.13.0",
+            "badges": [
+              "Previous"
+            ],
+            "compatibility": {
+              "state": "matches"
+            },
+            "check": "passed",
+            "checkLabel": "Working",
+            "disk": null,
+            "actions": [
+              "activate",
+              "validate"
+            ],
+            "blocked": [
+              {
+                "action": "remove",
+                "reason": "previous"
+              }
+            ],
+            "key": "nightly-wheel-gfx120x-all-7-13-0",
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installRoot": "/tmp/rocm/runtime-7-13-0",
+            "source": "Downloaded from https://example.invalid/simple"
+          }
+        ],
+        "update": {
+          "state": "available",
+          "installed": "7.14.0",
+          "latest": "7.15.0"
+        },
+        "updateMessage": "ROCm 7.15.0 is available. You have 7.14.0.",
+        "updateRequest": {
+          "operation": "update-runtime",
+          "key": "nightly-wheel-gfx120x-all-7-14-0"
+        },
+        "catalog": {
+          "state": "fresh",
+          "notice": null,
+          "checkedAtUnixMs": 1767225600000,
+          "entries": [
+            {
+              "tier": "stable",
+              "title": "ROCm 7.13.0",
+              "version": "7.13.0",
+              "presence": "installed",
+              "installRequest": null,
+              "channel": "release",
+              "indexUrl": "https://repo.amd.com/rocm/whl-multi-arch"
+            },
+            {
+              "tier": "beta",
+              "title": "ROCm 7.14.0",
+              "version": "7.14.0",
+              "presence": "active",
+              "installRequest": null,
+              "channel": "release",
+              "indexUrl": "https://repo.amd.com/rocm/whl-multi-arch"
+            },
+            {
+              "tier": "nightly",
+              "title": "ROCm 7.15.0a20260728",
+              "version": "7.15.0a20260728",
+              "presence": "available",
+              "installRequest": {
+                "operation": "install-runtime",
+                "channel": "nightly",
+                "family": "gfx120X-all",
+                "version": {
+                  "kind": "exact",
+                  "version": "7.15.0a20260728"
+                },
+                "installRoot": null
+              },
+              "channel": "nightly",
+              "indexUrl": "https://rocm.nightlies.amd.com/whl-multi-arch"
+            }
+          ]
+        },
+        "unmanaged": [
+          {
+            "path": "/opt/rocm",
+            "originLabel": "Installed with apt",
+            "guidance": {
+              "kind": "packages",
+              "packageManager": "apt",
+              "commands": [
+                "sudo apt purge comgr hip-runtime-amd",
+                "sudo apt autoremove"
+              ]
+            },
+            "warning": null
+          },
+          {
+            "path": "/usr/local/rocm",
+            "originLabel": "Unpackaged files",
+            "guidance": {
+              "kind": "loose-delete",
+              "precheckCommands": [
+                "dpkg -S /usr/local/rocm",
+                "rpm -qf /usr/local/rocm"
+              ],
+              "deleteCommand": "sudo rm -rf /usr/local/rocm"
+            },
+            "warning": "This permanently deletes everything under /usr/local/rocm. Run the check above first and make sure nothing else lives there."
+          },
+          {
+            "path": "/srv/rocm-mystery",
+            "originLabel": "Could not determine how it was installed",
+            "guidance": {
+              "kind": "diagnostic",
+              "commands": [
+                "dpkg -S /srv/rocm-mystery",
+                "rpm -qf /srv/rocm-mystery"
+              ]
+            },
+            "warning": null
+          }
+        ],
         "mutable": true
       }
     }

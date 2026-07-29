@@ -778,6 +778,150 @@ fn runtimes_catalog_without_a_valid_family_offers_no_install() {
         assert!(entry.install_request.is_none(), "{} offered", entry.version);
     }
 }
+// ---------------------------------------------------------------------------
+// Unmanaged ROCm: guided uninstall
+// ---------------------------------------------------------------------------
+
+/// Criterion: the attention golden's classified installs render as rows a
+/// person can act on — apt purge for the deb one, a guarded delete for the
+/// loose one, diagnostics only for the unknown one.
+#[test]
+fn runtimes_unmanaged_rows_render_the_decided_command_sets() {
+    use super::RemovalGuidance;
+
+    let v = view(&snapshot_named("attention"), &disk());
+    assert_eq!(v.unmanaged.len(), 3);
+
+    let deb = &v.unmanaged[0];
+    assert_eq!(deb.path, "/opt/rocm");
+    assert_eq!(deb.origin_label, "Installed with apt");
+    assert_eq!(deb.warning, None);
+    assert_eq!(
+        deb.guidance,
+        RemovalGuidance::Packages {
+            package_manager: "apt".to_owned(),
+            commands: vec![
+                "sudo apt purge comgr hip-runtime-amd".to_owned(),
+                "sudo apt autoremove".to_owned(),
+            ],
+        }
+    );
+
+    let loose = &v.unmanaged[1];
+    assert_eq!(
+        loose.guidance,
+        RemovalGuidance::LooseDelete {
+            precheck_commands: vec![
+                "dpkg -S /usr/local/rocm".to_owned(),
+                "rpm -qf /usr/local/rocm".to_owned(),
+            ],
+            delete_command: "sudo rm -rf /usr/local/rocm".to_owned(),
+        }
+    );
+    assert!(
+        loose.warning.as_deref().is_some_and(|w| w.contains("permanently")),
+        "a destructive copy block must carry its warning"
+    );
+
+    let unknown = &v.unmanaged[2];
+    assert!(matches!(
+        unknown.guidance,
+        RemovalGuidance::Diagnostic { .. }
+    ));
+}
+
+/// The safety invariant (#21): destructive or removal copy is only reachable
+/// from a verdict that earns it. Unknown and unrecognised origins, package
+/// origins with no package names, and rpm systems with an unrecognised
+/// frontend all degrade to investigate-only diagnostics.
+#[test]
+fn runtimes_unmanaged_uncertain_classifications_never_offer_removal() {
+    use super::RemovalGuidance;
+    use crate::contract::{LegacyRocmInstall, LegacyRocmOrigin};
+
+    let install = |origin, package_manager: Option<&str>, packages: &[&str]| LegacyRocmInstall {
+        path: "/srv/rocm-mystery".to_owned(),
+        origin,
+        package_manager: package_manager.map(str::to_owned),
+        packages: packages.iter().map(|p| (*p).to_owned()).collect(),
+    };
+
+    let uncertain = [
+        install(LegacyRocmOrigin::Unknown, None, &[]),
+        install(LegacyRocmOrigin::Unrecognised, None, &[]),
+        install(LegacyRocmOrigin::Deb, Some("apt"), &[]),
+        install(LegacyRocmOrigin::Rpm, Some("dnf"), &[]),
+        install(LegacyRocmOrigin::Rpm, None, &["rocm-core"]),
+        install(LegacyRocmOrigin::Rpm, Some("yum"), &["rocm-core"]),
+    ];
+    for case in &uncertain {
+        let mut s = snapshot_named("healthy");
+        s.legacy_rocm = vec![case.clone()];
+        let row = &view(&s, &disk()).unmanaged[0];
+        assert!(
+            matches!(row.guidance, RemovalGuidance::Diagnostic { .. }),
+            "{:?} with pm {:?} and {} packages must be diagnostic-only",
+            case.origin,
+            case.package_manager,
+            case.packages.len()
+        );
+        if let RemovalGuidance::Diagnostic { commands } = &row.guidance {
+            for command in commands {
+                assert!(!command.contains("rm "), "{command} removes");
+                assert!(!command.contains("purge"), "{command} removes");
+            }
+        }
+    }
+}
+
+/// A zypper host gets zypper's words, a Windows root gets Settings steps —
+/// and a hostile path never escapes its shell quoting.
+#[test]
+fn runtimes_unmanaged_covers_zypper_windows_and_hostile_paths() {
+    use super::RemovalGuidance;
+    use crate::contract::{LegacyRocmInstall, LegacyRocmOrigin};
+
+    let mut s = snapshot_named("healthy");
+    s.legacy_rocm = vec![
+        LegacyRocmInstall {
+            path: "/opt/rocm".to_owned(),
+            origin: LegacyRocmOrigin::Rpm,
+            package_manager: Some("zypper".to_owned()),
+            packages: vec!["rocm-core".to_owned()],
+        },
+        LegacyRocmInstall {
+            path: r"C:\Program Files\AMD\ROCm".to_owned(),
+            origin: LegacyRocmOrigin::Windows,
+            package_manager: None,
+            packages: vec![],
+        },
+        LegacyRocmInstall {
+            path: "/tmp/rocm; rm -rf $HOME".to_owned(),
+            origin: LegacyRocmOrigin::Loose,
+            package_manager: None,
+            packages: vec![],
+        },
+    ];
+    let v = view(&s, &disk());
+
+    assert_eq!(
+        v.unmanaged[0].guidance,
+        RemovalGuidance::Packages {
+            package_manager: "zypper".to_owned(),
+            commands: vec!["sudo zypper remove rocm-core".to_owned()],
+        }
+    );
+
+    let RemovalGuidance::WindowsSteps { steps } = &v.unmanaged[1].guidance else {
+        panic!("windows origin must render steps");
+    };
+    assert!(steps.iter().any(|s| s.contains("Settings")));
+
+    let RemovalGuidance::LooseDelete { delete_command, .. } = &v.unmanaged[2].guidance else {
+        panic!("loose origin renders a delete");
+    };
+    assert_eq!(delete_command, "sudo rm -rf '/tmp/rocm; rm -rf $HOME'");
+}
 
 // ---------------------------------------------------------------------------
 // Outcomes, audit, and no-fallback
@@ -1185,6 +1329,13 @@ fn build_fixtures() -> RuntimesFixtures {
                 s.available_versions = None;
                 s
             }),
+            state(
+                "unmanaged",
+                "unmanaged ROCm installs beside the managed one, with guided removal",
+                // The attention golden is the producer-generated source of
+                // classified legacyRocm entries: deb-owned, loose, unknown.
+                &snapshot_named("attention"),
+            ),
         ],
         plan: recorded_plan(),
         outcomes: recorded_outcomes(),
