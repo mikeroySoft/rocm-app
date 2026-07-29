@@ -431,6 +431,7 @@ fn runtimes_update_states_are_distinguished() {
         let mut s = with_spare(RuntimeValidation::Ready);
         s.update.state = state;
         s.update.trust = trust;
+        s.available_versions = None;
         s
     };
     let signed = || SourceTrust::Signed {
@@ -533,6 +534,65 @@ fn runtimes_update_states_are_distinguished() {
     }
 }
 
+/// Catalog tiers, not the legacy update report, set the update ceiling.
+#[test]
+fn runtimes_update_ceiling_is_scoped_by_channel() {
+    let mut release = with_spare(RuntimeValidation::Ready);
+    release.runtimes[0].channel = "release".to_owned();
+    release.runtimes[0].version = "7.12.0".to_owned();
+    release.update.state = UpdateState::Available {
+        installed: "7.12.0".to_owned(),
+        latest: "7.14.0".to_owned(),
+    };
+
+    // Deliberately put an older stable first: the ceiling is the newest stable,
+    // not the producer's first matching entry or the beta in `update.latest`.
+    let catalog = release
+        .available_versions
+        .as_mut()
+        .expect("healthy fixture has a catalog");
+    let mut older_stable = catalog
+        .entries
+        .iter()
+        .find(|entry| entry.version == "7.13.0")
+        .expect("stable entry")
+        .clone();
+    older_stable.version = "7.11.0".to_owned();
+    catalog.entries.insert(0, older_stable);
+
+    assert_eq!(
+        standing_for(&release),
+        UpdateStanding::Available {
+            installed: "7.12.0".to_owned(),
+            latest: "7.13.0".to_owned(),
+        }
+    );
+
+    // A beta installed through the release channel has no remembered beta
+    // affinity: relative to stable it is simply ahead.
+    release.runtimes[0].version = "7.14.0".to_owned();
+    release.update.state = UpdateState::NoUpdate {
+        installed: "7.14.0".to_owned(),
+    };
+    assert_eq!(
+        standing_for(&release),
+        UpdateStanding::AheadOfIndex {
+            installed: "7.14.0".to_owned(),
+            latest: "7.13.0".to_owned(),
+        }
+    );
+
+    let nightly = with_spare(RuntimeValidation::Ready);
+    assert_eq!(
+        standing_for(&nightly),
+        UpdateStanding::Available {
+            installed: "7.14.0".to_owned(),
+            latest: "7.15.0a20260728".to_owned(),
+        },
+        "the catalog overrides the legacy no-update state"
+    );
+}
+
 /// An update for the wrong graphics card is worse than no update.
 #[test]
 fn runtimes_incompatible_update_is_reported_and_never_offered() {
@@ -547,7 +607,7 @@ fn runtimes_incompatible_update_is_reported_and_never_offered() {
     assert_eq!(
         v.update,
         UpdateStanding::Incompatible {
-            latest: "7.15.0".to_owned(),
+            latest: "7.15.0a20260728".to_owned(),
             built_for: "gfx110X-all".to_owned()
         }
     );
@@ -555,9 +615,9 @@ fn runtimes_incompatible_update_is_reported_and_never_offered() {
     assert!(v.update_request.is_none(), "an unusable update was offered");
 }
 
-/// Offline and unverified answers are not evidence that an update exists.
+/// Offline, stale, and unverified answers are not evidence that an update exists.
 #[test]
-fn runtimes_only_a_trusted_available_answer_offers_an_update() {
+fn runtimes_only_a_trusted_catalog_answer_offers_an_update() {
     for state in [
         UpdateState::Offline {
             detail: "unreachable".to_owned(),
@@ -569,9 +629,6 @@ fn runtimes_only_a_trusted_available_answer_offers_an_update() {
             installed: "7.14.0".to_owned(),
             checked_at_unix_ms: 1,
         },
-        UpdateState::NoUpdate {
-            installed: "7.14.0".to_owned(),
-        },
     ] {
         let mut snapshot = with_spare(RuntimeValidation::Ready);
         snapshot.update.state = state.clone();
@@ -580,9 +637,8 @@ fn runtimes_only_a_trusted_available_answer_offers_an_update() {
     }
 
     let mut snapshot = with_spare(RuntimeValidation::Ready);
-    snapshot.update.state = UpdateState::Available {
+    snapshot.update.state = UpdateState::NoUpdate {
         installed: "7.14.0".to_owned(),
-        latest: "7.15.0".to_owned(),
     };
     let v = view(&snapshot, &disk());
     assert_eq!(
@@ -819,7 +875,10 @@ fn runtimes_unmanaged_rows_render_the_decided_command_sets() {
         }
     );
     assert!(
-        loose.warning.as_deref().is_some_and(|w| w.contains("permanently")),
+        loose
+            .warning
+            .as_deref()
+            .is_some_and(|w| w.contains("permanently")),
         "a destructive copy block must carry its warning"
     );
 

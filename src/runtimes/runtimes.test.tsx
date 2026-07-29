@@ -162,9 +162,10 @@ describe("runtimes guards", () => {
 });
 
 describe("runtimes updates", () => {
-  /** Criterion: the five update answers are distinguishable on screen. */
+  /** Criterion: distinct update answers stay distinguishable on screen. */
   it.each([
-    ["installed", /newest version/i],
+    ["catalog-never", /newest version/i],
+    ["installed", /is available/i],
     ["update-available", /is available/i],
     ["update-incompatible", /built for/i],
     ["offline", /could not reach AMD/i],
@@ -178,15 +179,18 @@ describe("runtimes updates", () => {
   it("offers the update only when one is available and usable", async () => {
     // Each case gets the document to itself: Testing Library cleans up between
     // tests, not between renders inside one.
-    for (const name of ["installed", "offline", "update-incompatible", "unsupported"]) {
+    for (const name of ["offline", "update-incompatible", "unsupported"]) {
       const { unmount } = render(<Runtimes backend={fixtureRuntimes(name)} />);
       await screen.findByTestId("update");
       expect(screen.queryByTestId("update-action"), name).not.toBeInTheDocument();
       unmount();
     }
 
-    render(<Runtimes backend={fixtureRuntimes("update-available")} />);
-    expect(await screen.findByTestId("update-action")).toBeInTheDocument();
+    for (const name of ["installed", "update-available"]) {
+      const { unmount } = render(<Runtimes backend={fixtureRuntimes(name)} />);
+      expect(await screen.findByTestId("update-action"), name).toBeInTheDocument();
+      unmount();
+    }
   });
 
   /**

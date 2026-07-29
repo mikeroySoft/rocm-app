@@ -39,6 +39,7 @@ sha2 = "0.10"
 # rocm-dash-collectors, and the same version rocm-cli pins, so naming it
 # directly costs nothing and avoids two unsafe platform calls.
 sysinfo = { version = "0.34", default-features = false, features = ["disk"] }
+version-compare = "0.2.1"
 
 [workspace.lints.rust]
 # `deny`, not `forbid`: a documented `#[allow(unsafe_code)]` stays possible for

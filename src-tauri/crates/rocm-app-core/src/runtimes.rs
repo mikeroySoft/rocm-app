@@ -24,6 +24,7 @@
 //! variant that could. The driver stays a report-only row on the Overview.
 
 use serde::{Deserialize, Serialize};
+use version_compare::{Cmp, Version};
 
 use crate::contract::{
     AppSnapshot, AvailableVersionsState, EligibleAction, InstallSource, LegacyRocmInstall,
@@ -811,11 +812,11 @@ pub fn find(snapshot: &AppSnapshot, key: &str) -> Result<RuntimeRecord, BlockRea
     Ok(first.clone())
 }
 
-/// Map the contract's update report into the standing the UI shows.
+/// Derive update standing from the trusted report state and current catalog.
 ///
-/// Compatibility is layered on top: the contract says what version exists, and
-/// this decides whether it is one this machine can use. An update offered for
-/// the wrong graphics card is worse than no update at all.
+/// The report still owns trust and freshness. For a current answer, the
+/// catalog supplies the channel-scoped ceiling so a stable install is never
+/// nudged toward beta.
 #[must_use]
 pub fn standing_for(snapshot: &AppSnapshot) -> UpdateStanding {
     // An unverifiable download list is decided first: whatever it *says* about
@@ -829,38 +830,97 @@ pub fn standing_for(snapshot: &AppSnapshot) -> UpdateStanding {
     }
 
     match &snapshot.update.state {
-        UpdateState::NoUpdate { installed } => UpdateStanding::UpToDate {
-            installed: installed.clone(),
-        },
-        UpdateState::Available { installed, latest } => match incompatible_family(snapshot) {
-            Some(built_for) => UpdateStanding::Incompatible {
-                latest: latest.clone(),
-                built_for,
-            },
-            None => UpdateStanding::Available {
-                installed: installed.clone(),
-                latest: latest.clone(),
-            },
-        },
-        UpdateState::AheadOfIndex { installed, latest } => UpdateStanding::AheadOfIndex {
-            installed: installed.clone(),
-            latest: latest.clone(),
-        },
-        UpdateState::Offline { detail } => UpdateStanding::Offline {
-            detail: detail.clone(),
-        },
+        UpdateState::Offline { detail } => {
+            return UpdateStanding::Offline {
+                detail: detail.clone(),
+            };
+        }
         UpdateState::Stale {
             installed,
             checked_at_unix_ms,
-        } => UpdateStanding::Stale {
-            installed: installed.clone(),
-            checked_at_unix_ms: *checked_at_unix_ms,
+        } => {
+            return UpdateStanding::Stale {
+                installed: installed.clone(),
+                checked_at_unix_ms: *checked_at_unix_ms,
+            };
+        }
+        UpdateState::UntrustedMetadata { detail } => {
+            return UpdateStanding::Untrusted {
+                detail: detail.clone(),
+            };
+        }
+        UpdateState::NotApplicable => return UpdateStanding::NotApplicable,
+        UpdateState::Unrecognised => return UpdateStanding::Unrecognised,
+        UpdateState::NoUpdate { .. }
+        | UpdateState::Available { .. }
+        | UpdateState::AheadOfIndex { .. } => {}
+    }
+
+    let Some(available) = &snapshot.available_versions else {
+        // Schema v1 made the catalog additive. Keep older CLI snapshots useful
+        // when they cannot provide the tier information needed below.
+        return match &snapshot.update.state {
+            UpdateState::NoUpdate { installed } => UpdateStanding::UpToDate {
+                installed: installed.clone(),
+            },
+            UpdateState::Available { installed, latest } => UpdateStanding::Available {
+                installed: installed.clone(),
+                latest: latest.clone(),
+            },
+            UpdateState::AheadOfIndex { installed, latest } => UpdateStanding::AheadOfIndex {
+                installed: installed.clone(),
+                latest: latest.clone(),
+            },
+            _ => unreachable!("terminal update states returned above"),
+        };
+    };
+    let Some(active) = snapshot.active_runtime() else {
+        return UpdateStanding::NotApplicable;
+    };
+    let tier = match active.channel.as_str() {
+        "release" => VersionTier::Stable,
+        "nightly" => VersionTier::Nightly,
+        _ => return UpdateStanding::Unrecognised,
+    };
+
+    let mut latest: Option<(&str, Version<'_>)> = None;
+    for entry in available.entries.iter().filter(|entry| entry.tier == tier) {
+        let Some(candidate) = Version::from(&entry.version) else {
+            return UpdateStanding::Unrecognised;
+        };
+        if latest
+            .as_ref()
+            .is_none_or(|(_, current)| candidate.compare(current) == Cmp::Gt)
+        {
+            latest = Some((&entry.version, candidate));
+        }
+    }
+    let Some((latest, latest_version)) = latest else {
+        return UpdateStanding::Unrecognised;
+    };
+    let Some(installed_version) = Version::from(&active.version) else {
+        return UpdateStanding::Unrecognised;
+    };
+
+    match installed_version.compare(&latest_version) {
+        Cmp::Lt => match incompatible_family(snapshot) {
+            Some(built_for) => UpdateStanding::Incompatible {
+                latest: latest.to_owned(),
+                built_for,
+            },
+            None => UpdateStanding::Available {
+                installed: active.version.clone(),
+                latest: latest.to_owned(),
+            },
         },
-        UpdateState::UntrustedMetadata { detail } => UpdateStanding::Untrusted {
-            detail: detail.clone(),
+        Cmp::Eq => UpdateStanding::UpToDate {
+            installed: active.version.clone(),
         },
-        UpdateState::NotApplicable => UpdateStanding::NotApplicable,
-        UpdateState::Unrecognised => UpdateStanding::Unrecognised,
+        Cmp::Gt => UpdateStanding::AheadOfIndex {
+            installed: active.version.clone(),
+            latest: latest.to_owned(),
+        },
+        _ => unreachable!("version comparison returns only ordering variants"),
     }
 }
 

@@ -62,11 +62,15 @@
           }
         ],
         "update": {
-          "state": "up-to-date",
-          "installed": "7.14.0"
+          "state": "available",
+          "installed": "7.14.0",
+          "latest": "7.15.0a20260728"
         },
-        "updateMessage": "ROCm 7.14.0 is the newest version.",
-        "updateRequest": null,
+        "updateMessage": "ROCm 7.15.0a20260728 is available. You have 7.14.0.",
+        "updateRequest": {
+          "operation": "update-runtime",
+          "key": "nightly-wheel-gfx120x-all-7-14-0"
+        },
         "catalog": {
           "state": "fresh",
           "notice": null,
@@ -178,9 +182,9 @@
         "update": {
           "state": "available",
           "installed": "7.14.0",
-          "latest": "7.15.0"
+          "latest": "7.15.0a20260728"
         },
-        "updateMessage": "ROCm 7.15.0 is available. You have 7.14.0.",
+        "updateMessage": "ROCm 7.15.0a20260728 is available. You have 7.14.0.",
         "updateRequest": {
           "operation": "update-runtime",
           "key": "nightly-wheel-gfx120x-all-7-14-0"
@@ -296,10 +300,10 @@
         ],
         "update": {
           "state": "incompatible",
-          "latest": "7.15.0",
+          "latest": "7.15.0a20260728",
           "builtFor": "gfx110X-all"
         },
-        "updateMessage": "ROCm 7.15.0 is available but is built for gfx110X-all, not your graphics card.",
+        "updateMessage": "ROCm 7.15.0a20260728 is available but is built for gfx110X-all, not your graphics card.",
         "updateRequest": null,
         "catalog": {
           "state": "fresh",
@@ -414,11 +418,15 @@
           }
         ],
         "update": {
-          "state": "up-to-date",
-          "installed": "7.14.0"
+          "state": "available",
+          "installed": "7.14.0",
+          "latest": "7.15.0a20260728"
         },
-        "updateMessage": "ROCm 7.14.0 is the newest version.",
-        "updateRequest": null,
+        "updateMessage": "ROCm 7.15.0a20260728 is available. You have 7.14.0.",
+        "updateRequest": {
+          "operation": "update-runtime",
+          "key": "nightly-wheel-gfx120x-all-7-14-0"
+        },
         "catalog": {
           "state": "fresh",
           "notice": null,
@@ -532,11 +540,15 @@
           }
         ],
         "update": {
-          "state": "up-to-date",
-          "installed": "7.14.0"
+          "state": "available",
+          "installed": "7.14.0",
+          "latest": "7.15.0a20260728"
         },
-        "updateMessage": "ROCm 7.14.0 is the newest version.",
-        "updateRequest": null,
+        "updateMessage": "ROCm 7.15.0a20260728 is available. You have 7.14.0.",
+        "updateRequest": {
+          "operation": "update-runtime",
+          "key": "nightly-wheel-gfx120x-all-7-14-0"
+        },
         "catalog": {
           "state": "fresh",
           "notice": null,
@@ -682,11 +694,15 @@
           }
         ],
         "update": {
-          "state": "up-to-date",
-          "installed": "7.14.0"
+          "state": "available",
+          "installed": "7.14.0",
+          "latest": "7.15.0a20260728"
         },
-        "updateMessage": "ROCm 7.14.0 is the newest version.",
-        "updateRequest": null,
+        "updateMessage": "ROCm 7.15.0a20260728 is available. You have 7.14.0.",
+        "updateRequest": {
+          "operation": "update-runtime",
+          "key": "nightly-wheel-gfx120x-all-7-14-0"
+        },
         "catalog": {
           "state": "fresh",
           "notice": null,
@@ -923,10 +939,11 @@
           }
         ],
         "update": {
-          "state": "up-to-date",
-          "installed": "7.14.0"
+          "state": "available",
+          "installed": "7.14.0",
+          "latest": "7.15.0a20260728"
         },
-        "updateMessage": "ROCm 7.14.0 is the newest version.",
+        "updateMessage": "ROCm 7.15.0a20260728 is available. You have 7.14.0.",
         "updateRequest": null,
         "catalog": {
           "state": "fresh",
@@ -1028,11 +1045,15 @@
           }
         ],
         "update": {
-          "state": "up-to-date",
-          "installed": "7.14.0"
+          "state": "available",
+          "installed": "7.14.0",
+          "latest": "7.15.0a20260728"
         },
-        "updateMessage": "ROCm 7.14.0 is the newest version.",
-        "updateRequest": null,
+        "updateMessage": "ROCm 7.15.0a20260728 is available. You have 7.14.0.",
+        "updateRequest": {
+          "operation": "update-runtime",
+          "key": "nightly-wheel-gfx120x-all-7-14-0"
+        },
         "catalog": {
           "state": "stale",
           "notice": "This list was checked a while ago and may be missing newer versions.",
@@ -1227,9 +1248,9 @@
         "update": {
           "state": "available",
           "installed": "7.14.0",
-          "latest": "7.15.0"
+          "latest": "7.15.0a20260728"
         },
-        "updateMessage": "ROCm 7.15.0 is available. You have 7.14.0.",
+        "updateMessage": "ROCm 7.15.0a20260728 is available. You have 7.14.0.",
         "updateRequest": {
           "operation": "update-runtime",
           "key": "nightly-wheel-gfx120x-all-7-14-0"

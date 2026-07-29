@@ -567,17 +567,19 @@ fn tray_checking_is_never_announced() {
 #[test]
 fn tray_an_unofferable_update_is_never_announced() {
     let mut trusted = snapshot_named("healthy");
+    trusted.runtimes[0].channel = "release".to_owned();
+    trusted.runtimes[0].version = "7.12.0".to_owned();
     trusted.update.state = UpdateState::Available {
-        installed: "7.14.0".to_owned(),
-        latest: "7.15.0".to_owned(),
+        installed: "7.12.0".to_owned(),
+        latest: "7.14.0".to_owned(),
     };
     trusted.update.trust = SourceTrust::Signed {
         key_source: "pinned metadata key".to_owned(),
     };
     assert_eq!(
         notify::available_update(&trusted).as_deref(),
-        Some("7.15.0"),
-        "a trusted, compatible offer is announceable"
+        Some("7.13.0"),
+        "the tray announces the stable catalog ceiling, not update.latest"
     );
 
     let mut untrusted = trusted.clone();
