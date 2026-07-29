@@ -36,11 +36,14 @@ esac
 command -v curl >/dev/null 2>&1 || fail "curl is required"
 command -v sha256sum >/dev/null 2>&1 || fail "sha256sum is required"
 
-# The /releases/latest redirect names the newest tag; no API token, no jq.
+# The public releases API names the newest release; parsed with sed so the
+# script needs no jq. (The HTML /releases/latest redirect lags behind the
+# API after publishing — measured, it pointed at /releases while the API
+# already answered — so the API is the source of truth here.)
 if [ -z "$TAG" ]; then
-    TAG=$(curl -fsSLI -o /dev/null -w '%{url_effective}' "https://github.com/$REPO/releases/latest")
-    TAG="${TAG##*/}"
-    [ -n "$TAG" ] && [ "$TAG" != "releases" ] || fail "could not resolve the newest release tag"
+    TAG=$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" |
+        sed -n 's/^ *"tag_name": *"\([^"]*\)".*/\1/p' | head -n 1)
+    [ -n "$TAG" ] || fail "could not resolve the newest release tag"
 fi
 VERSION="${TAG#v}"
 
