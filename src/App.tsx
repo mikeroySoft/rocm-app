@@ -28,6 +28,7 @@ import { FIXTURES as ONBOARD_FIXTURES, desktopBackend, fixtureBackend } from "./
 import type { FixtureBackendOptions, OnboardingBackend } from "./lib/onboarding";
 import OnboardingFlow from "./onboarding/OnboardingFlow";
 import Runtimes from "./runtimes/Runtimes";
+import VersionPickerPrototype from "./runtimes/VersionPickerPrototype";
 import {
   FIXTURES as RUNTIME_FIXTURES,
   desktopRuntimes,
@@ -109,6 +110,10 @@ function fixtureRoute(): React.ReactElement | null {
     const scenario = params.get("scenario") ?? "healthy";
     const fatal = DASH_FIXTURES.fatal.find((f) => f.name === scenario);
     return <Dashboard source={fatal ? failingSource(fatal.error) : fixtureSource(scenario)} />;
+  }
+  // PROTOTYPE (rocm-app#20) — throwaway version-picker variants; fixture builds only.
+  if (view === "runtimes-picker-prototype") {
+    return <VersionPickerPrototype />;
   }
   if (view === "runtimes") {
     const outcome = params.get("outcome");
