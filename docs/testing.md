@@ -254,15 +254,16 @@ One spec file per boot, because the landing surface is decided by the app's
 first snapshot read. `tests/e2e/scenarios.ts` maps each spec to a producer
 golden from `fixtures/contract/`.
 
-| Spec             | Scenario          | Covers                                               |
-| ---------------- | ----------------- | ---------------------------------------------------- |
-| `first-launch`   | `setup-required`  | first launch, isolated roots, no change on start     |
-| `healthy-boot`   | `healthy`         | Overview, GPU and runtime identity, refresh          |
-| `onboarding`     | `setup-required`  | guided setup, review, approval, progress, result     |
-| `runtime-switch` | `healthy`         | version list, review, apply, post-change state       |
-| `diagnostics`    | `attention`       | Activity, support-bundle export, Diagnose            |
-| `routing`        | `healthy`         | compact and full windows, surface routing, autostart |
-| `unsupported`    | `unsupported-wsl` | refusal, no change controls, explanation             |
+| Spec              | Scenario          | Covers                                                     |
+| ----------------- | ----------------- | ---------------------------------------------------------- |
+| `first-launch`    | `setup-required`  | first launch, isolated roots, no change on start           |
+| `healthy-boot`    | `healthy`         | Overview, GPU and runtime identity, refresh                |
+| `onboarding`      | `setup-required`  | guided setup, review, approval, progress, result           |
+| `runtime-switch`  | `healthy`         | version list, review, apply, post-change state             |
+| `catalog-install` | `healthy`         | version catalog, pre-release opt-in, exact-version install |
+| `diagnostics`     | `attention`       | Activity, support-bundle export, Diagnose                  |
+| `routing`         | `healthy`         | compact and full windows, surface routing, autostart       |
+| `unsupported`     | `unsupported-wsl` | refusal, no change controls, explanation                   |
 
 ### Isolation
 

@@ -143,6 +143,12 @@ pub struct AppSnapshot {
     pub runtimes: Vec<RuntimeRecord>,
     pub driver: DriverReport,
     pub update: UpdateReport,
+    /// The pickable version catalog, absent when the producer has never
+    /// fetched one (old CLI, or a machine that has not been online yet).
+    /// `#[serde(default)]` is the whole compatibility story: the block is
+    /// additive within schema v1, so absence decodes rather than fails.
+    #[serde(default)]
+    pub available_versions: Option<AvailableVersions>,
     pub eligible_actions: Vec<EligibleAction>,
 }
 
@@ -468,6 +474,64 @@ pub struct UpdateReport {
     pub trust: SourceTrust,
 }
 
+/// How fresh the producer says the version catalog is.
+///
+/// Facts, not judgments: the producer reports when it last reached the
+/// indexes; whether "stale" warrants a warning line is this app's decision.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum AvailableVersionsState {
+    Fresh,
+    Stale,
+    Offline,
+    #[serde(other)]
+    Unrecognised,
+}
+
+/// Which shelf a pickable version sits on.
+///
+/// An unrecognised tier decodes rather than fails, and the view layer drops
+/// the entry: a shelf this build cannot explain must not grow an Install
+/// button.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum VersionTier {
+    Nightly,
+    Beta,
+    Stable,
+    #[serde(other)]
+    Unrecognised,
+}
+
+/// One installable version the producer found on an index it would actually
+/// install from.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AvailableVersionEntry {
+    pub tier: VersionTier,
+    /// Exact string handed to `rocm install --version`.
+    pub version: String,
+    /// [`RuntimeRecord::channel`] vocabulary: `release` or `nightly`.
+    pub channel: String,
+    /// Where the CLI will resolve this version. Provenance for diagnostics,
+    /// never rendered as a link or trusted as a payload source.
+    pub index_url: String,
+}
+
+/// The version catalog: what could be installed, and how fresh that answer is.
+///
+/// There are no installed/active flags here on purpose — that is derivable by
+/// joining `version` against `runtimes[]` in the same snapshot, and a carried
+/// copy invites the two to disagree.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AvailableVersions {
+    pub state: AvailableVersionsState,
+    /// When the entries were last real. `None` only when never fetched.
+    pub checked_at_unix_ms: Option<u64>,
+    pub entries: Vec<AvailableVersionEntry>,
+}
+
 /// A mutation the app may offer.
 ///
 /// No variant targets a driver, and an action this build does not recognise
@@ -754,6 +818,60 @@ mod tests {
             vec![EligibleAction::InstallRuntime],
             "an unrecognised action must never be offered"
         );
+    }
+
+    // -- Version catalog ------------------------------------------------------
+
+    /// The healthy golden carries the three-tier catalog exactly as the
+    /// producer emits it (#16 wire shape).
+    #[test]
+    fn contract_healthy_golden_carries_the_version_catalog() {
+        let snapshot = decode(&golden("healthy")).expect("decode");
+        let catalog = snapshot.available_versions.expect("catalog present");
+        assert_eq!(catalog.state, AvailableVersionsState::Fresh);
+        assert!(catalog.checked_at_unix_ms.is_some());
+        let tiers: Vec<VersionTier> = catalog.entries.iter().map(|e| e.tier).collect();
+        assert_eq!(
+            tiers,
+            vec![VersionTier::Nightly, VersionTier::Beta, VersionTier::Stable]
+        );
+        for entry in &catalog.entries {
+            assert!(!entry.version.is_empty());
+            assert!(matches!(entry.channel.as_str(), "release" | "nightly"));
+            assert!(entry.index_url.starts_with("https://"));
+        }
+    }
+
+    /// A producer that never fetched a catalog omits the field, and that must
+    /// decode — it is what every pre-catalog CLI looks like forever.
+    #[test]
+    fn contract_absent_catalog_decodes_as_never_fetched() {
+        let snapshot = decode(&golden("setup-required")).expect("decode");
+        assert_eq!(snapshot.available_versions, None);
+    }
+
+    /// The offline golden keeps its cached entries: `offline` changes the
+    /// state, never the list.
+    #[test]
+    fn contract_offline_golden_keeps_cached_catalog_entries() {
+        let snapshot = decode(&golden("offline-stale")).expect("decode");
+        let catalog = snapshot.available_versions.expect("catalog present");
+        assert_eq!(catalog.state, AvailableVersionsState::Offline);
+        assert!(!catalog.entries.is_empty());
+    }
+
+    /// A tier or state this build has never heard of decodes to
+    /// `Unrecognised` instead of failing the whole snapshot.
+    #[test]
+    fn contract_catalog_tolerates_unknown_tier_and_state() {
+        let mut value: serde_json::Value = serde_json::from_str(&golden("healthy")).expect("parse");
+        value["availableVersions"]["state"] = serde_json::json!("clairvoyant");
+        value["availableVersions"]["entries"][0]["tier"] = serde_json::json!("omega");
+
+        let snapshot = decode(&value.to_string()).expect("decode");
+        let catalog = snapshot.available_versions.expect("catalog present");
+        assert_eq!(catalog.state, AvailableVersionsState::Unrecognised);
+        assert_eq!(catalog.entries[0].tier, VersionTier::Unrecognised);
     }
 
     // -- Driver is read-only -------------------------------------------------

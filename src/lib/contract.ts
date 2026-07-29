@@ -176,6 +176,27 @@ export interface UpdateReport {
   readonly trust: SourceTrust;
 }
 
+export type AvailableVersionsState = "fresh" | "stale" | "offline" | "unrecognised";
+
+export type VersionTier = "nightly" | "beta" | "stable" | "unrecognised";
+
+export interface AvailableVersionEntry {
+  readonly tier: VersionTier;
+  /** Exact string handed to `rocm install --version`. */
+  readonly version: string;
+  /** `RuntimeRecord.channel` vocabulary: `release` or `nightly`. */
+  readonly channel: string;
+  /** Where the CLI will resolve it. Provenance for diagnostics only. */
+  readonly indexUrl: string;
+}
+
+export interface AvailableVersions {
+  readonly state: AvailableVersionsState;
+  /** When the entries were last real. Null only when never fetched. */
+  readonly checkedAtUnixMs: number | null;
+  readonly entries: readonly AvailableVersionEntry[];
+}
+
 export interface AppSnapshot {
   readonly schemaVersion: number;
   readonly producer: ProducerIdentity;
@@ -187,6 +208,11 @@ export interface AppSnapshot {
   readonly runtimes: readonly RuntimeRecord[];
   readonly driver: DriverReport;
   readonly update: UpdateReport;
+  /**
+   * The pickable version catalog. Absent (undefined) when the producer has
+   * never fetched one — an old CLI, or a machine that has not been online.
+   */
+  readonly availableVersions?: AvailableVersions;
   readonly eligibleActions: readonly EligibleAction[];
 }
 

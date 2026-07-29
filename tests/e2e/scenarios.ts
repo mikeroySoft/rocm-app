@@ -37,6 +37,8 @@ export interface MutationResponse {
 /** Runtime keys carried by the contract goldens. */
 export const ACTIVE_RUNTIME = "nightly-wheel-gfx120x-all-7-14-0";
 export const OTHER_RUNTIME = "nightly-wheel-gfx120x-all-7-13-0";
+/** The nightly version the healthy golden's catalog offers for install. */
+export const NIGHTLY_VERSION = "7.15.0a20260728";
 
 export const SCENARIOS: Readonly<Record<string, Scenario>> = {
   /** Nothing installed yet: the state guided setup exists for. */
@@ -60,7 +62,10 @@ export const SCENARIOS: Readonly<Record<string, Scenario>> = {
   /** A validated runtime is active and there is nothing to do. */
   healthy: {
     snapshot: "contract/healthy.json",
-    extraSnapshots: { "switched.json": "e2e/switched.json" },
+    extraSnapshots: {
+      "switched.json": "e2e/switched.json",
+      "installed-nightly.json": "e2e/installed-nightly.json",
+    },
     mutations: {
       [`runtimes activate ${OTHER_RUNTIME}`]: {
         exit: 0,
@@ -70,6 +75,14 @@ export const SCENARIOS: Readonly<Record<string, Scenario>> = {
       },
       [`runtimes list --runtime ${OTHER_RUNTIME}`]: { exit: 0, stdout: "ok\n" },
       [`runtimes uninstall ${OTHER_RUNTIME} --yes`]: { exit: 0, stdout: "removed\n" },
+      // The exact-version install the catalog's nightly entry plans (#22).
+      [`install sdk --channel nightly --format wheel --family gfx120X-all --yes --version ${NIGHTLY_VERSION}`]:
+        {
+          exit: 0,
+          stdout: "installed\n",
+          delayMs: 600,
+          thenSnapshot: "installed-nightly.json",
+        },
     },
   },
 
@@ -132,6 +145,7 @@ export const SPEC_SCENARIOS: Readonly<Record<string, string>> = {
   "healthy-boot.e2e.ts": "healthy",
   "onboarding.e2e.ts": "setup-required",
   "runtime-switch.e2e.ts": "healthy",
+  "catalog-install.e2e.ts": "healthy",
   "diagnostics.e2e.ts": "attention",
   "routing.e2e.ts": "healthy",
   "unsupported.e2e.ts": "unsupported-wsl",

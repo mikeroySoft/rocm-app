@@ -95,6 +95,7 @@
             "keySource": "pinned"
           }
         },
+        "availableVersions": null,
         "eligibleActions": [
           "install-runtime"
         ]
@@ -343,6 +344,30 @@
             "keySource": "pinned"
           }
         },
+        "availableVersions": {
+          "state": "fresh",
+          "checkedAtUnixMs": 1767225600000,
+          "entries": [
+            {
+              "tier": "nightly",
+              "version": "7.15.0a20260728",
+              "channel": "nightly",
+              "indexUrl": "https://rocm.nightlies.amd.com/whl-multi-arch"
+            },
+            {
+              "tier": "beta",
+              "version": "7.14.0",
+              "channel": "release",
+              "indexUrl": "https://repo.amd.com/rocm/whl-multi-arch"
+            },
+            {
+              "tier": "stable",
+              "version": "7.13.0",
+              "channel": "release",
+              "indexUrl": "https://repo.amd.com/rocm/whl-multi-arch"
+            }
+          ]
+        },
         "eligibleActions": []
       },
       "targetFolder": "/home/rocm-user/ROCm",
@@ -456,6 +481,7 @@
             "keySource": "pinned"
           }
         },
+        "availableVersions": null,
         "eligibleActions": [
           "install-runtime"
         ]
@@ -618,6 +644,30 @@
             "kind": "signed",
             "keySource": "pinned"
           }
+        },
+        "availableVersions": {
+          "state": "fresh",
+          "checkedAtUnixMs": 1767225600000,
+          "entries": [
+            {
+              "tier": "nightly",
+              "version": "7.15.0a20260728",
+              "channel": "nightly",
+              "indexUrl": "https://rocm.nightlies.amd.com/whl-multi-arch"
+            },
+            {
+              "tier": "beta",
+              "version": "7.14.0",
+              "channel": "release",
+              "indexUrl": "https://repo.amd.com/rocm/whl-multi-arch"
+            },
+            {
+              "tier": "stable",
+              "version": "7.13.0",
+              "channel": "release",
+              "indexUrl": "https://repo.amd.com/rocm/whl-multi-arch"
+            }
+          ]
         },
         "eligibleActions": [
           "install-runtime",
@@ -786,6 +836,30 @@
             "reason": "no metadata retrieved"
           }
         },
+        "availableVersions": {
+          "state": "offline",
+          "checkedAtUnixMs": 1767139200000,
+          "entries": [
+            {
+              "tier": "nightly",
+              "version": "7.15.0a20260728",
+              "channel": "nightly",
+              "indexUrl": "https://rocm.nightlies.amd.com/whl-multi-arch"
+            },
+            {
+              "tier": "beta",
+              "version": "7.14.0",
+              "channel": "release",
+              "indexUrl": "https://repo.amd.com/rocm/whl-multi-arch"
+            },
+            {
+              "tier": "stable",
+              "version": "7.13.0",
+              "channel": "release",
+              "indexUrl": "https://repo.amd.com/rocm/whl-multi-arch"
+            }
+          ]
+        },
         "eligibleActions": [
           "install-runtime",
           "activate-runtime",
@@ -905,6 +979,7 @@
             "reason": "signature did not verify"
           }
         },
+        "availableVersions": null,
         "eligibleActions": [
           "install-runtime"
         ]
@@ -1020,6 +1095,7 @@
             "keySource": "pinned"
           }
         },
+        "availableVersions": null,
         "eligibleActions": [
           "install-runtime"
         ]
@@ -1137,6 +1213,7 @@
             "keySource": "pinned"
           }
         },
+        "availableVersions": null,
         "eligibleActions": [
           "install-runtime"
         ]

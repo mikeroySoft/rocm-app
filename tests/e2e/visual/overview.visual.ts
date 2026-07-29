@@ -33,6 +33,12 @@ describe("visual: healthy", () => {
     await fullState("runtimes-details-open");
   });
 
+  it("photographs the catalog with pre-release tiers revealed", async () => {
+    await (await waitForTestId("catalog-prerelease")).click();
+    await waitForTestId("catalog-nightly");
+    await fullState("runtimes-catalog-prerelease");
+  });
+
   it("photographs the compact panel", async () => {
     await quickState("healthy");
   });

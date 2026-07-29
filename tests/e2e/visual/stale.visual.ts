@@ -17,6 +17,14 @@ describe("visual: offline and stale", () => {
     await fullState("offline-stale-overview");
   });
 
+  it("photographs the version list with its offline catalog notice", async () => {
+    await (await waitForTestId("manage-versions")).click();
+    await waitForTestId("catalog-notice");
+    await fullState("offline-stale-versions");
+    await browser.$("button*=Back to overview").click();
+    await waitForTestId("verdict");
+  });
+
   it("photographs the compact panel in the stale state", async () => {
     await quickState("offline-stale");
   });

@@ -26,10 +26,12 @@
 use serde::{Deserialize, Serialize};
 
 use crate::contract::{
-    AppSnapshot, EligibleAction, InstallSource, RuntimeRecord, RuntimeValidation, SourceTrust,
-    UpdateState,
+    AppSnapshot, AvailableVersionsState, EligibleAction, InstallSource, RuntimeRecord,
+    RuntimeValidation, SourceTrust, UpdateState, VersionTier,
 };
-use crate::controller::request::{OperationRequest, RuntimeKey};
+use crate::controller::request::{
+    Channel, OperationRequest, RuntimeFamily, RuntimeKey, VersionSelector,
+};
 use crate::onboarding::format_bytes;
 
 /// What may be done to one installed version.
@@ -240,8 +242,79 @@ pub struct RuntimesView {
     pub update_message: String,
     /// The request the Update button would plan, when there is one.
     pub update_request: Option<OperationRequest>,
+    /// The pickable versions this machine could get, per the producer's
+    /// catalog. Always present; its `state` says how much to trust it.
+    pub catalog: CatalogView,
     /// True when this host may be changed at all.
     pub mutable: bool,
+}
+
+/// How fresh the "Get another version" list is, in the UI's vocabulary.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum CatalogState {
+    Fresh,
+    Stale,
+    Offline,
+    /// The producer has never fetched a catalog (old CLI, or a machine that
+    /// has not been online yet). The panel explains itself instead of
+    /// rendering an empty list.
+    NeverFetched,
+    /// A freshness state this build does not recognise. Entries still render,
+    /// but with a caution line, because unknown freshness is not fresh.
+    Unrecognised,
+}
+
+/// Which shelf a pickable version sits on. Declaration order is display
+/// order: the safe choice first, pre-release shelves after.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum CatalogTier {
+    Stable,
+    Beta,
+    Nightly,
+}
+
+/// Whether a pickable version is already on this machine.
+///
+/// Derived here by joining the catalog against `runtimes[]` — the contract
+/// deliberately carries no such flag (#16), and the renderer never derives.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum CatalogPresence {
+    Available,
+    Installed,
+    Active,
+}
+
+/// One version a person could get.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CatalogEntry {
+    pub tier: CatalogTier,
+    /// Friendly headline, e.g. "ROCm 7.14.0".
+    pub title: String,
+    pub version: String,
+    pub presence: CatalogPresence,
+    /// The exact-version install the Install button would plan. `None` when
+    /// the version is already here, or this host may not install at all —
+    /// the same rule `RocmController::plan` enforces.
+    pub install_request: Option<OperationRequest>,
+    /// Advanced identifiers: shown only behind details, never in the headline.
+    pub channel: String,
+    pub index_url: String,
+}
+
+/// The "Get another version" panel.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CatalogView {
+    pub state: CatalogState,
+    /// One plain sentence above the list when freshness warrants one.
+    pub notice: Option<String>,
+    pub checked_at_unix_ms: Option<u64>,
+    /// Sorted by tier, safe choice first; producer order within a tier.
+    pub entries: Vec<CatalogEntry>,
 }
 
 /// Disk usage the host measured, keyed by install root.
@@ -274,7 +347,117 @@ pub fn view(snapshot: &AppSnapshot, disk: &DiskUsage) -> RuntimesView {
         update_message: update.message(),
         update,
         update_request,
+        catalog: catalog_for(snapshot),
         mutable,
+    }
+}
+
+/// Build the "Get another version" panel from the producer's catalog.
+///
+/// Guarded the same way twice, per the module doc: an entry only carries an
+/// `install_request` when `RocmController::plan` would accept it — this host
+/// may install, the action is offered, and the version is not already here.
+fn catalog_for(snapshot: &AppSnapshot) -> CatalogView {
+    let Some(available) = &snapshot.available_versions else {
+        return CatalogView {
+            state: CatalogState::NeverFetched,
+            notice: None,
+            checked_at_unix_ms: None,
+            entries: Vec::new(),
+        };
+    };
+
+    let state = match available.state {
+        AvailableVersionsState::Fresh => CatalogState::Fresh,
+        AvailableVersionsState::Stale => CatalogState::Stale,
+        AvailableVersionsState::Offline => CatalogState::Offline,
+        AvailableVersionsState::Unrecognised => CatalogState::Unrecognised,
+    };
+    let notice = match state {
+        CatalogState::Fresh | CatalogState::NeverFetched => None,
+        CatalogState::Stale => {
+            Some("This list was checked a while ago and may be missing newer versions.".to_owned())
+        }
+        CatalogState::Offline => Some(
+            "This computer could not reach AMD to refresh the version list. \
+             Showing the last one it saw."
+                .to_owned(),
+        ),
+        CatalogState::Unrecognised => {
+            Some("This version of ROCm App does not recognise how fresh this list is.".to_owned())
+        }
+    };
+
+    let installable = snapshot.platform.install_allowed()
+        && snapshot
+            .offerable_actions()
+            .contains(&EligibleAction::InstallRuntime);
+    // The same allowlist the controller enforces; a family it refuses must
+    // not become a request the UI offers.
+    let family = snapshot
+        .gpu
+        .therock_family
+        .clone()
+        .and_then(|f| RuntimeFamily::new(f).ok());
+
+    let mut entries: Vec<CatalogEntry> = available
+        .entries
+        .iter()
+        .filter_map(|entry| {
+            let tier = match entry.tier {
+                VersionTier::Stable => CatalogTier::Stable,
+                VersionTier::Beta => CatalogTier::Beta,
+                VersionTier::Nightly => CatalogTier::Nightly,
+                // A shelf this build cannot explain must not grow an
+                // Install button; dropping the entry fails closed.
+                VersionTier::Unrecognised => return None,
+            };
+            // The channel becomes an argv element; only the closed set passes.
+            let channel = match entry.channel.as_str() {
+                "release" => Channel::Release,
+                "nightly" => Channel::Nightly,
+                _ => return None,
+            };
+            let presence = match snapshot
+                .runtimes
+                .iter()
+                .find(|r| r.version == entry.version)
+            {
+                Some(record) if record.active => CatalogPresence::Active,
+                Some(_) => CatalogPresence::Installed,
+                None => CatalogPresence::Available,
+            };
+            let install_request = (installable && presence == CatalogPresence::Available)
+                .then_some(())
+                .zip(family.clone())
+                .map(|((), family)| OperationRequest::InstallRuntime {
+                    channel,
+                    family,
+                    version: VersionSelector::Exact {
+                        version: entry.version.clone(),
+                    },
+                    // rocm-cli's own default folder; onboarding names one
+                    // because first run reviews it, the picker does not.
+                    install_root: None,
+                });
+            Some(CatalogEntry {
+                tier,
+                title: format!("ROCm {}", entry.version),
+                version: entry.version.clone(),
+                presence,
+                install_request,
+                channel: entry.channel.clone(),
+                index_url: entry.index_url.clone(),
+            })
+        })
+        .collect();
+    entries.sort_by_key(|entry| entry.tier);
+
+    CatalogView {
+        state,
+        notice,
+        checked_at_unix_ms: available.checked_at_unix_ms,
+        entries,
     }
 }
 

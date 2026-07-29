@@ -610,6 +610,176 @@ fn runtimes_an_unsupported_host_offers_nothing() {
 }
 
 // ---------------------------------------------------------------------------
+// Catalog
+// ---------------------------------------------------------------------------
+
+/// Criterion: the healthy golden's three-tier catalog renders safe-first,
+/// with already-installed versions joined against the installed rows rather
+/// than re-offered.
+#[test]
+fn runtimes_catalog_lists_tiers_safe_first_and_joins_installed_versions() {
+    let v = view(&snapshot_named("healthy"), &disk());
+    assert_eq!(v.catalog.state, super::CatalogState::Fresh);
+    assert_eq!(v.catalog.notice, None);
+
+    let tiers: Vec<super::CatalogTier> = v.catalog.entries.iter().map(|e| e.tier).collect();
+    assert_eq!(
+        tiers,
+        vec![
+            super::CatalogTier::Stable,
+            super::CatalogTier::Beta,
+            super::CatalogTier::Nightly
+        ]
+    );
+
+    // 7.14.0 is the active install, 7.13.0 the previous one; neither may be
+    // offered for install again.
+    let beta = &v.catalog.entries[1];
+    assert_eq!(beta.version, "7.14.0");
+    assert_eq!(beta.presence, super::CatalogPresence::Active);
+    assert!(beta.install_request.is_none());
+
+    let stable = &v.catalog.entries[0];
+    assert_eq!(stable.version, "7.13.0");
+    assert_eq!(stable.presence, super::CatalogPresence::Installed);
+    assert!(stable.install_request.is_none());
+
+    // Headlines are friendly and free of backend identifiers.
+    for entry in &v.catalog.entries {
+        assert_eq!(entry.title, format!("ROCm {}", entry.version));
+        assert!(
+            !entry.title.contains("gfx"),
+            "{} leaks a family",
+            entry.title
+        );
+    }
+}
+
+/// Criterion: a version not on this machine gets an exact-version install
+/// request — never "latest" — for this card's family, on the entry's channel.
+#[test]
+fn runtimes_catalog_offers_an_exact_version_install_for_absent_versions() {
+    let v = view(&snapshot_named("healthy"), &disk());
+    let nightly = v
+        .catalog
+        .entries
+        .iter()
+        .find(|e| e.tier == super::CatalogTier::Nightly)
+        .expect("nightly entry");
+    assert_eq!(nightly.presence, super::CatalogPresence::Available);
+
+    let request = nightly.install_request.clone().expect("install offered");
+    let OperationRequest::InstallRuntime {
+        channel,
+        family,
+        version,
+        install_root,
+    } = &request
+    else {
+        panic!("not an install: {request:?}");
+    };
+    assert_eq!(channel.as_str(), "nightly");
+    assert_eq!(family.as_str(), "gfx120X-all");
+    assert_eq!(
+        version,
+        &crate::controller::request::VersionSelector::Exact {
+            version: nightly.version.clone()
+        }
+    );
+    assert_eq!(install_root, &None);
+
+    // Guard parity: the request the view offers is one the controller plans.
+    let h = Harness::ready(snapshot_named("healthy"));
+    let plan = h.controller.plan(&request).expect("plan accepts");
+    assert_eq!(plan.resolved_version(), Some(nightly.version.as_str()));
+}
+
+/// Criterion: an unsupported host renders the catalog read-only — every
+/// entry present, no install request anywhere.
+#[test]
+fn runtimes_catalog_on_an_unsupported_host_offers_no_install() {
+    let v = view(&snapshot_named("unsupported-wsl"), &disk());
+    assert!(!v.catalog.entries.is_empty(), "catalog still informs");
+    for entry in &v.catalog.entries {
+        assert!(entry.install_request.is_none(), "{} offered", entry.version);
+    }
+}
+
+/// Criterion: no catalog block means never fetched — an explanation state,
+/// not an empty list pretending to be an answer.
+#[test]
+fn runtimes_catalog_absent_block_reads_as_never_fetched() {
+    let mut s = snapshot_named("healthy");
+    s.available_versions = None;
+    let v = view(&s, &disk());
+    assert_eq!(v.catalog.state, super::CatalogState::NeverFetched);
+    assert!(v.catalog.entries.is_empty());
+    assert_eq!(v.catalog.checked_at_unix_ms, None);
+    assert_eq!(v.catalog.notice, None);
+}
+
+/// Criterion: stale and offline keep their entries but say so in a sentence;
+/// an unrecognised freshness state is cautioned, not trusted as fresh.
+#[test]
+fn runtimes_catalog_freshness_states_carry_a_notice_and_keep_entries() {
+    use crate::contract::AvailableVersionsState;
+    for (state, expected) in [
+        (AvailableVersionsState::Stale, super::CatalogState::Stale),
+        (
+            AvailableVersionsState::Offline,
+            super::CatalogState::Offline,
+        ),
+        (
+            AvailableVersionsState::Unrecognised,
+            super::CatalogState::Unrecognised,
+        ),
+    ] {
+        let mut s = snapshot_named("healthy");
+        s.available_versions.as_mut().expect("catalog").state = state;
+        let v = view(&s, &disk());
+        assert_eq!(v.catalog.state, expected);
+        assert!(
+            !v.catalog.entries.is_empty(),
+            "{expected:?} dropped entries"
+        );
+        let notice = v
+            .catalog
+            .notice
+            .unwrap_or_else(|| panic!("{expected:?} has no notice"));
+        assert!(!notice.is_empty());
+    }
+}
+
+/// Criterion: an entry this build cannot explain — unknown tier or a channel
+/// outside the closed set — is dropped rather than rendered without a reason
+/// or, worse, wired into an argv.
+#[test]
+fn runtimes_catalog_drops_entries_it_cannot_explain() {
+    let mut s = snapshot_named("healthy");
+    {
+        let catalog = s.available_versions.as_mut().expect("catalog");
+        catalog.entries[0].tier = crate::contract::VersionTier::Unrecognised;
+        catalog.entries[1].channel = "torrent".to_owned();
+    }
+    let v = view(&s, &disk());
+    assert_eq!(v.catalog.entries.len(), 1);
+}
+
+/// Criterion: a card the request vocabulary refuses (or none at all) keeps
+/// the catalog readable but never installable — the same allowlist the
+/// controller enforces.
+#[test]
+fn runtimes_catalog_without_a_valid_family_offers_no_install() {
+    let mut s = snapshot_named("healthy");
+    s.gpu.therock_family = None;
+    let v = view(&s, &disk());
+    assert!(!v.catalog.entries.is_empty());
+    for entry in &v.catalog.entries {
+        assert!(entry.install_request.is_none(), "{} offered", entry.version);
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Outcomes, audit, and no-fallback
 // ---------------------------------------------------------------------------
 
@@ -994,9 +1164,27 @@ fn build_fixtures() -> RuntimesFixtures {
                 s.update.trust = SourceTrust::Untrusted {
                     reason: "no metadata retrieved".to_owned(),
                 };
+                // The same unreachable AMD affects the version catalog: the
+                // cached list is still served, with the offline notice.
+                if let Some(catalog) = s.available_versions.as_mut() {
+                    catalog.state = contract::AvailableVersionsState::Offline;
+                }
                 s
             }),
             state("unsupported", "read-only host", &wsl),
+            state("catalog-stale", "a version list old enough to caution", &{
+                let mut s = with_spare(RuntimeValidation::Ready);
+                s.available_versions
+                    .as_mut()
+                    .expect("healthy golden carries a catalog")
+                    .state = contract::AvailableVersionsState::Stale;
+                s
+            }),
+            state("catalog-never", "no version list has ever been fetched", &{
+                let mut s = with_spare(RuntimeValidation::Ready);
+                s.available_versions = None;
+                s
+            }),
         ],
         plan: recorded_plan(),
         outcomes: recorded_outcomes(),

@@ -67,6 +67,49 @@
         },
         "updateMessage": "ROCm 7.14.0 is the newest version.",
         "updateRequest": null,
+        "catalog": {
+          "state": "fresh",
+          "notice": null,
+          "checkedAtUnixMs": 1767225600000,
+          "entries": [
+            {
+              "tier": "stable",
+              "title": "ROCm 7.13.0",
+              "version": "7.13.0",
+              "presence": "installed",
+              "installRequest": null,
+              "channel": "release",
+              "indexUrl": "https://repo.amd.com/rocm/whl-multi-arch"
+            },
+            {
+              "tier": "beta",
+              "title": "ROCm 7.14.0",
+              "version": "7.14.0",
+              "presence": "active",
+              "installRequest": null,
+              "channel": "release",
+              "indexUrl": "https://repo.amd.com/rocm/whl-multi-arch"
+            },
+            {
+              "tier": "nightly",
+              "title": "ROCm 7.15.0a20260728",
+              "version": "7.15.0a20260728",
+              "presence": "available",
+              "installRequest": {
+                "operation": "install-runtime",
+                "channel": "nightly",
+                "family": "gfx120X-all",
+                "version": {
+                  "kind": "exact",
+                  "version": "7.15.0a20260728"
+                },
+                "installRoot": null
+              },
+              "channel": "nightly",
+              "indexUrl": "https://rocm.nightlies.amd.com/whl-multi-arch"
+            }
+          ]
+        },
         "mutable": true
       }
     },
@@ -141,6 +184,49 @@
           "operation": "update-runtime",
           "key": "nightly-wheel-gfx120x-all-7-14-0"
         },
+        "catalog": {
+          "state": "fresh",
+          "notice": null,
+          "checkedAtUnixMs": 1767225600000,
+          "entries": [
+            {
+              "tier": "stable",
+              "title": "ROCm 7.13.0",
+              "version": "7.13.0",
+              "presence": "installed",
+              "installRequest": null,
+              "channel": "release",
+              "indexUrl": "https://repo.amd.com/rocm/whl-multi-arch"
+            },
+            {
+              "tier": "beta",
+              "title": "ROCm 7.14.0",
+              "version": "7.14.0",
+              "presence": "active",
+              "installRequest": null,
+              "channel": "release",
+              "indexUrl": "https://repo.amd.com/rocm/whl-multi-arch"
+            },
+            {
+              "tier": "nightly",
+              "title": "ROCm 7.15.0a20260728",
+              "version": "7.15.0a20260728",
+              "presence": "available",
+              "installRequest": {
+                "operation": "install-runtime",
+                "channel": "nightly",
+                "family": "gfx120X-all",
+                "version": {
+                  "kind": "exact",
+                  "version": "7.15.0a20260728"
+                },
+                "installRoot": null
+              },
+              "channel": "nightly",
+              "indexUrl": "https://rocm.nightlies.amd.com/whl-multi-arch"
+            }
+          ]
+        },
         "mutable": true
       }
     },
@@ -213,6 +299,49 @@
         },
         "updateMessage": "ROCm 7.15.0 is available but is built for gfx110X-all, not your graphics card.",
         "updateRequest": null,
+        "catalog": {
+          "state": "fresh",
+          "notice": null,
+          "checkedAtUnixMs": 1767225600000,
+          "entries": [
+            {
+              "tier": "stable",
+              "title": "ROCm 7.13.0",
+              "version": "7.13.0",
+              "presence": "installed",
+              "installRequest": null,
+              "channel": "release",
+              "indexUrl": "https://repo.amd.com/rocm/whl-multi-arch"
+            },
+            {
+              "tier": "beta",
+              "title": "ROCm 7.14.0",
+              "version": "7.14.0",
+              "presence": "active",
+              "installRequest": null,
+              "channel": "release",
+              "indexUrl": "https://repo.amd.com/rocm/whl-multi-arch"
+            },
+            {
+              "tier": "nightly",
+              "title": "ROCm 7.15.0a20260728",
+              "version": "7.15.0a20260728",
+              "presence": "available",
+              "installRequest": {
+                "operation": "install-runtime",
+                "channel": "nightly",
+                "family": "gfx120X-all",
+                "version": {
+                  "kind": "exact",
+                  "version": "7.15.0a20260728"
+                },
+                "installRoot": null
+              },
+              "channel": "nightly",
+              "indexUrl": "https://rocm.nightlies.amd.com/whl-multi-arch"
+            }
+          ]
+        },
         "mutable": true
       }
     },
@@ -287,6 +416,49 @@
         },
         "updateMessage": "ROCm 7.14.0 is the newest version.",
         "updateRequest": null,
+        "catalog": {
+          "state": "fresh",
+          "notice": null,
+          "checkedAtUnixMs": 1767225600000,
+          "entries": [
+            {
+              "tier": "stable",
+              "title": "ROCm 7.13.0",
+              "version": "7.13.0",
+              "presence": "installed",
+              "installRequest": null,
+              "channel": "release",
+              "indexUrl": "https://repo.amd.com/rocm/whl-multi-arch"
+            },
+            {
+              "tier": "beta",
+              "title": "ROCm 7.14.0",
+              "version": "7.14.0",
+              "presence": "active",
+              "installRequest": null,
+              "channel": "release",
+              "indexUrl": "https://repo.amd.com/rocm/whl-multi-arch"
+            },
+            {
+              "tier": "nightly",
+              "title": "ROCm 7.15.0a20260728",
+              "version": "7.15.0a20260728",
+              "presence": "available",
+              "installRequest": {
+                "operation": "install-runtime",
+                "channel": "nightly",
+                "family": "gfx120X-all",
+                "version": {
+                  "kind": "exact",
+                  "version": "7.15.0a20260728"
+                },
+                "installRoot": null
+              },
+              "channel": "nightly",
+              "indexUrl": "https://rocm.nightlies.amd.com/whl-multi-arch"
+            }
+          ]
+        },
         "mutable": true
       }
     },
@@ -361,6 +533,49 @@
         },
         "updateMessage": "ROCm 7.14.0 is the newest version.",
         "updateRequest": null,
+        "catalog": {
+          "state": "fresh",
+          "notice": null,
+          "checkedAtUnixMs": 1767225600000,
+          "entries": [
+            {
+              "tier": "stable",
+              "title": "ROCm 7.13.0",
+              "version": "7.13.0",
+              "presence": "installed",
+              "installRequest": null,
+              "channel": "release",
+              "indexUrl": "https://repo.amd.com/rocm/whl-multi-arch"
+            },
+            {
+              "tier": "beta",
+              "title": "ROCm 7.14.0",
+              "version": "7.14.0",
+              "presence": "active",
+              "installRequest": null,
+              "channel": "release",
+              "indexUrl": "https://repo.amd.com/rocm/whl-multi-arch"
+            },
+            {
+              "tier": "nightly",
+              "title": "ROCm 7.15.0a20260728",
+              "version": "7.15.0a20260728",
+              "presence": "available",
+              "installRequest": {
+                "operation": "install-runtime",
+                "channel": "nightly",
+                "family": "gfx120X-all",
+                "version": {
+                  "kind": "exact",
+                  "version": "7.15.0a20260728"
+                },
+                "installRoot": null
+              },
+              "channel": "nightly",
+              "indexUrl": "https://rocm.nightlies.amd.com/whl-multi-arch"
+            }
+          ]
+        },
         "mutable": true
       }
     },
@@ -467,6 +682,49 @@
         },
         "updateMessage": "ROCm 7.14.0 is the newest version.",
         "updateRequest": null,
+        "catalog": {
+          "state": "fresh",
+          "notice": null,
+          "checkedAtUnixMs": 1767225600000,
+          "entries": [
+            {
+              "tier": "stable",
+              "title": "ROCm 7.13.0",
+              "version": "7.13.0",
+              "presence": "installed",
+              "installRequest": null,
+              "channel": "release",
+              "indexUrl": "https://repo.amd.com/rocm/whl-multi-arch"
+            },
+            {
+              "tier": "beta",
+              "title": "ROCm 7.14.0",
+              "version": "7.14.0",
+              "presence": "active",
+              "installRequest": null,
+              "channel": "release",
+              "indexUrl": "https://repo.amd.com/rocm/whl-multi-arch"
+            },
+            {
+              "tier": "nightly",
+              "title": "ROCm 7.15.0a20260728",
+              "version": "7.15.0a20260728",
+              "presence": "available",
+              "installRequest": {
+                "operation": "install-runtime",
+                "channel": "nightly",
+                "family": "gfx120X-all",
+                "version": {
+                  "kind": "exact",
+                  "version": "7.15.0a20260728"
+                },
+                "installRoot": null
+              },
+              "channel": "nightly",
+              "indexUrl": "https://rocm.nightlies.amd.com/whl-multi-arch"
+            }
+          ]
+        },
         "mutable": true
       }
     },
@@ -537,6 +795,49 @@
         },
         "updateMessage": "This computer could not reach AMD to check for a newer version.",
         "updateRequest": null,
+        "catalog": {
+          "state": "offline",
+          "notice": "This computer could not reach AMD to refresh the version list. Showing the last one it saw.",
+          "checkedAtUnixMs": 1767225600000,
+          "entries": [
+            {
+              "tier": "stable",
+              "title": "ROCm 7.13.0",
+              "version": "7.13.0",
+              "presence": "installed",
+              "installRequest": null,
+              "channel": "release",
+              "indexUrl": "https://repo.amd.com/rocm/whl-multi-arch"
+            },
+            {
+              "tier": "beta",
+              "title": "ROCm 7.14.0",
+              "version": "7.14.0",
+              "presence": "active",
+              "installRequest": null,
+              "channel": "release",
+              "indexUrl": "https://repo.amd.com/rocm/whl-multi-arch"
+            },
+            {
+              "tier": "nightly",
+              "title": "ROCm 7.15.0a20260728",
+              "version": "7.15.0a20260728",
+              "presence": "available",
+              "installRequest": {
+                "operation": "install-runtime",
+                "channel": "nightly",
+                "family": "gfx120X-all",
+                "version": {
+                  "kind": "exact",
+                  "version": "7.15.0a20260728"
+                },
+                "installRoot": null
+              },
+              "channel": "nightly",
+              "indexUrl": "https://rocm.nightlies.amd.com/whl-multi-arch"
+            }
+          ]
+        },
         "mutable": true
       }
     },
@@ -620,7 +921,230 @@
         },
         "updateMessage": "ROCm 7.14.0 is the newest version.",
         "updateRequest": null,
+        "catalog": {
+          "state": "fresh",
+          "notice": null,
+          "checkedAtUnixMs": 1767225600000,
+          "entries": [
+            {
+              "tier": "stable",
+              "title": "ROCm 7.13.0",
+              "version": "7.13.0",
+              "presence": "installed",
+              "installRequest": null,
+              "channel": "release",
+              "indexUrl": "https://repo.amd.com/rocm/whl-multi-arch"
+            },
+            {
+              "tier": "beta",
+              "title": "ROCm 7.14.0",
+              "version": "7.14.0",
+              "presence": "active",
+              "installRequest": null,
+              "channel": "release",
+              "indexUrl": "https://repo.amd.com/rocm/whl-multi-arch"
+            },
+            {
+              "tier": "nightly",
+              "title": "ROCm 7.15.0a20260728",
+              "version": "7.15.0a20260728",
+              "presence": "available",
+              "installRequest": null,
+              "channel": "nightly",
+              "indexUrl": "https://rocm.nightlies.amd.com/whl-multi-arch"
+            }
+          ]
+        },
         "mutable": false
+      }
+    },
+    {
+      "name": "catalog-stale",
+      "purpose": "a version list old enough to caution",
+      "view": {
+        "rows": [
+          {
+            "title": "ROCm 7.14.0",
+            "version": "7.14.0",
+            "badges": [
+              "In use"
+            ],
+            "compatibility": {
+              "state": "matches"
+            },
+            "check": "passed",
+            "checkLabel": "Working",
+            "disk": "13 GB",
+            "actions": [
+              "validate"
+            ],
+            "blocked": [
+              {
+                "action": "activate",
+                "reason": "active"
+              },
+              {
+                "action": "remove",
+                "reason": "active"
+              }
+            ],
+            "key": "nightly-wheel-gfx120x-all-7-14-0",
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installRoot": "/tmp/rocm/runtime",
+            "source": "Downloaded from https://example.invalid/simple"
+          },
+          {
+            "title": "ROCm 7.13.0",
+            "version": "7.13.0",
+            "badges": [],
+            "compatibility": {
+              "state": "matches"
+            },
+            "check": "passed",
+            "checkLabel": "Working",
+            "disk": null,
+            "actions": [
+              "activate",
+              "remove",
+              "validate"
+            ],
+            "blocked": [],
+            "key": "nightly-wheel-gfx120x-all-7-13-0",
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installRoot": "/tmp/rocm/runtime-7-13-0",
+            "source": "Downloaded from https://example.invalid/simple"
+          }
+        ],
+        "update": {
+          "state": "up-to-date",
+          "installed": "7.14.0"
+        },
+        "updateMessage": "ROCm 7.14.0 is the newest version.",
+        "updateRequest": null,
+        "catalog": {
+          "state": "stale",
+          "notice": "This list was checked a while ago and may be missing newer versions.",
+          "checkedAtUnixMs": 1767225600000,
+          "entries": [
+            {
+              "tier": "stable",
+              "title": "ROCm 7.13.0",
+              "version": "7.13.0",
+              "presence": "installed",
+              "installRequest": null,
+              "channel": "release",
+              "indexUrl": "https://repo.amd.com/rocm/whl-multi-arch"
+            },
+            {
+              "tier": "beta",
+              "title": "ROCm 7.14.0",
+              "version": "7.14.0",
+              "presence": "active",
+              "installRequest": null,
+              "channel": "release",
+              "indexUrl": "https://repo.amd.com/rocm/whl-multi-arch"
+            },
+            {
+              "tier": "nightly",
+              "title": "ROCm 7.15.0a20260728",
+              "version": "7.15.0a20260728",
+              "presence": "available",
+              "installRequest": {
+                "operation": "install-runtime",
+                "channel": "nightly",
+                "family": "gfx120X-all",
+                "version": {
+                  "kind": "exact",
+                  "version": "7.15.0a20260728"
+                },
+                "installRoot": null
+              },
+              "channel": "nightly",
+              "indexUrl": "https://rocm.nightlies.amd.com/whl-multi-arch"
+            }
+          ]
+        },
+        "mutable": true
+      }
+    },
+    {
+      "name": "catalog-never",
+      "purpose": "no version list has ever been fetched",
+      "view": {
+        "rows": [
+          {
+            "title": "ROCm 7.14.0",
+            "version": "7.14.0",
+            "badges": [
+              "In use"
+            ],
+            "compatibility": {
+              "state": "matches"
+            },
+            "check": "passed",
+            "checkLabel": "Working",
+            "disk": "13 GB",
+            "actions": [
+              "validate"
+            ],
+            "blocked": [
+              {
+                "action": "activate",
+                "reason": "active"
+              },
+              {
+                "action": "remove",
+                "reason": "active"
+              }
+            ],
+            "key": "nightly-wheel-gfx120x-all-7-14-0",
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installRoot": "/tmp/rocm/runtime",
+            "source": "Downloaded from https://example.invalid/simple"
+          },
+          {
+            "title": "ROCm 7.13.0",
+            "version": "7.13.0",
+            "badges": [],
+            "compatibility": {
+              "state": "matches"
+            },
+            "check": "passed",
+            "checkLabel": "Working",
+            "disk": null,
+            "actions": [
+              "activate",
+              "remove",
+              "validate"
+            ],
+            "blocked": [],
+            "key": "nightly-wheel-gfx120x-all-7-13-0",
+            "channel": "nightly",
+            "family": "gfx120X-all",
+            "format": "wheel",
+            "installRoot": "/tmp/rocm/runtime-7-13-0",
+            "source": "Downloaded from https://example.invalid/simple"
+          }
+        ],
+        "update": {
+          "state": "up-to-date",
+          "installed": "7.14.0"
+        },
+        "updateMessage": "ROCm 7.14.0 is the newest version.",
+        "updateRequest": null,
+        "catalog": {
+          "state": "never-fetched",
+          "notice": null,
+          "checkedAtUnixMs": null,
+          "entries": []
+        },
+        "mutable": true
       }
     }
   ],

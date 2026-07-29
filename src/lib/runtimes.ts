@@ -67,11 +67,39 @@ export type UpdateStanding =
   | { state: "not-applicable" }
   | { state: "unrecognised" };
 
+export type CatalogState = "fresh" | "stale" | "offline" | "never-fetched" | "unrecognised";
+
+/** Declaration order is display order: the safe choice first. */
+export type CatalogTier = "stable" | "beta" | "nightly";
+
+export type CatalogPresence = "available" | "installed" | "active";
+
+export interface CatalogEntry {
+  readonly tier: CatalogTier;
+  readonly title: string;
+  readonly version: string;
+  readonly presence: CatalogPresence;
+  /** The exact-version install the Install button plans; null when blocked. */
+  readonly installRequest: OperationRequest | null;
+  /** Advanced identifiers. Shown only behind the details disclosure. */
+  readonly channel: string;
+  readonly indexUrl: string;
+}
+
+export interface CatalogView {
+  readonly state: CatalogState;
+  /** One plain sentence above the list when freshness warrants one. */
+  readonly notice: string | null;
+  readonly checkedAtUnixMs: number | null;
+  readonly entries: readonly CatalogEntry[];
+}
+
 export interface RuntimesView {
   readonly rows: readonly RuntimeRow[];
   readonly update: UpdateStanding;
   readonly updateMessage: string;
   readonly updateRequest: OperationRequest | null;
+  readonly catalog: CatalogView;
   readonly mutable: boolean;
 }
 

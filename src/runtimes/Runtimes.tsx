@@ -18,7 +18,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { approvalFor } from "../lib/controller";
 import type { ChangePlan, OperationRequest, ProgressEvent } from "../lib/controller";
 import { BLOCK_MESSAGES } from "../lib/runtimes";
-import type { RuntimeRow, RuntimesBackend, RuntimesView } from "../lib/runtimes";
+import type {
+  CatalogEntry,
+  CatalogTier,
+  CatalogView,
+  RuntimeRow,
+  RuntimesBackend,
+  RuntimesView,
+} from "../lib/runtimes";
 
 type Stage =
   | { step: "list" }
@@ -204,6 +211,13 @@ export default function Runtimes({ backend }: RuntimesProps) {
               ))}
             </ul>
           )}
+
+          <Catalog
+            catalog={view.catalog}
+            mutable={view.mutable}
+            onInstall={review}
+            busy={planning}
+          />
         </>
       )}
     </main>
@@ -216,6 +230,167 @@ const ACTION_LABEL: Readonly<Record<string, string>> = {
   validate: "Check it works",
   update: "Get the newer version",
 };
+
+/** Declaration order is display order: the safe choice first. */
+const TIERS: readonly CatalogTier[] = ["stable", "beta", "nightly"];
+
+const TIER_LABEL: Readonly<Record<CatalogTier, string>> = {
+  stable: "Stable",
+  beta: "Beta",
+  nightly: "Nightly",
+};
+
+const TIER_BLURB: Readonly<Record<CatalogTier, string>> = {
+  stable: "Tested releases. The safe choice.",
+  beta: "The newest release, ahead of stable. Minor rough edges possible.",
+  nightly: "Built last night from the latest code. Expect breakage.",
+};
+
+/**
+ * "Get another version": the tiered catalog panel.
+ *
+ * Stable is always visible; beta and nightly sit behind the pre-release
+ * opt-in. An installed version keeps its place in the catalog but points up
+ * to the installed list instead of growing a second set of controls.
+ */
+function Catalog({
+  catalog,
+  mutable,
+  onInstall,
+  busy,
+}: {
+  readonly catalog: CatalogView;
+  readonly mutable: boolean;
+  readonly onInstall: (request: OperationRequest) => void;
+  readonly busy: boolean;
+}) {
+  const [preRelease, setPreRelease] = useState(false);
+  const tiers = preRelease ? TIERS : TIERS.slice(0, 1);
+
+  return (
+    <section
+      className="dash__panel"
+      aria-labelledby="runtimes-catalog"
+      data-testid="catalog"
+      data-state={catalog.state}
+    >
+      <h2 id="runtimes-catalog" className="dash__subtitle">
+        Get another version
+      </h2>
+
+      {catalog.notice !== null && (
+        <p className="dash__muted" data-testid="catalog-notice">
+          {catalog.notice}
+        </p>
+      )}
+
+      {catalog.state === "never-fetched" ? (
+        <p className="dash__muted" data-testid="catalog-never">
+          ROCm App has not fetched the list of available versions yet. It will appear here once this
+          computer has been online.
+        </p>
+      ) : (
+        <>
+          {tiers.map((tier) => {
+            const entries = catalog.entries.filter((entry) => entry.tier === tier);
+            if (entries.length === 0) {
+              return null;
+            }
+            return (
+              <section key={tier} aria-label={TIER_LABEL[tier]} data-testid={`catalog-${tier}`}>
+                <h3 className="dash__subtitle">{TIER_LABEL[tier]}</h3>
+                <p className="dash__muted">{TIER_BLURB[tier]}</p>
+                <ul className="runtimes">
+                  {entries.map((entry) => (
+                    <CatalogRow
+                      key={entry.version}
+                      entry={entry}
+                      mutable={mutable}
+                      onInstall={onInstall}
+                      busy={busy}
+                    />
+                  ))}
+                </ul>
+              </section>
+            );
+          })}
+          <label className="settings__toggle">
+            <input
+              type="checkbox"
+              checked={preRelease}
+              data-testid="catalog-prerelease"
+              onChange={(event) => {
+                setPreRelease(event.target.checked);
+              }}
+            />
+            Show beta and nightly versions
+          </label>
+        </>
+      )}
+    </section>
+  );
+}
+
+function CatalogRow({
+  entry,
+  mutable,
+  onInstall,
+  busy,
+}: {
+  readonly entry: CatalogEntry;
+  readonly mutable: boolean;
+  readonly onInstall: (request: OperationRequest) => void;
+  readonly busy: boolean;
+}) {
+  return (
+    <li className="runtimes__row" data-testid={`catalog-entry-${entry.version}`}>
+      <div className="runtimes__headline">
+        <h4 className="runtimes__title">{entry.title}</h4>
+        {entry.presence === "active" && <span className="runtimes__badge">In use</span>}
+        {entry.presence === "installed" && <span className="runtimes__badge">Installed</span>}
+      </div>
+
+      {entry.presence === "available" ? (
+        entry.installRequest !== null ? (
+          <div className="onboard__actions">
+            <button
+              type="button"
+              data-testid={`catalog-install-${entry.version}`}
+              disabled={busy}
+              onClick={() => {
+                onInstall(entry.installRequest as OperationRequest);
+              }}
+            >
+              Install
+            </button>
+          </div>
+        ) : (
+          // Installable in principle, refused on this host. Say why: a
+          // version with no button and no reason reads as a broken screen.
+          <p className="dash__muted" data-testid={`catalog-blocked-${entry.version}`}>
+            {mutable ? BLOCK_MESSAGES["not-offered"] : BLOCK_MESSAGES["unsupported-host"]}
+          </p>
+        )
+      ) : (
+        <p className="dash__muted">Already on this computer — manage it in the list above.</p>
+      )}
+
+      <details className="onboard__advanced">
+        <summary>Details</summary>
+        <dl className="dash__facts">
+          <div className="dash__fact">
+            <dt>Builds</dt>
+            <dd>{entry.channel}</dd>
+          </div>
+          <div className="dash__fact">
+            <dt>Source</dt>
+            <dd>{entry.indexUrl}</dd>
+          </div>
+        </dl>
+      </details>
+    </li>
+  );
+}
 
 function Row({
   row,

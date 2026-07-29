@@ -381,6 +381,99 @@ describe("runtimes review and apply", () => {
     expect(await screen.findByTestId("plan-steps")).toBeInTheDocument();
   });
 });
+describe("runtimes catalog", () => {
+  const NIGHTLY = "7.15.0a20260728";
+
+  it("shows stable by default and pre-release tiers only after the opt-in", async () => {
+    await show("installed");
+    const user = userEvent.setup();
+
+    expect(screen.getByTestId("catalog-stable")).toBeInTheDocument();
+    expect(screen.queryByTestId("catalog-beta")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("catalog-nightly")).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("catalog-prerelease"));
+    expect(screen.getByTestId("catalog-beta")).toBeInTheDocument();
+    expect(screen.getByTestId("catalog-nightly")).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("catalog-prerelease"));
+    expect(screen.queryByTestId("catalog-nightly")).not.toBeInTheDocument();
+  });
+
+  /** Criterion: an installed version points up to the list, never re-offers Install. */
+  it("badges installed versions instead of offering a second install", async () => {
+    await show("installed");
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId("catalog-prerelease"));
+
+    const stable = screen.getByTestId("catalog-entry-7.13.0");
+    expect(stable).toHaveTextContent("Installed");
+    expect(stable).toHaveTextContent(/manage it in the list above/i);
+    expect(within(stable).queryByRole("button", { name: "Install" })).toBeNull();
+
+    const beta = screen.getByTestId("catalog-entry-7.14.0");
+    expect(beta).toHaveTextContent("In use");
+    expect(within(beta).queryByRole("button", { name: "Install" })).toBeNull();
+  });
+
+  /** Criterion: picker install enters the same plan → review → approve flow. */
+  it("plans the exact-version install the backend prepared and reviews it", async () => {
+    const backend = await show("installed", { plan: ACTIVATION_PLAN, events: [COMPLETED] });
+    const user = userEvent.setup();
+
+    await user.click(screen.getByTestId("catalog-prerelease"));
+    await user.click(screen.getByTestId(`catalog-install-${NIGHTLY}`));
+
+    await screen.findByTestId("plan-steps");
+    expect(backend.calls.executions).toHaveLength(0);
+    expect(backend.calls.plans).toEqual([
+      {
+        operation: "install-runtime",
+        channel: "nightly",
+        family: "gfx120X-all",
+        version: { kind: "exact", version: NIGHTLY },
+        installRoot: null,
+      },
+    ]);
+  });
+
+  it("explains a never-fetched list instead of rendering an empty panel", async () => {
+    await show("catalog-never");
+    expect(screen.getByTestId("catalog-never")).toHaveTextContent(/has not fetched/i);
+    expect(screen.queryByTestId("catalog-stable")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("catalog-prerelease")).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ["catalog-stale", /may be missing newer versions/i],
+    ["offline", /could not reach AMD to refresh the version list/i],
+  ])("keeps the list but warns about freshness on %s", async (name, expected) => {
+    const { unmount } = render(<Runtimes backend={fixtureRuntimes(name)} />);
+    await screen.findByTestId("catalog");
+    expect(screen.getByTestId("catalog-notice")).toHaveTextContent(expected);
+    expect(screen.getByTestId("catalog-stable")).toBeInTheDocument();
+    unmount();
+  });
+
+  /** Criterion: a read-only host gets a reason, not a missing button. */
+  it("offers no install on a host it cannot change and says why", async () => {
+    await show("unsupported");
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId("catalog-prerelease"));
+
+    const available = fixtureState("unsupported").view.catalog.entries.filter(
+      (entry) => entry.presence === "available",
+    );
+    expect(available.length).toBeGreaterThan(0);
+    for (const entry of available) {
+      const row = screen.getByTestId(`catalog-entry-${entry.version}`);
+      expect(within(row).queryByRole("button", { name: "Install" })).toBeNull();
+      expect(within(row).getByTestId(`catalog-blocked-${entry.version}`)).toHaveTextContent(
+        BLOCK_MESSAGES["unsupported-host"],
+      );
+    }
+  });
+});
 
 describe("runtimes audit trail", () => {
   /** Criterion: every mutation is recorded, and the record is safe to share. */
