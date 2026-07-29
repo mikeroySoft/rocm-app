@@ -3101,7 +3101,7 @@ dependencies = [
 
 [[package]]
 name = "rocm-app"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "rocm-app-core",
  "serde",
@@ -3116,7 +3116,7 @@ dependencies = [
 
 [[package]]
 name = "rocm-app-core"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "rocm-core",
  "rocm-dash-collectors",
@@ -3182,7 +3182,7 @@ dependencies = [
 
 [[package]]
 name = "rocm-fixture-cli"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "serde_json",
 ]

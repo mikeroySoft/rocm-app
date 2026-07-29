@@ -14,6 +14,23 @@ It depends on rocm-cli's shared crates at an exact pinned revision and bundles a
 compatible `rocm` / `rocmd` build, but it is not a workspace member of that
 repository and does not add frontend weight to it.
 
+## Install
+
+Linux (x86_64, deb or rpm hosts):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mikeroySoft/rocm-app/main/install.sh | sh
+```
+
+The script downloads the newest [release](https://github.com/mikeroySoft/rocm-app/releases)
+package for this host, verifies its published SHA-256, and installs it with
+your package manager — which also installs the bundled `rocm` / `rocmd`
+command-line tools. It never touches GPU drivers. Pin a version with
+`ROCM_APP_VERSION=v0.0.1`.
+
+Windows: download `rocm-app_<version>_x64-setup.exe` from the
+[releases page](https://github.com/mikeroySoft/rocm-app/releases) and run it.
+
 ## Supported platforms
 
 | Platform                      | Status                                                                   |
