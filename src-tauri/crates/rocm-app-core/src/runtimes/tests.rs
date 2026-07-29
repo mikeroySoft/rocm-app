@@ -185,7 +185,7 @@ fn runtimes_unvalidated_version_cannot_be_activated() {
 }
 
 /// Criterion: removal of active, in-use, protected, ambiguous, or unknown
-/// runtimes is rejected.
+/// runtimes is rejected; a previous version may be removed after review.
 #[test]
 fn runtimes_removal_is_blocked_for_every_unsafe_case() {
     // Active.
@@ -195,12 +195,13 @@ fn runtimes_removal_is_blocked_for_every_unsafe_case() {
         Some(BlockReason::Active)
     );
 
-    // Previous — the version ROCm would fall back to.
+    // Previous is removable: the CLI clears the rollback pointer with it.
     let mut snapshot = with_spare(RuntimeValidation::Ready);
     snapshot.runtimes[1].previous = true;
-    assert_eq!(
-        blocked_reason(&view(&snapshot, &disk()), "7.13.0", RowAction::Remove),
-        Some(BlockReason::Previous)
+    assert!(
+        row(&view(&snapshot, &disk()), "7.13.0")
+            .actions
+            .contains(&RowAction::Remove)
     );
 
     // Protected: not installed by this app.
@@ -247,7 +248,6 @@ fn runtimes_removal_is_blocked_for_every_unsafe_case() {
 fn runtimes_every_block_reason_explains_itself() {
     for reason in [
         BlockReason::Active,
-        BlockReason::Previous,
         BlockReason::Protected,
         BlockReason::Ambiguous,
         BlockReason::Unknown,

@@ -19,7 +19,6 @@ export type RowAction = "activate" | "remove" | "validate" | "update";
 
 export type BlockReason =
   | "active"
-  | "previous"
   | "protected"
   | "ambiguous"
   | "unknown"
@@ -128,8 +127,7 @@ export interface RuntimesView {
 
 /** Plain-language explanation for a missing control. */
 export const BLOCK_MESSAGES: Readonly<Record<BlockReason, string>> = {
-  active: "This is the version ROCm is using now.",
-  previous: "This is the version ROCm falls back to. Choose another version first.",
+  active: "Install and use another version before removing this one.",
   protected: "This version was not installed by ROCm App.",
   ambiguous: "More than one installed version answers to this name, so ROCm App will not guess.",
   unknown: "ROCm App does not have enough information about this version.",

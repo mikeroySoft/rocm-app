@@ -54,8 +54,6 @@ pub enum RowAction {
 pub enum BlockReason {
     /// This is the version currently in use.
     Active,
-    /// Kept as the version to fall back to.
-    Previous,
     /// Installed somewhere this app must not delete, or marked read-only.
     Protected,
     /// More than one installed version answers to this identity.
@@ -76,9 +74,6 @@ impl BlockReason {
     pub const fn message(self) -> &'static str {
         match self {
             Self::Active => "This is the version ROCm is using now.",
-            Self::Previous => {
-                "This is the version ROCm falls back to. Choose another version first."
-            }
             Self::Protected => "This version was not installed by ROCm App.",
             Self::Ambiguous => {
                 "More than one installed version answers to this name, so ROCm App will not guess."
@@ -761,9 +756,6 @@ pub fn remove_block(snapshot: &AppSnapshot, runtime: &RuntimeRecord) -> Option<B
     }
     if runtime.active {
         return Some(BlockReason::Active);
-    }
-    if runtime.previous {
-        return Some(BlockReason::Previous);
     }
     if runtime.read_only {
         return Some(BlockReason::Protected);

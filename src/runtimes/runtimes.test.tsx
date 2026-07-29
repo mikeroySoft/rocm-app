@@ -117,6 +117,11 @@ describe("runtimes guards", () => {
     expect(screen.getByTestId("blocked-7.14.0")).toHaveTextContent(BLOCK_MESSAGES.active);
   });
 
+  it("offers removal for the previous version after another is active", async () => {
+    await show("installed");
+    expect(screen.getByTestId("action-7.13.0-remove")).toBeInTheDocument();
+  });
+
   it("offers no removal for protected or unknown versions", async () => {
     await show("blocked");
     const protectedRow = screen.getByTestId("blocked-7.13.0");

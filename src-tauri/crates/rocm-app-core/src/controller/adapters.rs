@@ -248,12 +248,7 @@ pub fn argv_for(request: &OperationRequest, resolved_version: Option<&str>) -> V
             owned("--yes"),
         ],
         OperationRequest::ValidateRuntime { key } => {
-            vec![
-                owned("runtimes"),
-                owned("list"),
-                owned("--runtime"),
-                owned(key.as_str()),
-            ]
+            vec![owned("runtimes"), owned("validate"), owned(key.as_str())]
         }
         // No `--json`: the runner reads exit status, and the flag would only
         // add output nothing consumes.
@@ -828,8 +823,8 @@ mod tests {
             },
             None,
         );
+        assert_eq!(argv, ["runtimes", "validate", "k"]);
         assert!(!argv.contains(&"--yes".to_owned()));
-        assert!(!argv.iter().any(|a| a == "uninstall" || a == "activate"));
     }
 
     #[test]
