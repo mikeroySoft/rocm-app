@@ -526,12 +526,13 @@ fn system_label(snapshot: &AppSnapshot) -> String {
     format!("{os}, {width}")
 }
 
-/// Plain-language driver state. No version invented where none was read.
+/// Plain-language driver state. Linux reports the kernel that supplied its
+/// in-tree amdgpu module rather than pretending it has a separate version.
 fn driver_summary(snapshot: &AppSnapshot) -> String {
     match &snapshot.driver.installed {
         DriverVersionState::Known { version } => format!("Installed, version {version}"),
-        DriverVersionState::DetectedWithoutVersion { .. } => {
-            "Installed (version not reported)".to_owned()
+        DriverVersionState::DetectedWithoutVersion { detail } => {
+            format!("Installed — {detail}")
         }
         DriverVersionState::NotDetected { .. } => "Not detected".to_owned(),
         DriverVersionState::Unknown { .. } | DriverVersionState::Unrecognised => {

@@ -207,6 +207,27 @@ fn onboarding_first_view_copy_hides_backend_identifiers() {
 // Driver: report only
 // ---------------------------------------------------------------------------
 
+#[test]
+fn onboarding_surfaces_linux_kernel_driver_details() {
+    let mut snapshot = snapshot_named("setup-required");
+    snapshot.driver.installed = contract::DriverVersionState::DetectedWithoutVersion {
+        detail: "amdgpu from Linux kernel 7.0.0-28-generic".to_owned(),
+    };
+    let OnboardingView::Ready { recommendation } = recommend(
+        &snapshot,
+        &fixture_choices(),
+        Some(AMPLE_BYTES),
+        &folder_choices(),
+    ) else {
+        panic!("supported host should be ready");
+    };
+
+    assert_eq!(
+        recommendation.driver.summary,
+        "Installed — amdgpu from Linux kernel 7.0.0-28-generic"
+    );
+}
+
 /// Criterion: driver advice offers no mutation.
 #[test]
 fn onboarding_driver_advice_carries_no_action() {

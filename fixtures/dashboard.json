@@ -115,7 +115,7 @@
         "driver": {
           "installed": {
             "state": "detected-without-version",
-            "detail": "amdgpu kernel module is loaded"
+            "detail": "amdgpu from Linux kernel 6.8.0-test"
           },
           "latestKnown": null,
           "supportLinks": []
@@ -246,7 +246,7 @@
             "value": "Installed",
             "status": "ready",
             "statusLabel": "Ready",
-            "note": "amdgpu kernel module is loaded"
+            "note": "amdgpu from Linux kernel 6.8.0-test"
           },
           {
             "kind": "system-hip-rocm",
@@ -290,7 +290,7 @@
           }
         ],
         "driver": {
-          "summary": "Installed (version not reported)",
+          "summary": "Installed — amdgpu from Linux kernel 6.8.0-test",
           "note": "ROCm App only reports your display driver. It never installs, updates, or changes it.",
           "links": []
         },
@@ -437,7 +437,7 @@
         "driver": {
           "installed": {
             "state": "detected-without-version",
-            "detail": "amdgpu kernel module is loaded"
+            "detail": "amdgpu from Linux kernel 6.8.0-test"
           },
           "latestKnown": null,
           "supportLinks": []
@@ -541,7 +541,7 @@
             "value": "Installed",
             "status": "ready",
             "statusLabel": "Ready",
-            "note": "amdgpu kernel module is loaded"
+            "note": "amdgpu from Linux kernel 6.8.0-test"
           },
           {
             "kind": "system-hip-rocm",
@@ -585,7 +585,7 @@
           }
         ],
         "driver": {
-          "summary": "Installed (version not reported)",
+          "summary": "Installed — amdgpu from Linux kernel 6.8.0-test",
           "note": "ROCm App only reports your display driver. It never installs, updates, or changes it.",
           "links": []
         },
@@ -776,7 +776,7 @@
         "driver": {
           "installed": {
             "state": "detected-without-version",
-            "detail": "amdgpu kernel module is loaded"
+            "detail": "amdgpu from Linux kernel 6.8.0-test"
           },
           "latestKnown": null,
           "supportLinks": []
@@ -931,7 +931,7 @@
             "value": "Installed",
             "status": "ready",
             "statusLabel": "Ready",
-            "note": "amdgpu kernel module is loaded"
+            "note": "amdgpu from Linux kernel 6.8.0-test"
           },
           {
             "kind": "system-hip-rocm",
@@ -975,7 +975,7 @@
           }
         ],
         "driver": {
-          "summary": "Installed (version not reported)",
+          "summary": "Installed — amdgpu from Linux kernel 6.8.0-test",
           "note": "ROCm App only reports your display driver. It never installs, updates, or changes it.",
           "links": []
         },
@@ -1156,7 +1156,7 @@
         "driver": {
           "installed": {
             "state": "detected-without-version",
-            "detail": "amdgpu kernel module is loaded"
+            "detail": "amdgpu from Linux kernel 6.8.0-test"
           },
           "latestKnown": null,
           "supportLinks": []
@@ -1287,7 +1287,7 @@
             "value": "Installed",
             "status": "ready",
             "statusLabel": "Ready",
-            "note": "amdgpu kernel module is loaded"
+            "note": "amdgpu from Linux kernel 6.8.0-test"
           },
           {
             "kind": "system-hip-rocm",
@@ -1331,7 +1331,7 @@
           }
         ],
         "driver": {
-          "summary": "Installed (version not reported)",
+          "summary": "Installed — amdgpu from Linux kernel 6.8.0-test",
           "note": "ROCm App only reports your display driver. It never installs, updates, or changes it.",
           "links": []
         },
@@ -1530,7 +1530,7 @@
         "driver": {
           "installed": {
             "state": "detected-without-version",
-            "detail": "amdgpu kernel module is loaded"
+            "detail": "amdgpu from Linux kernel 6.8.0-test"
           },
           "latestKnown": null,
           "supportLinks": []
@@ -1661,7 +1661,7 @@
             "value": "Installed",
             "status": "ready",
             "statusLabel": "Ready",
-            "note": "amdgpu kernel module is loaded"
+            "note": "amdgpu from Linux kernel 6.8.0-test"
           },
           {
             "kind": "system-hip-rocm",
@@ -1713,7 +1713,7 @@
           }
         ],
         "driver": {
-          "summary": "Installed (version not reported)",
+          "summary": "Installed — amdgpu from Linux kernel 6.8.0-test",
           "note": "ROCm App only reports your display driver. It never installs, updates, or changes it.",
           "links": []
         },
@@ -1905,7 +1905,7 @@
         "driver": {
           "installed": {
             "state": "detected-without-version",
-            "detail": "amdgpu kernel module is loaded"
+            "detail": "amdgpu from Linux kernel 6.8.0-test"
           },
           "latestKnown": null,
           "supportLinks": []
@@ -2031,7 +2031,7 @@
             "value": "Installed",
             "status": "ready",
             "statusLabel": "Ready",
-            "note": "amdgpu kernel module is loaded"
+            "note": "amdgpu from Linux kernel 6.8.0-test"
           },
           {
             "kind": "system-hip-rocm",
@@ -2075,7 +2075,7 @@
           }
         ],
         "driver": {
-          "summary": "Installed (version not reported)",
+          "summary": "Installed — amdgpu from Linux kernel 6.8.0-test",
           "note": "ROCm App only reports your display driver. It never installs, updates, or changes it.",
           "links": []
         },
@@ -2275,7 +2275,7 @@
         "driver": {
           "installed": {
             "state": "detected-without-version",
-            "detail": "amdgpu kernel module is loaded"
+            "detail": "amdgpu from Linux kernel 6.8.0-test"
           },
           "latestKnown": null,
           "supportLinks": []
@@ -2406,7 +2406,7 @@
             "value": "Installed",
             "status": "ready",
             "statusLabel": "Ready",
-            "note": "amdgpu kernel module is loaded"
+            "note": "amdgpu from Linux kernel 6.8.0-test"
           },
           {
             "kind": "system-hip-rocm",
@@ -2458,7 +2458,7 @@
           }
         ],
         "driver": {
-          "summary": "Installed (version not reported)",
+          "summary": "Installed — amdgpu from Linux kernel 6.8.0-test",
           "note": "ROCm App only reports your display driver. It never installs, updates, or changes it.",
           "links": []
         },
@@ -2648,7 +2648,7 @@
         "driver": {
           "installed": {
             "state": "detected-without-version",
-            "detail": "amdgpu kernel module is loaded"
+            "detail": "amdgpu from Linux kernel 6.8.0-test"
           },
           "latestKnown": null,
           "supportLinks": []
@@ -2779,7 +2779,7 @@
             "value": "Installed",
             "status": "ready",
             "statusLabel": "Ready",
-            "note": "amdgpu kernel module is loaded"
+            "note": "amdgpu from Linux kernel 6.8.0-test"
           },
           {
             "kind": "system-hip-rocm",
@@ -2823,7 +2823,7 @@
           }
         ],
         "driver": {
-          "summary": "Installed (version not reported)",
+          "summary": "Installed — amdgpu from Linux kernel 6.8.0-test",
           "note": "ROCm App only reports your display driver. It never installs, updates, or changes it.",
           "links": []
         },
@@ -2975,7 +2975,7 @@
         "driver": {
           "installed": {
             "state": "detected-without-version",
-            "detail": "amdgpu kernel module is loaded"
+            "detail": "amdgpu from Linux kernel 6.8.0-test"
           },
           "latestKnown": null,
           "supportLinks": []
@@ -3054,7 +3054,7 @@
             "value": "Installed",
             "status": "ready",
             "statusLabel": "Ready",
-            "note": "amdgpu kernel module is loaded"
+            "note": "amdgpu from Linux kernel 6.8.0-test"
           },
           {
             "kind": "system-hip-rocm",
@@ -3098,7 +3098,7 @@
           }
         ],
         "driver": {
-          "summary": "Installed (version not reported)",
+          "summary": "Installed — amdgpu from Linux kernel 6.8.0-test",
           "note": "ROCm App only reports your display driver. It never installs, updates, or changes it.",
           "links": []
         },
@@ -3259,7 +3259,7 @@
         "driver": {
           "installed": {
             "state": "detected-without-version",
-            "detail": "amdgpu kernel module is loaded"
+            "detail": "amdgpu from Linux kernel 6.8.0-test"
           },
           "latestKnown": null,
           "supportLinks": []
@@ -3367,7 +3367,7 @@
             "value": "Installed",
             "status": "ready",
             "statusLabel": "Ready",
-            "note": "amdgpu kernel module is loaded"
+            "note": "amdgpu from Linux kernel 6.8.0-test"
           },
           {
             "kind": "system-hip-rocm",
@@ -3411,7 +3411,7 @@
           }
         ],
         "driver": {
-          "summary": "Installed (version not reported)",
+          "summary": "Installed — amdgpu from Linux kernel 6.8.0-test",
           "note": "ROCm App only reports your display driver. It never installs, updates, or changes it.",
           "links": []
         },
@@ -3577,7 +3577,7 @@
         "driver": {
           "installed": {
             "state": "detected-without-version",
-            "detail": "amdgpu kernel module is loaded"
+            "detail": "amdgpu from Linux kernel 6.8.0-test"
           },
           "latestKnown": null,
           "supportLinks": []
@@ -3708,7 +3708,7 @@
             "value": "Installed",
             "status": "ready",
             "statusLabel": "Ready",
-            "note": "amdgpu kernel module is loaded"
+            "note": "amdgpu from Linux kernel 6.8.0-test"
           },
           {
             "kind": "system-hip-rocm",
@@ -3752,7 +3752,7 @@
           }
         ],
         "driver": {
-          "summary": "Installed (version not reported)",
+          "summary": "Installed — amdgpu from Linux kernel 6.8.0-test",
           "note": "ROCm App only reports your display driver. It never installs, updates, or changes it.",
           "links": []
         },

@@ -127,6 +127,7 @@ describe("dashboard component inventory", () => {
     await show("healthy");
     const driver = screen.getByTestId("driver");
     expect(driver).toHaveTextContent(/never installs, updates, or changes it/i);
+    expect(driver).toHaveTextContent(/amdgpu from Linux kernel 6\.8\.0-test/i);
     expect(within(driver).queryByRole("button")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /driver/i })).not.toBeInTheDocument();
     // And the inventory row for the driver is a table row, not an action.
