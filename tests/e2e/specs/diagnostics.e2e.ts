@@ -29,6 +29,17 @@ describe("diagnostics", () => {
     await waitForTestId("verdict");
   }
 
+  it("offers removal guidance from the Overview notice, count first", async () => {
+    // Three unmanaged installs ride the attention golden (#28): one counted
+    // notice, no paths here, and no verdict change — coexistence is legal.
+    const notices = await waitForTestId("notices");
+    assert.match(await notices.getText(), /3 ROCm installs outside ROCm App/);
+    await (await waitForTestId("review-removal")).click();
+    await waitForTestId("unmanaged");
+    await clickButton("Back to overview");
+    await waitForTestId("verdict");
+  });
+
   it("shows Activity with the sources the CLI reported", async () => {
     await clickButton("Activity");
     const sources = await waitForTestId("sources");

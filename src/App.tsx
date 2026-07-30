@@ -168,6 +168,10 @@ function DesktopShell({ initialSurface }: { readonly initialSurface?: Surface | 
   const [tray] = useState<TrayBackend>(desktopTray);
   const [diagnostics] = useState<DiagnosticsBackend>(desktopDiagnostics);
   const [surface, setSurface] = useState<Surface | null>(initialSurface ?? null);
+  // Where "back" from ROCm versions goes. Guided setup hands users over for
+  // removal guidance and must get them back to re-detect; every other door
+  // into the surface returns to the Overview (#28).
+  const [runtimesReturn, setRuntimesReturn] = useState<"dashboard" | "onboarding">("dashboard");
 
   // One read decides the landing surface. It is the Overview's own answer, so
   // the shell does not need a second opinion about what "set up" means.
@@ -233,6 +237,7 @@ function DesktopShell({ initialSurface }: { readonly initialSurface?: Surface | 
       // An unrecognised payload leaves the window where it was. Blanking a
       // window because the event grew a fourth surface is the worse failure.
       if (isFullSurface(payload)) {
+        setRuntimesReturn("dashboard");
         setSurface(payload);
       }
     }).catch(() => null);
@@ -252,6 +257,11 @@ function DesktopShell({ initialSurface }: { readonly initialSurface?: Surface | 
     setSurface("onboarding");
   }, []);
   const toRuntimes = useCallback(() => {
+    setRuntimesReturn("dashboard");
+    setSurface("runtimes");
+  }, []);
+  const toRuntimesFromSetup = useCallback(() => {
+    setRuntimesReturn("onboarding");
     setSurface("runtimes");
   }, []);
   const toSettings = useCallback(() => {
@@ -272,14 +282,24 @@ function DesktopShell({ initialSurface }: { readonly initialSurface?: Surface | 
     );
   }
   if (surface === "onboarding") {
-    return <OnboardingFlow backend={onboarding} onFinished={toDashboard} />;
+    return (
+      <OnboardingFlow
+        backend={onboarding}
+        onFinished={toDashboard}
+        onReviewRemoval={toRuntimesFromSetup}
+      />
+    );
   }
   if (surface !== "dashboard") {
+    // Returning to setup re-runs detection by remounting the flow, which is
+    // exactly the recheck #28 asks for: gone installs skip the transition
+    // step, remaining ones bring it back.
+    const backToSetup = surface === "runtimes" && runtimesReturn === "onboarding";
     return (
       <>
         <nav className="shell__nav">
-          <button type="button" onClick={toDashboard}>
-            Back to overview
+          <button type="button" onClick={backToSetup ? toOnboarding : toDashboard}>
+            {backToSetup ? "Back to setup" : "Back to overview"}
           </button>
         </nav>
         {surface === "runtimes" && <Runtimes backend={runtimes} />}

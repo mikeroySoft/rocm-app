@@ -59,6 +59,15 @@ export const SCENARIOS: Readonly<Record<string, Scenario>> = {
     },
   },
 
+  /**
+   * First run beside ROCm installed outside the app (#28): the transition
+   * step, its handover to removal guidance, and the way back. The snapshot
+   * is the setup-required golden carrying the attention golden's classified
+   * `legacyRocm` block; `contract_e2e_setup_legacy_fixture_decodes` keeps
+   * the splice honest.
+   */
+  "setup-legacy": { snapshot: "e2e/setup-legacy.json" },
+
   /** A validated runtime is active and there is nothing to do. */
   healthy: {
     snapshot: "contract/healthy.json",
@@ -144,6 +153,7 @@ export const SPEC_SCENARIOS: Readonly<Record<string, string>> = {
   "first-launch.e2e.ts": "setup-required",
   "healthy-boot.e2e.ts": "healthy",
   "onboarding.e2e.ts": "setup-required",
+  "onboarding-transition.e2e.ts": "setup-legacy",
   "runtime-switch.e2e.ts": "healthy",
   "catalog-install.e2e.ts": "healthy",
   "diagnostics.e2e.ts": "attention",
@@ -152,6 +162,7 @@ export const SPEC_SCENARIOS: Readonly<Record<string, string>> = {
   "deliberate-failure.e2e.ts": "healthy",
   "overview.visual.ts": "healthy",
   "setup.visual.ts": "setup-required",
+  "transition.visual.ts": "setup-legacy",
   "attention.visual.ts": "attention",
   "unsupported.visual.ts": "unsupported-wsl",
   "stale.visual.ts": "offline-stale",
@@ -163,6 +174,7 @@ export const SPEC_SCENARIOS: Readonly<Record<string, string>> = {
   "axe-healthy.a11y.ts": "healthy",
   "axe-setup.a11y.ts": "setup-required",
   "axe-attention.a11y.ts": "attention",
+  "axe-transition.a11y.ts": "setup-legacy",
   "axe-unsupported.a11y.ts": "unsupported-wsl",
   "keyboard.a11y.ts": "healthy",
   "keyboard-flows.a11y.ts": "setup-required",

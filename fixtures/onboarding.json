@@ -149,6 +149,7 @@
             "links": []
           },
           "firstRun": true,
+          "unmanagedPaths": [],
           "channel": "release",
           "family": "gfx120X-all",
           "targetFolder": "/home/rocm-user/ROCm",
@@ -1241,6 +1242,242 @@
         }
       },
       "plan": null
+    },
+    {
+      "name": "unmanaged-detected",
+      "purpose": "first run beside ROCm installed outside the app: advisory transition step",
+      "snapshot": {
+        "schemaVersion": 1,
+        "producer": {
+          "name": "rocm-cli",
+          "version": "0.1.0",
+          "build": "unknown"
+        },
+        "observedAtUnixMs": 1767225600000,
+        "platform": {
+          "os": "linux",
+          "arch": "x86_64",
+          "isWsl": false,
+          "support": {
+            "state": "supported"
+          }
+        },
+        "gpu": {
+          "name": "AMD Radeon AI PRO R9700",
+          "gfxTarget": "gfx1201",
+          "therockFamily": "gfx120X-all"
+        },
+        "health": {
+          "verdict": "setup-required",
+          "reasons": [
+            {
+              "code": "runtime-absent",
+              "detail": "No managed ROCm runtime is installed."
+            }
+          ],
+          "nextAction": "Set up ROCm."
+        },
+        "components": [
+          {
+            "kind": "app",
+            "name": "rocm-app",
+            "state": {
+              "state": "unknown",
+              "reason": "supplied by the desktop app, not the CLI"
+            }
+          },
+          {
+            "kind": "cli",
+            "name": "rocm",
+            "state": {
+              "state": "installed",
+              "version": "0.1.0"
+            }
+          },
+          {
+            "kind": "system-hip-rocm",
+            "name": "system-rocm",
+            "state": {
+              "state": "installed",
+              "version": "6.4.0"
+            }
+          },
+          {
+            "kind": "managed-runtime",
+            "name": "therock",
+            "state": {
+              "state": "installed",
+              "version": "7.14.0"
+            }
+          },
+          {
+            "kind": "py-torch",
+            "name": "torch",
+            "state": {
+              "state": "installed",
+              "version": "2.9.0"
+            }
+          }
+        ],
+        "runtimes": [],
+        "driver": {
+          "installed": {
+            "state": "detected-without-version",
+            "detail": "amdgpu from Linux kernel 6.8.0-test"
+          },
+          "latestKnown": null,
+          "supportLinks": []
+        },
+        "update": {
+          "state": {
+            "state": "not-applicable"
+          },
+          "checkedAtUnixMs": 1767225600000,
+          "trust": {
+            "kind": "signed",
+            "keySource": "pinned"
+          }
+        },
+        "availableVersions": null,
+        "legacyRocm": [
+          {
+            "path": "/opt/rocm",
+            "origin": "deb",
+            "packageManager": "apt",
+            "packages": [
+              "comgr",
+              "hip-runtime-amd"
+            ]
+          },
+          {
+            "path": "/usr/local/rocm",
+            "origin": "loose",
+            "packageManager": null,
+            "packages": []
+          },
+          {
+            "path": "/srv/rocm-mystery",
+            "origin": "unknown",
+            "packageManager": null,
+            "packages": []
+          }
+        ],
+        "eligibleActions": [
+          "install-runtime"
+        ]
+      },
+      "targetFolder": "/home/rocm-user/ROCm",
+      "availableBytes": 429496729600,
+      "view": {
+        "state": "ready",
+        "recommendation": {
+          "facts": [
+            {
+              "key": "gpu",
+              "label": "Graphics card",
+              "value": "AMD Radeon AI PRO R9700"
+            },
+            {
+              "key": "system",
+              "label": "System",
+              "value": "Linux, 64-bit"
+            },
+            {
+              "key": "driver",
+              "label": "Display driver",
+              "value": "Installed — amdgpu from Linux kernel 6.8.0-test"
+            },
+            {
+              "key": "rocm",
+              "label": "ROCm to install",
+              "value": "Newest stable release"
+            },
+            {
+              "key": "space",
+              "label": "Space needed",
+              "value": "About 12 GB"
+            },
+            {
+              "key": "folder",
+              "label": "Install folder",
+              "value": "/home/rocm-user/ROCm"
+            },
+            {
+              "key": "free-space",
+              "label": "Free space there",
+              "value": "400 GB"
+            }
+          ],
+          "driver": {
+            "summary": "Installed — amdgpu from Linux kernel 6.8.0-test",
+            "note": "ROCm App only reports your display driver. It never installs, updates, or changes it.",
+            "links": []
+          },
+          "firstRun": true,
+          "unmanagedPaths": [
+            "/opt/rocm",
+            "/usr/local/rocm",
+            "/srv/rocm-mystery"
+          ],
+          "channel": "release",
+          "family": "gfx120X-all",
+          "targetFolder": "/home/rocm-user/ROCm",
+          "folderChoices": [
+            "/home/rocm-user/ROCm",
+            "/home/rocm-user/AMD/ROCm"
+          ],
+          "estimatedBytes": 12884901888,
+          "availableBytes": 429496729600,
+          "request": {
+            "operation": "install-runtime",
+            "channel": "release",
+            "family": "gfx120X-all",
+            "version": {
+              "kind": "latest"
+            },
+            "installRoot": "/home/rocm-user/ROCm"
+          }
+        }
+      },
+      "plan": {
+        "id": "plan-1767225600000-000000",
+        "request": {
+          "operation": "install-runtime",
+          "channel": "release",
+          "family": "gfx120X-all",
+          "version": {
+            "kind": "latest"
+          },
+          "installRoot": "/home/rocm-user/ROCm"
+        },
+        "steps": [
+          {
+            "stage": "download",
+            "summary": "Download the ROCm runtime",
+            "mutating": false
+          },
+          {
+            "stage": "verify",
+            "summary": "Check the download is genuine",
+            "mutating": false
+          },
+          {
+            "stage": "install",
+            "summary": "Install alongside your existing ROCm versions",
+            "mutating": true
+          },
+          {
+            "stage": "validate",
+            "summary": "Check the new version works",
+            "mutating": false
+          }
+        ],
+        "resolvedVersion": "7.14.1",
+        "createdAtUnixMs": 1767225600000,
+        "expiresAtUnixMs": 1767225900000,
+        "snapshot": "538a251f5818c8d0468544ae23a8ad7185c0c22a8753c209201320310a85465a",
+        "digest": "2c280ff7a3a4050f12d8635f958ca9150f807367a71342be22a4a48283dd3e6a"
+      }
     }
   ],
   "outcomes": [

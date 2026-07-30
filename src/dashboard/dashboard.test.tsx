@@ -83,6 +83,40 @@ describe("dashboard first viewport", () => {
   });
 });
 
+/**
+ * The one notice that carries an action (#28): a count and the guidance
+ * door. Coexistence is legal, so it never touches the verdict, and the
+ * paths themselves stay in ROCm versions.
+ */
+describe("dashboard unmanaged notice", () => {
+  it("counts the installs and opens removal guidance", async () => {
+    const onManageVersions = vi.fn();
+    render(<Dashboard source={fixtureSource("attention")} onManageVersions={onManageVersions} />);
+    const notices = await screen.findByTestId("notices");
+    expect(within(notices).getByText(/3 ROCm installs outside ROCm App/)).toBeInTheDocument();
+    expect(notices).not.toHaveTextContent("/opt/rocm");
+
+    const user = userEvent.setup();
+    await user.click(within(notices).getByTestId("review-removal"));
+    expect(onManageVersions).toHaveBeenCalledTimes(1);
+    // A notice, not a verdict: attention stays whatever the producer said.
+    expect(screen.getByTestId("verdict")).toHaveAttribute("data-value", "attention");
+  });
+
+  it("stays silent when nothing unmanaged was reported", async () => {
+    await show("healthy");
+    expect(screen.queryByTestId("review-removal")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("notices")).not.toBeInTheDocument();
+  });
+
+  it("hides the door when the shell has nowhere to send them", async () => {
+    render(<Dashboard source={fixtureSource("attention")} />);
+    const notices = await screen.findByTestId("notices");
+    expect(notices).toHaveTextContent(/outside ROCm App/);
+    expect(screen.queryByTestId("review-removal")).not.toBeInTheDocument();
+  });
+});
+
 describe("dashboard component inventory", () => {
   const REQUIRED = [
     "app",

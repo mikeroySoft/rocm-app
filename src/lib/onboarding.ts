@@ -66,6 +66,11 @@ export interface Recommendation {
   readonly facts: readonly Fact[];
   readonly driver: DriverAdvice;
   readonly firstRun: boolean;
+  /**
+   * Paths of ROCm installs found outside ROCm App (#28). Non-empty, the flow
+   * shows the advisory transition step before this recommendation.
+   */
+  readonly unmanagedPaths: readonly string[];
   readonly channel: Channel;
   readonly family: string;
   readonly targetFolder: string;

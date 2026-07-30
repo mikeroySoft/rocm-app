@@ -203,6 +203,31 @@ fn onboarding_first_view_copy_hides_backend_identifiers() {
     }
 }
 
+/// Criterion (#28): the transition step's facts are exactly the producer's
+/// unmanaged paths, in producer order — and none are invented on a clean
+/// machine.
+#[test]
+fn onboarding_recommendation_lists_unmanaged_installs() {
+    assert!(ready("setup-required").unmanaged_paths.is_empty());
+
+    let mut snapshot = snapshot_named("setup-required");
+    snapshot.legacy_rocm = snapshot_named("attention").legacy_rocm;
+    let view = recommend(
+        &snapshot,
+        &fixture_choices(),
+        Some(AMPLE_BYTES),
+        &folder_choices(),
+    );
+    let recommendation = view.recommendation().expect("still installable");
+    let expected: Vec<String> = snapshot
+        .legacy_rocm
+        .iter()
+        .map(|install| install.path.clone())
+        .collect();
+    assert_eq!(recommendation.unmanaged_paths, expected);
+    assert_eq!(recommendation.unmanaged_paths.len(), 3);
+}
+
 // ---------------------------------------------------------------------------
 // Driver: report only
 // ---------------------------------------------------------------------------
@@ -738,106 +763,128 @@ fn scenario_in(
     }
 }
 
+/// A `setup-required` snapshot with one targeted mutation: each unhappy
+/// fixture scenario varies a single fact.
+fn setup_variant(mutate: impl FnOnce(&mut AppSnapshot)) -> AppSnapshot {
+    let mut snapshot = snapshot_named("setup-required");
+    mutate(&mut snapshot);
+    snapshot
+}
+
 fn build_fixtures() -> OnboardingFixtures {
-    let unknown_gpu = {
-        let mut s = snapshot_named("setup-required");
+    OnboardingFixtures {
+        scenarios: scenario_fixtures(),
+        outcomes: outcome_fixtures(),
+    }
+}
+
+fn scenario_fixtures() -> Vec<ScenarioFixture> {
+    let unknown_gpu = setup_variant(|s| {
         s.gpu.therock_family = None;
         s.gpu.gfx_target = None;
-        s
-    };
-    let untrusted = {
-        let mut s = snapshot_named("setup-required");
+    });
+    let untrusted = setup_variant(|s| {
         s.update.state = UpdateState::UntrustedMetadata {
             detail: "signature did not verify".to_owned(),
         };
         s.update.trust = SourceTrust::Untrusted {
             reason: "signature did not verify".to_owned(),
         };
-        s
-    };
+    });
+    // The attention golden is the producer-generated source of classified
+    // legacyRocm entries; splicing keeps every value producer-authored.
+    let unmanaged_beside = setup_variant(|s| {
+        s.legacy_rocm = snapshot_named("attention").legacy_rocm;
+    });
+    vec![
+        scenario(
+            "supported",
+            "fresh supported host: one recommended stable plan",
+            snapshot_named("setup-required"),
+            Some(AMPLE_BYTES),
+        ),
+        scenario(
+            "unsupported-wsl",
+            "WSL: no install action anywhere in the payload",
+            snapshot_named("unsupported-wsl"),
+            Some(AMPLE_BYTES),
+        ),
+        scenario(
+            "unknown-hardware",
+            "graphics card not matched to a ROCm build",
+            unknown_gpu,
+            Some(AMPLE_BYTES),
+        ),
+        scenario(
+            "incomplete-probe",
+            "checks did not finish; refuse to recommend",
+            snapshot_named("partial"),
+            Some(AMPLE_BYTES),
+        ),
+        scenario(
+            "offline",
+            "download service unreachable",
+            snapshot_named("offline-stale"),
+            Some(AMPLE_BYTES),
+        ),
+        scenario(
+            "untrusted-metadata",
+            "download list failed its signature check",
+            untrusted,
+            Some(AMPLE_BYTES),
+        ),
+        scenario(
+            "insufficient-space",
+            "not enough room on the chosen drive",
+            snapshot_named("setup-required"),
+            Some(TIGHT_BYTES),
+        ),
+        scenario_in(
+            "protected-folder",
+            "the chosen folder is a system location",
+            snapshot_named("setup-required"),
+            Some(AMPLE_BYTES),
+            Choices {
+                target_folder: "/usr/local/rocm".to_owned(),
+                ..fixture_choices()
+            },
+        ),
+        scenario(
+            "unmanaged-detected",
+            "first run beside ROCm installed outside the app: advisory transition step",
+            unmanaged_beside,
+            Some(AMPLE_BYTES),
+        ),
+    ]
+}
 
-    OnboardingFixtures {
-        scenarios: vec![
-            scenario(
-                "supported",
-                "fresh supported host: one recommended stable plan",
-                snapshot_named("setup-required"),
-                Some(AMPLE_BYTES),
+fn outcome_fixtures() -> Vec<OutcomeFixture> {
+    vec![
+        OutcomeFixture {
+            name: "success",
+            events: run_outcome(
+                FakeCliRunner::succeeding(&["download", "verify", "install", "validate"]),
+                false,
             ),
-            scenario(
-                "unsupported-wsl",
-                "WSL: no install action anywhere in the payload",
-                snapshot_named("unsupported-wsl"),
-                Some(AMPLE_BYTES),
-            ),
-            scenario(
-                "unknown-hardware",
-                "graphics card not matched to a ROCm build",
-                unknown_gpu,
-                Some(AMPLE_BYTES),
-            ),
-            scenario(
-                "incomplete-probe",
-                "checks did not finish; refuse to recommend",
-                snapshot_named("partial"),
-                Some(AMPLE_BYTES),
-            ),
-            scenario(
-                "offline",
-                "download service unreachable",
-                snapshot_named("offline-stale"),
-                Some(AMPLE_BYTES),
-            ),
-            scenario(
-                "untrusted-metadata",
-                "download list failed its signature check",
-                untrusted,
-                Some(AMPLE_BYTES),
-            ),
-            scenario(
-                "insufficient-space",
-                "not enough room on the chosen drive",
-                snapshot_named("setup-required"),
-                Some(TIGHT_BYTES),
-            ),
-            scenario_in(
-                "protected-folder",
-                "the chosen folder is a system location",
-                snapshot_named("setup-required"),
-                Some(AMPLE_BYTES),
-                Choices {
-                    target_folder: "/usr/local/rocm".to_owned(),
-                    ..fixture_choices()
-                },
-            ),
-        ],
-        outcomes: vec![
-            OutcomeFixture {
-                name: "success",
-                events: run_outcome(
-                    FakeCliRunner::succeeding(&["download", "verify", "install", "validate"]),
-                    false,
+        },
+        OutcomeFixture {
+            name: "cancelled",
+            events: run_outcome(FakeCliRunner::succeeding(&["download"]), true),
+        },
+        OutcomeFixture {
+            name: "validation-failed",
+            events: run_outcome(
+                FakeCliRunner::failing(
+                    &["download", "verify", "install", "validate"],
+                    3,
+                    AdapterError::Verification {
+                        detail: "the installed version did not pass its check".to_owned(),
+                    },
                 ),
-            },
-            OutcomeFixture {
-                name: "cancelled",
-                events: run_outcome(FakeCliRunner::succeeding(&["download"]), true),
-            },
-            OutcomeFixture {
-                name: "validation-failed",
-                events: run_outcome(
-                    FakeCliRunner::failing(
-                        &["download", "verify", "install", "validate"],
-                        3,
-                        AdapterError::Verification {
-                            detail: "the installed version did not pass its check".to_owned(),
-                        },
-                    ),
-                    false,
-                ),
-            },
-        ],
-    }
+                false,
+            ),
+        },
+    ]
 }
 
 /// The renderer's fixture file is generated from this module, and must stay in

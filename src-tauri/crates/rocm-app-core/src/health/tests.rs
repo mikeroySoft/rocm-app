@@ -657,7 +657,10 @@ fn health_age_labels_read_like_english() {
     assert_eq!(label(48 * 60 * 60_000), "Last checked 2 days ago");
     assert_eq!(label(3 * 24 * 60 * 60_000), "Last checked 3 days ago");
     assert_eq!(label(13 * 24 * 60 * 60_000), "Last checked 13 days ago");
-    assert_eq!(label(14 * 24 * 60 * 60_000), "Last checked more than two weeks ago");
+    assert_eq!(
+        label(14 * 24 * 60 * 60_000),
+        "Last checked more than two weeks ago"
+    );
     assert_eq!(
         label(4995 * 60 * 60_000),
         "Last checked more than two weeks ago"
@@ -697,6 +700,32 @@ fn health_offline_and_untrusted_metadata_are_both_reported() {
 fn health_partial_probe_is_flagged() {
     let o = view("partial");
     assert!(o.notices.iter().any(|n| n.code == NoticeCode::PartialProbe));
+}
+
+/// Criterion (#28): unmanaged installs surface as one counted notice, and
+/// only a notice — legal coexistence never overrides the health verdict.
+#[test]
+fn health_unmanaged_installs_get_a_counted_notice_not_a_verdict() {
+    let with = view("attention");
+    let notice = with
+        .notices
+        .iter()
+        .find(|n| n.code == NoticeCode::UnmanagedRocm)
+        .expect("attention carries three unmanaged installs");
+    assert!(
+        notice.message.contains('3'),
+        "the notice must carry the count: {}",
+        notice.message
+    );
+    assert_eq!(with.verdict, snapshot_named("attention").health.verdict);
+
+    let without = view("healthy");
+    assert!(
+        !without
+            .notices
+            .iter()
+            .any(|n| n.code == NoticeCode::UnmanagedRocm)
+    );
 }
 
 /// Criterion: every state is identifiable from text alone.

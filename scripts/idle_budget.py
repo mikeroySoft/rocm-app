@@ -188,7 +188,9 @@ def main() -> int:
     parser.add_argument("--settle", type=float, default=30.0, help="pre-window settle seconds")
     parser.add_argument("--interval", type=float, default=5.0, help="sample every N seconds")
     parser.add_argument("--budget-cpu", type=float, default=1.0, help="max average CPU percent")
-    parser.add_argument("--budget-rss-mib", type=float, default=512.0, help="max tree RSS MiB")
+    # 768 is the product budget docs/testing.md carries; the reference machine
+    # measures ~614 MiB with shared pages double-counted across ~6 processes.
+    parser.add_argument("--budget-rss-mib", type=float, default=768.0, help="max tree RSS MiB")
     parser.add_argument("--out", type=Path, default=REPO / "test-results" / "idle")
     args = parser.parse_args()
 

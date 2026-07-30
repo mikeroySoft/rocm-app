@@ -192,6 +192,19 @@ export default function Dashboard({
           {overview.notices.map((notice: Notice) => (
             <li key={notice.code} data-code={notice.code}>
               {notice.message}
+              {/* Coexistence is legal, so the notice offers the guidance door
+                  rather than changing the verdict (#28). The paths and the
+                  commands themselves stay in ROCm versions. */}
+              {notice.code === "unmanaged-rocm" && onManageVersions !== undefined && (
+                <button
+                  type="button"
+                  className="dash__notice-action"
+                  data-testid="review-removal"
+                  onClick={onManageVersions}
+                >
+                  Review removal guidance
+                </button>
+              )}
             </li>
           ))}
         </ul>

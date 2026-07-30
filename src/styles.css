@@ -438,6 +438,18 @@ code {
   overflow-wrap: anywhere;
 }
 
+/* The transition step's path list: evidence, not a log — one bordered block,
+   monospace paths that wrap rather than scroll (#28). */
+.onboard__paths {
+  margin: 0;
+  padding: 10px 12px 10px 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
 .onboard__actions {
   display: flex;
   gap: 8px;
@@ -686,6 +698,13 @@ code {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+/* The one notice that carries an action (#28): the button sits under its
+   sentence and inherits the notice's warning palette. */
+.dash__notice-action {
+  align-self: flex-start;
+  margin-block-start: 2px;
 }
 
 .dash__table {

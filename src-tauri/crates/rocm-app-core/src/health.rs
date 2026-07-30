@@ -242,6 +242,7 @@ pub enum NoticeCode {
     PartialProbe,
     Unsupported,
     UntrustedMetadata,
+    UnmanagedRocm,
     TelemetryPermission,
     Stale,
 }
@@ -540,7 +541,10 @@ fn age_phrase(age_ms: u64) -> String {
         0..JUST_NOW => "just now".to_owned(),
         JUST_NOW..MINUTES_UNTIL => {
             let minutes = age_ms / MINUTE;
-            format!("{minutes} minute{} ago", if minutes == 1 { "" } else { "s" })
+            format!(
+                "{minutes} minute{} ago",
+                if minutes == 1 { "" } else { "s" }
+            )
         }
         MINUTES_UNTIL..HOURS_UNTIL => {
             let hours = age_ms / HOUR;
@@ -595,7 +599,12 @@ fn components_for(
         if let Some(index) = snapshot.components.iter().position(|c| c.kind == kind) {
             consumed[index] = true;
             let component = &snapshot.components[index];
-            rows.push(row_for(kind, &component.name, &component.state, now_unix_ms));
+            rows.push(row_for(
+                kind,
+                &component.name,
+                &component.state,
+                now_unix_ms,
+            ));
         } else {
             rows.push(missing_row(kind));
         }
@@ -606,7 +615,12 @@ fn components_for(
     // reads as "not present", which is not what "not understood" means.
     for (index, component) in snapshot.components.iter().enumerate() {
         if !consumed[index] {
-            rows.push(row_for(component.kind, &component.name, &component.state, now_unix_ms));
+            rows.push(row_for(
+                component.kind,
+                &component.name,
+                &component.state,
+                now_unix_ms,
+            ));
         }
     }
     rows
@@ -871,6 +885,18 @@ fn notices_for(
             NoticeCode::UntrustedMetadata,
             "AMD's download list could not be verified, so it was not used.",
         );
+    }
+    // Coexistence is legal, so this is a notice with a count, never a verdict
+    // change (#28). The paths and removal guidance stay in ROCm versions.
+    let unmanaged = snapshot.legacy_rocm.len();
+    if unmanaged > 0 {
+        let noun = if unmanaged == 1 {
+            "install"
+        } else {
+            "installs"
+        };
+        let message = format!("This computer also has {unmanaged} ROCm {noun} outside ROCm App.");
+        push(NoticeCode::UnmanagedRocm, &message);
     }
     if telemetry.failure == Some(TelemetryFailure::Permission) {
         push(

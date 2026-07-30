@@ -658,6 +658,26 @@ mod tests {
         assert!(snapshot.active_runtime().is_some());
     }
 
+    /// `fixtures/e2e/setup-legacy.json` is the `setup-required` golden with
+    /// the attention golden's classified `legacyRocm` block spliced in — the
+    /// first-run-beside-unmanaged state the desktop suite boots (#28). Both
+    /// halves are producer output; this keeps the splice honest against
+    /// schema drift.
+    #[test]
+    fn contract_e2e_setup_legacy_fixture_decodes() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../fixtures/e2e/setup-legacy.json"
+        );
+        let raw = std::fs::read_to_string(path).expect("missing fixtures/e2e/setup-legacy.json");
+        let snapshot = decode(&raw).expect("setup-legacy fixture failed to decode");
+        assert_eq!(snapshot.schema_version, SUPPORTED_SCHEMA_VERSION);
+        assert!(snapshot.platform.install_allowed());
+        assert_eq!(snapshot.health.verdict, HealthVerdict::SetupRequired);
+        assert!(snapshot.active_runtime().is_none(), "must stay first-run");
+        assert_eq!(snapshot.legacy_rocm.len(), 3);
+    }
+
     #[test]
     fn contract_golden_verdicts_match_their_names() {
         for (name, expected) in [
@@ -950,7 +970,10 @@ mod tests {
         value["legacyRocm"][0]["origin"] = serde_json::json!("flatpak");
 
         let snapshot = decode(&value.to_string()).expect("decode");
-        assert_eq!(snapshot.legacy_rocm[0].origin, LegacyRocmOrigin::Unrecognised);
+        assert_eq!(
+            snapshot.legacy_rocm[0].origin,
+            LegacyRocmOrigin::Unrecognised
+        );
     }
 
     // -- Driver is read-only -------------------------------------------------

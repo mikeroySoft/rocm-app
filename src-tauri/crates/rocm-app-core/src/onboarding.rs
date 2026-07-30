@@ -194,6 +194,11 @@ pub struct Recommendation {
     /// that already has ROCm running belongs on the dashboard, even though a
     /// side-by-side install is still perfectly legal from there.
     pub first_run: bool,
+    /// Paths of ROCm installs the producer found outside ROCm App (#28).
+    /// Non-empty, the flow shows an advisory transition step before this
+    /// recommendation; the origins, warnings, and removal commands stay in
+    /// the ROCm versions surface, which owns that guidance.
+    pub unmanaged_paths: Vec<String>,
     /// Advanced identifiers, kept off the first view. The renderer shows these
     /// only behind Advanced options.
     pub channel: Channel,
@@ -335,6 +340,11 @@ pub fn recommend(
             facts: facts_for(snapshot, choices, available_bytes),
             driver: driver_advice(snapshot),
             first_run: snapshot.active_runtime().is_none(),
+            unmanaged_paths: snapshot
+                .legacy_rocm
+                .iter()
+                .map(|install| install.path.clone())
+                .collect(),
             channel: choices.channel,
             family,
             target_folder: choices.target_folder.clone(),

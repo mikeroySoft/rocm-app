@@ -115,8 +115,7 @@ pub trait Catalog: Send + Sync {
     /// CLI resolves it at install time instead. That is the state guided setup
     /// exists for, so it must not be an error — reporting it as one refuses
     /// the very first install on every machine that has never had ROCm.
-    fn latest_version(&self, channel: &str, family: &str)
-    -> Result<Option<String>, AdapterError>;
+    fn latest_version(&self, channel: &str, family: &str) -> Result<Option<String>, AdapterError>;
 }
 
 /// Runs the bundled CLI.

@@ -1038,7 +1038,12 @@
           ],
           "failure": null
         },
-        "notices": []
+        "notices": [
+          {
+            "code": "unmanaged-rocm",
+            "message": "This computer also has 3 ROCm installs outside ROCm App."
+          }
+        ]
       }
     },
     {

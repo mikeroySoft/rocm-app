@@ -31,7 +31,8 @@ import type {
   Recommendation,
 } from "../lib/onboarding";
 
-type Step = "detect" | "recommend" | "location" | "review" | "progress" | "result" | "blocked";
+type Step =
+  "detect" | "transition" | "recommend" | "location" | "review" | "progress" | "result" | "blocked";
 
 type Outcome =
   | { kind: "success"; message: string }
@@ -42,9 +43,18 @@ export interface OnboardingFlowProps {
   readonly backend: OnboardingBackend;
   /** Called once setup finishes successfully, so the shell can move on. */
   readonly onFinished?: (() => void) | undefined;
+  /**
+   * Opens ROCm versions for removal guidance (#28). Absent when the shell
+   * has nowhere to send them; the transition step then offers only Continue.
+   */
+  readonly onReviewRemoval?: (() => void) | undefined;
 }
 
-export default function OnboardingFlow({ backend, onFinished }: OnboardingFlowProps) {
+export default function OnboardingFlow({
+  backend,
+  onFinished,
+  onReviewRemoval,
+}: OnboardingFlowProps) {
   const [step, setStep] = useState<Step>("detect");
   const [view, setView] = useState<OnboardingView | null>(null);
   const [plan, setPlan] = useState<ChangePlan | null>(null);
@@ -82,8 +92,13 @@ export default function OnboardingFlow({ backend, onFinished }: OnboardingFlowPr
           return;
         }
         setView(next);
-        setStep(next.state === "blocked" ? "blocked" : "recommend");
-        if (next.state === "ready") {
+        if (next.state === "blocked") {
+          setStep("blocked");
+        } else {
+          // The advisory transition step precedes the recommendation whenever
+          // the producer reports ROCm outside the app. Every detect re-decides
+          // — a "Continue setup anyway" is never remembered (#28).
+          setStep(next.recommendation.unmanagedPaths.length > 0 ? "transition" : "recommend");
           setFolder((current) => current ?? next.recommendation.targetFolder);
           setChannel((current) => current ?? next.recommendation.channel);
         }
@@ -212,6 +227,13 @@ export default function OnboardingFlow({ backend, onFinished }: OnboardingFlowPr
           onChooseFolder={() => setStep("location")}
         />
       )}
+      {step === "transition" && recommendation && (
+        <TransitionCard
+          paths={recommendation.unmanagedPaths}
+          onReviewRemoval={onReviewRemoval}
+          onContinue={() => setStep("recommend")}
+        />
+      )}
 
       {step === "recommend" && recommendation && (
         <RecommendCard
@@ -308,6 +330,57 @@ function DriverNote({ recommendation }: { readonly recommendation: Recommendatio
   );
 }
 
+/**
+ * ROCm found outside the app, before any recommendation (#28).
+ *
+ * Advisory only: the paths and the shadowing risk, then two ways forward.
+ * Origins, warnings, and removal commands live in ROCm versions — this step
+ * never duplicates them, it offers the door.
+ */
+function TransitionCard({
+  paths,
+  onReviewRemoval,
+  onContinue,
+}: {
+  readonly paths: readonly string[];
+  readonly onReviewRemoval?: (() => void) | undefined;
+  readonly onContinue: () => void;
+}) {
+  return (
+    <section className="onboard__transition" data-testid="transition">
+      <p className="onboard__body">
+        This computer already has ROCm that ROCm App does not manage. It can stay, but two installs
+        side by side can shadow each other.
+      </p>
+      <ul className="onboard__paths" data-testid="transition-paths">
+        {paths.map((path) => (
+          <li key={path}>
+            <code>{path}</code>
+          </li>
+        ))}
+      </ul>
+      <p className="onboard__muted">
+        Removal is never required. Review the removal steps to move fully to ROCm App, or keep both
+        and continue.
+      </p>
+      <div className="onboard__actions">
+        {onReviewRemoval !== undefined && (
+          <button
+            type="button"
+            className="onboard__primary"
+            data-testid="review-removal"
+            onClick={onReviewRemoval}
+          >
+            Review removal guidance
+          </button>
+        )}
+        <button type="button" data-testid="continue-anyway" onClick={onContinue}>
+          Continue setup anyway
+        </button>
+      </div>
+    </section>
+  );
+}
 function RecommendCard({
   recommendation,
   folder,
@@ -638,6 +711,8 @@ function titleFor(step: Step, outcome: Outcome | null): string {
   switch (step) {
     case "detect":
       return "Checking this computer";
+    case "transition":
+      return "ROCm found outside ROCm App";
     case "recommend":
       return "Set up ROCm";
     case "location":

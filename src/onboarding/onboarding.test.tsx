@@ -14,9 +14,9 @@
 
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { FIXTURES, fixtureBackend } from "../lib/onboarding";
-import type { FixtureBackend, FixtureBackendOptions } from "../lib/onboarding";
+import type { FixtureBackend, FixtureBackendOptions, OnboardingBackend } from "../lib/onboarding";
 import OnboardingFlow from "./OnboardingFlow";
 
 function start(scenario: string, options: FixtureBackendOptions = {}): FixtureBackend {
@@ -79,6 +79,96 @@ describe("onboarding recommendation", () => {
     expect(driver).toHaveTextContent(/never installs, updates, or changes it/i);
     expect(within(driver).queryByRole("button")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /driver/i })).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * The advisory step for ROCm found outside the app (#28).
+ *
+ * It interposes before the recommendation, lists the producer's paths and
+ * nothing else, and never blocks setup: Continue is always there, and the
+ * removal detail stays in ROCm versions.
+ */
+describe("onboarding transition step", () => {
+  const PATHS = ["/opt/rocm", "/usr/local/rocm", "/srv/rocm-mystery"];
+
+  it("interposes the advisory step before any recommendation", async () => {
+    const backend = start("unmanaged-detected");
+    await screen.findByRole("heading", { name: /rocm found outside rocm app/i });
+
+    const list = within(screen.getByTestId("transition-paths"));
+    for (const path of PATHS) {
+      expect(list.getByText(path)).toBeInTheDocument();
+    }
+    // Advisory means advisory: nothing planned, no recommendation yet.
+    expect(screen.queryByTestId("facts")).not.toBeInTheDocument();
+    expect(backend.calls.plans).toHaveLength(0);
+  });
+
+  it("continues into the unchanged recommendation flow", async () => {
+    start("unmanaged-detected");
+    const user = userEvent.setup();
+    await user.click(await screen.findByTestId("continue-anyway"));
+
+    await screen.findByRole("heading", { name: /set up rocm/i });
+    expect(screen.getByTestId("facts")).toBeInTheDocument();
+  });
+
+  it("hands over to removal guidance without owning any of it", async () => {
+    const onReviewRemoval = vi.fn();
+    render(
+      <OnboardingFlow
+        backend={fixtureBackend(FIXTURES, "unmanaged-detected")}
+        onReviewRemoval={onReviewRemoval}
+      />,
+    );
+    const user = userEvent.setup();
+    await user.click(await screen.findByTestId("review-removal"));
+    expect(onReviewRemoval).toHaveBeenCalledTimes(1);
+    // Paths only: origins, warnings, and commands stay in ROCm versions.
+    expect(screen.getByTestId("transition")).not.toHaveTextContent(/apt|dnf|zypper|rm -rf/i);
+  });
+
+  it("offers only Continue when the shell has nowhere to send them", async () => {
+    start("unmanaged-detected");
+    await screen.findByTestId("transition");
+    expect(screen.queryByTestId("review-removal")).not.toBeInTheDocument();
+    expect(screen.getByTestId("continue-anyway")).toBeInTheDocument();
+  });
+
+  it("never appears on a machine with nothing unmanaged", async () => {
+    start("supported");
+    await screen.findByTestId("facts");
+    expect(screen.queryByTestId("transition")).not.toBeInTheDocument();
+  });
+
+  it("skips the step once a fresh detection reports nothing", async () => {
+    const viewOf = (name: string) => {
+      const found = FIXTURES.scenarios.find((s) => s.name === name);
+      if (!found) {
+        throw new Error(`missing onboarding fixture scenario: ${name}`);
+      }
+      return found.view;
+    };
+    // One backend across two mounts, exactly like the shell's return from
+    // ROCm versions: the second detection reports the installs gone.
+    const firstView = viewOf("unmanaged-detected");
+    const laterView = viewOf("supported");
+    let reads = 0;
+    const backend: OnboardingBackend = {
+      view: () => Promise.resolve(reads++ === 0 ? firstView : laterView),
+      plan: () => Promise.reject(new Error("nothing plans in this test")),
+      execute: () => Promise.reject(new Error("nothing executes in this test")),
+      cancel: () => Promise.resolve(),
+    };
+
+    const first = render(<OnboardingFlow backend={backend} />);
+    await screen.findByTestId("transition");
+    first.unmount();
+
+    render(<OnboardingFlow backend={backend} />);
+    await screen.findByTestId("facts");
+    expect(screen.queryByTestId("transition")).not.toBeInTheDocument();
   });
 });
 

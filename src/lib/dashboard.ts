@@ -81,6 +81,7 @@ export type NoticeCode =
   | "partial-probe"
   | "unsupported"
   | "untrusted-metadata"
+  | "unmanaged-rocm"
   | "telemetry-permission"
   | "stale";
 

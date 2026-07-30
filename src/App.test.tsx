@@ -15,6 +15,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import { fixtureState } from "./lib/dashboard";
 import type { DashboardSource, HealthOverview } from "./lib/dashboard";
+import type * as onboardingModule from "./lib/onboarding";
+
+/** Which onboarding fixture scenario the mocked desktop backend replays. */
+const onboardScenario = vi.hoisted(() => ({ current: "supported" }));
 
 /** What the shell's one landing read answers with; `null` keeps the refusal. */
 const landing = vi.hoisted(() => ({
@@ -34,8 +38,17 @@ vi.mock("./lib/dashboard", async (importOriginal) => {
   };
 });
 
+vi.mock("./lib/onboarding", async (importOriginal) => {
+  const actual = await importOriginal<typeof onboardingModule>();
+  return {
+    ...actual,
+    desktopBackend: () => actual.fixtureBackend(actual.FIXTURES, onboardScenario.current),
+  };
+});
+
 afterEach(() => {
   landing.current = null;
+  onboardScenario.current = "supported";
 });
 
 describe("App shell", () => {
@@ -90,5 +103,34 @@ describe("App shell", () => {
       expect(document.activeElement).toBe(heading);
     });
     expect(heading).toHaveAttribute("tabindex", "-1");
+  });
+
+  /**
+   * #28: guided setup hands users to ROCm versions for removal guidance.
+   * The way back must read "Back to setup", and returning must re-run
+   * detection — the transition step comes back while the installs remain.
+   */
+  it("routes setup's removal-guidance handover back to setup", async () => {
+    landing.current = fixtureState("setup-required").overview;
+    onboardScenario.current = "unmanaged-detected";
+    render(<App />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByTestId("review-removal"));
+    const back = await screen.findByRole("button", { name: "Back to setup" });
+    expect(screen.queryByRole("button", { name: "Back to overview" })).not.toBeInTheDocument();
+
+    await user.click(back);
+    expect(await screen.findByTestId("transition")).toBeInTheDocument();
+  });
+
+  it("keeps the overview return when guidance opens from the Overview notice", async () => {
+    landing.current = fixtureState("attention").overview;
+    render(<App />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByTestId("review-removal"));
+    expect(await screen.findByRole("button", { name: "Back to overview" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Back to setup" })).not.toBeInTheDocument();
   });
 });
