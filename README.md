@@ -209,8 +209,17 @@ failing to start.
 For a standalone binary that serves its own bundled frontend, build a release:
 
 ```bash
-npm run tauri build     # or: npm run build && cargo build --release --manifest-path src-tauri/Cargo.toml
+npm run tauri build
+
+# or, to build just the binary without the installer bundler:
+npm run build && cargo build --release --manifest-path src-tauri/Cargo.toml --features tauri/custom-protocol
 ```
+
+`--features tauri/custom-protocol` is not optional here: a plain
+`cargo build --release` compiles the crate in dev mode and bakes in the same
+`devUrl` as a debug build, so the standalone binary opens the _"Could not
+connect to localhost"_ window described above. `npm run tauri build` turns that
+feature on for you; a raw `cargo build` does not.
 
 The app runs the `rocm` command-line tool that sits **beside its own
 executable** — never one found elsewhere on `PATH`, so an installed app cannot
