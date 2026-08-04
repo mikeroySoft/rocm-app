@@ -16,12 +16,20 @@
 //!
 //! # The icon is computed, not shipped
 //!
-//! [`icon`] rasterises a 32×32 RGBA buffer from an 8×8 glyph mask. There is no
-//! icon asset, no image crate, and no generator script to drift out of sync
-//! with the status enum: adding a variant that forgets its glyph does not
-//! compile. Status is carried by **shape and colour together**, so a
-//! monochrome tray theme or a colour-blind reading loses nothing — and the
-//! menu's first line says it in words regardless.
+//! [`icon`] rasterises the AMD arrow — the mark from the ROCm lockup — from
+//! the artwork's own geometry: two polygons transcribed from
+//! `src-tauri/icons/brand/AMD_ROCm_RGB_Blk.svg`, so there is no image decoder,
+//! no rasterised asset, and no generator script in the way.
+//!
+//! # The icon says one thing, in colour alone
+//!
+//! White while there is nothing to do, orange when the app wants something.
+//! That is a deliberate narrowing, taken with eyes open: the mark used to
+//! carry a per-status glyph so that shape distinguished all seven states
+//! without colour, and it no longer does — a monochrome tray theme, or a
+//! reading that cannot separate white from orange, now gets nothing from the
+//! icon. What still carries the state in words is the menu's first line, the
+//! tooltip, and the compact window; none of them is optional.
 //!
 //! # Nothing here mutates anything
 //!
@@ -92,59 +100,25 @@ impl TrayStatus {
         }
     }
 
-    /// The 8×8 glyph, one row per string. Distinct per status by construction:
-    /// a test compares every pair.
-    const fn mask(self) -> [&'static str; 8] {
+    /// Does this state want something from the user?
+    ///
+    /// The one thing the icon says. A host the app cannot change wants
+    /// nothing — an unsupported machine would otherwise nag forever about a
+    /// state nobody can leave.
+    const fn wants_something(self) -> bool {
         match self {
-            // Three dots: work in progress, no verdict yet.
-            Self::Checking => [
-                "........", "........", "........", "##.##.##", "##.##.##", "........", "........",
-                "........",
-            ],
-            // Check mark.
-            Self::Healthy => [
-                "........", "......##", ".....##.", "....##..", "#...##..", "##.##...", ".####...",
-                "..##....",
-            ],
-            // Question mark.
-            Self::Unknown => [
-                "..####..", ".##..##.", ".....##.", "....##..", "...##...", "...##...", "........",
-                "...##...",
-            ],
-            // Down arrow: something wants installing.
-            Self::SetupRequired => [
-                "...##...", "...##...", "...##...", "...##...", ".######.", "..####..", "...##...",
-                "........",
-            ],
-            // Exclamation mark.
-            Self::Attention => [
-                "...##...", "...##...", "...##...", "...##...", "...##...", "........", "...##...",
-                "...##...",
-            ],
-            // Diagonal bar: nothing here will ever work.
-            Self::Unsupported => [
-                "......##", ".....##.", "....##..", "...##...", "..##....", ".##.....", "##......",
-                "........",
-            ],
-            // Cross.
-            Self::Error => [
-                "##....##", ".##..##.", "..####..", "...##...", "..####..", ".##..##.", "##....##",
-                "........",
-            ],
+            Self::Checking | Self::Healthy | Self::Unsupported => false,
+            Self::Unknown | Self::SetupRequired | Self::Attention | Self::Error => true,
         }
     }
 
-    /// Glyph colour, `(r, g, b)`. Shape already distinguishes every status;
-    /// colour is the fast read on top of it.
+    /// Mark colour, `(r, g, b)`: white while there is nothing to do, orange
+    /// when there is.
     const fn rgb(self) -> (u8, u8, u8) {
-        match self {
-            Self::Checking => (0x9A, 0xA0, 0xA6),
-            Self::Healthy => (0x1E, 0x9E, 0x52),
-            Self::Unknown => (0x7A, 0x6F, 0xF0),
-            Self::SetupRequired => (0x2C, 0x7B, 0xE5),
-            Self::Attention => (0xE8, 0xA3, 0x3D),
-            Self::Unsupported => (0x6B, 0x6B, 0x6B),
-            Self::Error => (0xD6, 0x45, 0x45),
+        if self.wants_something() {
+            (0xE8, 0xA3, 0x3D)
+        } else {
+            (0xFF, 0xFF, 0xFF)
         }
     }
 
@@ -161,10 +135,44 @@ impl TrayStatus {
 }
 
 /// Edge length of a rendered tray icon, in pixels.
-pub const ICON_SIZE: u32 = 32;
+///
+/// Larger than a panel will ever show it (GNOME renders around 22). The mark
+/// is all diagonals, and giving the compositor room to scale *down* is what
+/// keeps them from stepping.
+pub const ICON_SIZE: u32 = 64;
 
-/// Upscale factor from the 8×8 mask to [`ICON_SIZE`].
-const SCALE: u32 = ICON_SIZE / 8;
+/// Transparent margin around the mark, in pixels.
+const MARK_PAD: u32 = 2;
+
+/// Samples per axis when measuring how much of a pixel the mark covers.
+const SAMPLES: u32 = 4;
+
+/// The AMD arrow, in hundredths of an SVG unit, relative to its own bounding
+/// box: the two polygons of the arrow group in
+/// `src-tauri/icons/brand/AMD_ROCm_RGB_Blk.svg`, less the 160.59 x-offset the
+/// full lockup gives them. Geometry rather than pixels, so the mark is exact
+/// at any [`ICON_SIZE`] and the crate still needs no image decoder.
+const MARK: [&[(i64, i64)]; 2] = [
+    &[
+        (3660, 1370),
+        (1413, 1370),
+        (42, 0),
+        (5030, 0),
+        (5030, 4988),
+        (3660, 3618),
+    ],
+    &[
+        (1411, 3619),
+        (1411, 1645),
+        (0, 3055),
+        (0, 5030),
+        (1975, 5030),
+        (3385, 3619),
+    ],
+];
+
+/// Edge length of [`MARK`]'s bounding box, in the same hundredths.
+const MARK_SPAN: i64 = 5030;
 
 /// A rasterised tray icon, ready for `tauri::image::Image::new_owned`.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -175,27 +183,71 @@ pub struct TrayImage {
     pub height: u32,
 }
 
+/// Is this point inside the polygon? Even-odd, by counting edge crossings.
+fn inside(poly: &[(i64, i64)], x: i64, y: i64) -> bool {
+    let mut hit = false;
+    for (i, &(x1, y1)) in poly.iter().enumerate() {
+        let (x2, y2) = poly[(i + 1) % poly.len()];
+        if (y1 > y) == (y2 > y) {
+            continue;
+        }
+        // `x < x1 + (y - y1) * (x2 - x1) / (y2 - y1)`, cross-multiplied: the
+        // edge is never divided, so the test is exact and needs no floats.
+        let left = (x - x1) * (y2 - y1);
+        let right = (y - y1) * (x2 - x1);
+        if (y2 > y1) == (left < right) {
+            hit = !hit;
+        }
+    }
+    hit
+}
+
+/// How much of one pixel the mark covers, as an alpha value.
+fn mark_alpha(x: u32, y: u32) -> u8 {
+    let span = i64::from(ICON_SIZE - 2 * MARK_PAD);
+    let steps = span * i64::from(SAMPLES) * 2;
+    // Sub-sample centres, in the mark's own space. `None` is a sample outside
+    // the mark's box: the margin, which is always clear.
+    let axis = |pixel: u32, sub: u32| -> Option<i64> {
+        let offset = (i64::from(pixel) - i64::from(MARK_PAD)) * i64::from(SAMPLES);
+        let step = (offset + i64::from(sub)) * 2 + 1;
+        (0..=steps).contains(&step).then(|| step * MARK_SPAN / steps)
+    };
+    let mut covered = 0_u32;
+    for sub_y in 0..SAMPLES {
+        for sub_x in 0..SAMPLES {
+            let (Some(u), Some(v)) = (axis(x, sub_x), axis(y, sub_y)) else {
+                continue;
+            };
+            if MARK.iter().any(|poly| inside(poly, u, v)) {
+                covered += 1;
+            }
+        }
+    }
+    u8::try_from(covered * 255 / (SAMPLES * SAMPLES)).unwrap_or(u8::MAX)
+}
+
 /// Rasterise the icon for a status.
 ///
-/// Nearest-neighbour upscale of the 8×8 mask: glyph pixels take the status
-/// colour at full opacity, everything else is fully transparent so the icon
-/// sits on a light or dark tray equally well.
+/// The AMD arrow, and nothing else: white while there is nothing to do,
+/// orange when the app wants something. Everything around the mark is fully
+/// transparent, so it sits on a light or dark tray equally well, and its
+/// diagonals are antialiased because the panel only ever scales it down.
 #[must_use]
 pub fn icon(status: TrayStatus) -> TrayImage {
-    let mask = status.mask();
     let (r, g, b) = status.rgb();
     let mut rgba = vec![0_u8; (ICON_SIZE * ICON_SIZE * 4) as usize];
     for y in 0..ICON_SIZE {
-        let row = mask[(y / SCALE) as usize].as_bytes();
         for x in 0..ICON_SIZE {
-            if row[(x / SCALE) as usize] != b'#' {
+            let alpha = mark_alpha(x, y);
+            if alpha == 0 {
                 continue;
             }
             let offset = ((y * ICON_SIZE + x) * 4) as usize;
             rgba[offset] = r;
             rgba[offset + 1] = g;
             rgba[offset + 2] = b;
-            rgba[offset + 3] = 0xFF;
+            rgba[offset + 3] = alpha;
         }
     }
     TrayImage {
@@ -211,11 +263,11 @@ pub fn icon(status: TrayStatus) -> TrayImage {
 
 /// Stable menu item identifiers. The host matches on these, never on text.
 pub mod menu_id {
-    pub const STATUS: &str = "status";
-    pub const QUICK_STATUS: &str = "quick-status";
+    pub const INFO_GPU: &str = "info-gpu";
+    pub const INFO_SYSTEM: &str = "info-system";
+    pub const INFO_ROCM: &str = "info-rocm";
     pub const OPEN_APP: &str = "open-app";
-    pub const CHECK_NOW: &str = "check-now";
-    pub const START_AT_LOGIN: &str = "start-at-login";
+    pub const MORE_INFO: &str = "more-info";
     pub const QUIT: &str = "quit";
 }
 
@@ -226,6 +278,7 @@ pub enum MenuKind {
     /// Non-interactive current status.
     Label,
     Action,
+    /// Kept for wire compatibility; no current entry emits it.
     Check {
         checked: bool,
     },
@@ -266,7 +319,6 @@ pub struct TrayInput<'a> {
     pub overview: Option<&'a HealthOverview>,
     pub error: Option<&'a str>,
     pub platform: HostPlatform,
-    pub autostart: bool,
 }
 
 impl TrayInput<'_> {
@@ -317,10 +369,15 @@ pub fn tray_view(input: &TrayInput<'_>) -> TrayView {
             |o| o.summary.clone(),
         ),
     };
-    // Autostart is meaningless where the app cannot manage ROCm at all, but
-    // "Check now" stays live: re-checking is how a user on an unsupported host
-    // finds out that is what they are.
-    let supported = input.platform.install_allowed();
+    // A fact the probe has not delivered yet is honestly "Checking…" — unless
+    // the probe failed, in which case it will never arrive and "Unknown" is
+    // the truthful reading.
+    let fallback = if input.error.is_some() {
+        "Unknown"
+    } else {
+        "Checking…"
+    };
+    let info = |key: &str| input.fact(key).unwrap_or(fallback);
     let entry = |id: &str, text: String, kind: MenuKind, enabled: bool| MenuEntry {
         id: id.to_owned(),
         text,
@@ -329,23 +386,24 @@ pub fn tray_view(input: &TrayInput<'_>) -> TrayView {
     };
     let items = vec![
         entry(
-            menu_id::STATUS,
-            short_status.clone(),
+            menu_id::INFO_GPU,
+            format!("Graphics card: {}", info("gpu")),
             MenuKind::Label,
             false,
         ),
         entry(
-            "separator-status",
-            String::new(),
-            MenuKind::Separator,
+            menu_id::INFO_SYSTEM,
+            format!("System: {}", info("system")),
+            MenuKind::Label,
             false,
         ),
         entry(
-            menu_id::QUICK_STATUS,
-            "Quick status".to_owned(),
-            MenuKind::Action,
-            true,
+            menu_id::INFO_ROCM,
+            format!("ROCm in use: {}", info("rocm")),
+            MenuKind::Label,
+            false,
         ),
+        entry("separator-info", String::new(), MenuKind::Separator, false),
         entry(
             menu_id::OPEN_APP,
             "Open ROCm App".to_owned(),
@@ -353,24 +411,10 @@ pub fn tray_view(input: &TrayInput<'_>) -> TrayView {
             true,
         ),
         entry(
-            menu_id::CHECK_NOW,
-            "Check now".to_owned(),
+            menu_id::MORE_INFO,
+            "More Info".to_owned(),
             MenuKind::Action,
             true,
-        ),
-        entry(
-            "separator-settings",
-            String::new(),
-            MenuKind::Separator,
-            false,
-        ),
-        entry(
-            menu_id::START_AT_LOGIN,
-            "Start at login".to_owned(),
-            MenuKind::Check {
-                checked: input.autostart,
-            },
-            supported,
         ),
         entry("separator-quit", String::new(), MenuKind::Separator, false),
         entry(

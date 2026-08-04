@@ -21,8 +21,43 @@ compile_error!(
 
 pub mod controller_host;
 pub mod tray_host;
+pub mod window_host;
 
 use rocm_app_core::platform::HostPlatform;
+use tauri_plugin_window_state::StateFlags;
+
+fn window_state_flags() -> StateFlags {
+    #[cfg(target_os = "linux")]
+    let wayland = is_wayland_backend(
+        std::env::var_os("GDK_BACKEND").as_deref(),
+        std::env::var_os("WAYLAND_DISPLAY").as_deref(),
+    );
+    #[cfg(target_os = "windows")]
+    let wayland = false;
+    window_state_flags_for(wayland)
+}
+
+fn window_state_flags_for(wayland: bool) -> StateFlags {
+    if wayland {
+        // Wayland owns placement, and restoring a physical size before GTK's
+        // fractional scale settles leaves client-side titlebar hitboxes stale.
+        StateFlags::all() & !(StateFlags::SIZE | StateFlags::POSITION)
+    } else {
+        StateFlags::all()
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn is_wayland_backend(
+    gdk_backend: Option<&std::ffi::OsStr>,
+    wayland_display: Option<&std::ffi::OsStr>,
+) -> bool {
+    match gdk_backend {
+        Some(backend) if backend == std::ffi::OsStr::new("x11") => false,
+        Some(backend) if backend == std::ffi::OsStr::new("wayland") => true,
+        _ => wayland_display.is_some(),
+    }
+}
 
 /// Report the host this process is running on.
 ///
@@ -54,11 +89,15 @@ pub fn run() {
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec![rocm_app_core::tray::HIDDEN_FLAG]),
         ))
+        // Used from Rust only (the bundle-destination picker command), so the
+        // webview still holds exactly `core:default`.
+        .plugin(tauri_plugin_dialog::init())
         // The compact window is transient and positioned by the tray; restoring
         // a remembered geometry for it would fight that.
         .plugin(
             tauri_plugin_window_state::Builder::new()
                 .with_denylist(&[tray_host::QUICK_WINDOW])
+                .with_state_flags(window_state_flags())
                 .build(),
         )
         .setup(|app| {
@@ -103,13 +142,18 @@ pub fn run() {
             controller_host::diagnostics_diagnose,
             controller_host::diagnostics_export,
             controller_host::diagnostics_fix_plan,
+            controller_host::diagnostics_pick_destination,
             tray_host::tray_quick_status,
             tray_host::tray_model,
-            tray_host::tray_check_now,
             tray_host::tray_autostart_state,
             tray_host::tray_set_autostart,
             tray_host::tray_open_full,
             tray_host::tray_hide_quick,
+            window_host::window_minimize,
+            window_host::window_toggle_maximize,
+            window_host::window_close,
+            window_host::window_start_drag,
+            window_host::window_start_resize,
         ])
         .build(tauri::generate_context!())
         .expect("failed to start ROCm App");
@@ -157,7 +201,10 @@ fn build_declared_windows(app: &tauri::App) -> tauri::Result<()> {
                 "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection {args}"
             ));
         }
-        builder.build()?;
+        // Both windows draw their own chrome, and on Linux the toolkit
+        // installs one of its own regardless. Take it off before the window is
+        // ever shown.
+        window_host::strip_toolkit_titlebar(&builder.build()?);
     }
     Ok(())
 }
@@ -182,5 +229,35 @@ mod tests {
     fn wsl_is_never_reported_as_a_supported_host() {
         assert!(!HostPlatform::Wsl.install_allowed());
         assert!(HostPlatform::Wsl.unsupported_reason().is_some());
+    }
+    #[test]
+    fn wayland_window_state_keeps_modes_but_not_geometry() {
+        let flags = window_state_flags_for(true);
+        assert!(!flags.intersects(StateFlags::SIZE | StateFlags::POSITION));
+        assert!(flags.contains(
+            StateFlags::MAXIMIZED
+                | StateFlags::VISIBLE
+                | StateFlags::DECORATIONS
+                | StateFlags::FULLSCREEN
+        ));
+        assert_eq!(
+            window_state_flags_for(false).bits(),
+            StateFlags::all().bits()
+        );
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn forced_x11_wins_inside_a_wayland_session() {
+        let display = std::ffi::OsStr::new("wayland-0");
+        assert!(!is_wayland_backend(
+            Some(std::ffi::OsStr::new("x11")),
+            Some(display)
+        ));
+        assert!(is_wayland_backend(
+            Some(std::ffi::OsStr::new("wayland")),
+            None
+        ));
+        assert!(is_wayland_backend(None, Some(display)));
     }
 }

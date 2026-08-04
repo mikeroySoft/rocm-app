@@ -43,6 +43,9 @@ import Diagnostics from "./logs/Diagnostics";
 import Logs from "./logs/Logs";
 import { desktopDiagnostics, fixtureDiagnosticsBackend } from "./lib/logs";
 import type { DiagnosticsBackend } from "./lib/logs";
+import AppFrame from "./shell/AppFrame";
+import { desktopFrame } from "./lib/window";
+import type { WindowFrame } from "./lib/window";
 
 /**
  * Fixture mode is opt-in at build time. It is what lets renderer tests and
@@ -167,6 +170,7 @@ function DesktopShell({ initialSurface }: { readonly initialSurface?: Surface | 
   const [runtimes] = useState<RuntimesBackend>(desktopRuntimes);
   const [tray] = useState<TrayBackend>(desktopTray);
   const [diagnostics] = useState<DiagnosticsBackend>(desktopDiagnostics);
+  const [frame] = useState<WindowFrame>(desktopFrame);
   const [surface, setSurface] = useState<Surface | null>(initialSurface ?? null);
   // Where "back" from ROCm versions goes. Guided setup hands users over for
   // removal guidance and must get them back to re-detect; every other door
@@ -274,60 +278,91 @@ function DesktopShell({ initialSurface }: { readonly initialSurface?: Surface | 
     setSurface("diagnostics");
   }, []);
 
+  // The frame is the window: every state below wears it, so the three window
+  // buttons are reachable while a probe is still running and while guided
+  // setup owns the screen.
   if (surface === null) {
     return (
-      <main className="dash">
-        <p aria-busy="true">Checking this computer&hellip;</p>
-      </main>
+      <AppFrame frame={frame}>
+        <main className="dash">
+          <p aria-busy="true">Checking this computer&hellip;</p>
+        </main>
+      </AppFrame>
     );
   }
   if (surface === "onboarding") {
     return (
-      <OnboardingFlow
-        backend={onboarding}
-        onFinished={toDashboard}
-        onReviewRemoval={toRuntimesFromSetup}
-      />
+      <AppFrame frame={frame}>
+        <OnboardingFlow
+          backend={onboarding}
+          onFinished={toDashboard}
+          onReviewRemoval={toRuntimesFromSetup}
+        />
+      </AppFrame>
     );
   }
-  if (surface !== "dashboard") {
-    // Returning to setup re-runs detection by remounting the flow, which is
-    // exactly the recheck #28 asks for: gone installs skip the transition
-    // step, remaining ones bring it back.
-    const backToSetup = surface === "runtimes" && runtimesReturn === "onboarding";
-    return (
-      <>
-        <nav className="shell__nav">
-          <button type="button" onClick={backToSetup ? toOnboarding : toDashboard}>
-            {backToSetup ? "Back to setup" : "Back to overview"}
-          </button>
-        </nav>
-        {surface === "runtimes" && <Runtimes backend={runtimes} />}
-        {surface === "settings" && <Settings backend={tray} />}
-        {surface === "logs" && <Logs backend={diagnostics} />}
-        {surface === "diagnostics" && <Diagnostics backend={diagnostics} />}
-      </>
-    );
-  }
-  // Activity and Diagnose hang off the shell's own nav rather than off the
-  // Overview: they are read-and-report surfaces that stay reachable whatever
-  // the Overview happens to be saying, including when it is saying nothing.
-  return (
+  // Overview, Activity, Diagnose, Manage ROCm, and Settings hang off the
+  // frame's own rail rather than off any surface: they stay reachable
+  // whatever is on screen, including when the Overview is saying nothing.
+  // The rail is also what replaced "Back to overview" — the door is always
+  // there, so nothing has to offer a way back to it.
+  //
+  // Setup is the exception. Returning to it re-runs detection by remounting
+  // the flow, which is exactly the recheck #28 asks for: gone installs skip
+  // the transition step, remaining ones bring it back. Nothing else in the
+  // rail can express that, so the handover keeps its own way back.
+  const backToSetup = surface === "runtimes" && runtimesReturn === "onboarding";
+  const nav = (
     <>
-      <nav className="shell__nav">
-        <button type="button" onClick={toLogs}>
-          Activity
+      {backToSetup && (
+        <button type="button" onClick={toOnboarding}>
+          Back to setup
         </button>
-        <button type="button" onClick={toDiagnostics}>
-          Diagnose
-        </button>
-      </nav>
-      <Dashboard
-        source={dashboard}
-        onStartSetup={toOnboarding}
-        onManageVersions={toRuntimes}
-        onOpenSettings={toSettings}
-      />
+      )}
+      <button
+        type="button"
+        onClick={toDashboard}
+        aria-current={surface === "dashboard" ? "page" : undefined}
+      >
+        Overview
+      </button>
+      <button type="button" onClick={toLogs} aria-current={surface === "logs" ? "page" : undefined}>
+        Activity
+      </button>
+      <button
+        type="button"
+        onClick={toDiagnostics}
+        aria-current={surface === "diagnostics" ? "page" : undefined}
+      >
+        Diagnose
+      </button>
+      <button
+        type="button"
+        onClick={toRuntimes}
+        data-testid="manage-versions"
+        aria-current={surface === "runtimes" ? "page" : undefined}
+      >
+        Manage ROCm
+      </button>
+      <button
+        type="button"
+        onClick={toSettings}
+        data-testid="open-settings"
+        aria-current={surface === "settings" ? "page" : undefined}
+      >
+        Settings
+      </button>
     </>
+  );
+  return (
+    <AppFrame frame={frame} nav={nav}>
+      {surface === "dashboard" && (
+        <Dashboard source={dashboard} onStartSetup={toOnboarding} onManageVersions={toRuntimes} />
+      )}
+      {surface === "runtimes" && <Runtimes backend={runtimes} />}
+      {surface === "settings" && <Settings backend={tray} />}
+      {surface === "logs" && <Logs backend={diagnostics} />}
+      {surface === "diagnostics" && <Diagnostics backend={diagnostics} />}
+    </AppFrame>
   );
 }

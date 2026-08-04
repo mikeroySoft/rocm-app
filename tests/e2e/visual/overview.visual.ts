@@ -5,7 +5,7 @@
 /** Healthy machine: overview, settings, version list, compact panel. */
 
 import { assertNoDriverMutation, assertNoMutationYet, fullWindow, waitForTestId } from "../support";
-import { fullState, quickState } from "./matrix";
+import { fullState } from "./matrix";
 
 describe("visual: healthy", () => {
   before(async () => {
@@ -24,7 +24,7 @@ describe("visual: healthy", () => {
   });
 
   it("photographs the version list, closed and with details open", async () => {
-    await browser.$("button*=Back to overview").click();
+    await browser.$("button*=Overview").click();
     await waitForTestId("verdict");
     await (await waitForTestId("manage-versions")).click();
     await waitForTestId("rows");
@@ -37,10 +37,6 @@ describe("visual: healthy", () => {
     await (await waitForTestId("catalog-prerelease")).click();
     await waitForTestId("catalog-nightly");
     await fullState("runtimes-catalog-prerelease");
-  });
-
-  it("photographs the compact panel", async () => {
-    await quickState("healthy");
   });
 
   it("changed nothing on the machine", () => {

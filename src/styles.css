@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  *
- * The visual system. Light-first, calm, and legible at a glance.
+ * The visual system. Dark, high-contrast, and legible at a glance.
  *
  * Rules the whole file follows:
  *
@@ -18,46 +18,55 @@
  *   `overflow-wrap`. lspci strings are the test case, not the exception.
  * - Motion is decorative and small, and all of it dies under
  *   `prefers-reduced-motion: reduce` (the block at the end of this file).
- * - One focus language: a 2px accent outline, offset so it never melts into
- *   a control's own border.
+ * - One focus language: a 2px outline in a colour nothing else uses, offset so
+ *   it never melts into a control's own border.
+ * - The app draws its own window frame (`decorations: false`): the rail at the
+ *   top of `.frame` is the title bar, and `.frame__grip` replaces the resize
+ *   border an undecorated window no longer gets from the toolkit.
  */
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
+  /* Checkboxes and radios are native; without this they stay light. */
+  accent-color: var(--accent);
 
   /* Canvas and surfaces */
-  --bg: #f5f6f8;
-  --surface: #ffffff;
-  --surface-sunken: #eef0f3;
+  --bg: #05070e;
+  --surface: #0d1320;
+  --surface-sunken: #080c16;
 
   /* Ink */
-  --fg: #17191d;
-  --muted: #565d6a;
+  --fg: #dff3ff;
+  --muted: #8ea7c4;
+  /* Ink for text sitting on --accent, which is far too bright for white. */
+  --on-accent: #04121a;
 
   /* Lines */
-  --border: #d9dde3;
-  --border-strong: #adb5c0;
+  --border: #1c2b42;
+  --border-strong: #33507a;
 
-  /* Status ink — all ≥ 5.5:1 on --surface and on their quiet tints */
-  --ok: #106b39;
-  --warn: #8a5300;
-  --bad: #b3261e;
-  --unknown: #565d6a;
-  --ok-quiet: #e6f4ec;
-  --warn-quiet: #f7efe2;
-  --bad-quiet: #fbeae9;
-  --unknown-quiet: #edeff2;
+  /* Status ink — all ≥ 6:1 on --surface and on their quiet tints */
+  --ok: #2ff2a4;
+  --warn: #ffc247;
+  --bad: #ff5c7a;
+  --unknown: #9db4d0;
+  --ok-quiet: #06251a;
+  --warn-quiet: #2a1d02;
+  --bad-quiet: #2a0a14;
+  --unknown-quiet: #121a28;
 
   /* Action */
-  --accent: #0b5cd5;
-  --accent-hover: #0a51bb;
-  --accent-quiet: #e8f0fd;
-  --focus: #0b5cd5;
+  --accent: #22e1ff;
+  --accent-hover: #6cf0ff;
+  --accent-quiet: #072230;
+  /* Focus is the one hot colour in the palette, so a ring is never mistaken
+   * for a hover or a selected state. */
+  --focus: #ff3ea5;
 
-  /* Shape and depth */
-  --radius: 10px;
-  --radius-sm: 8px;
-  --shadow-1: 0 1px 2px rgb(23 25 29 / 0.05), 0 1px 3px rgb(23 25 29 / 0.07);
+  /* Shape and depth. Corners are tight and shadows are glow, not paper. */
+  --radius: 4px;
+  --radius-sm: 2px;
+  --shadow-1: 0 0 0 1px rgb(34 225 255 / 0.06), 0 8px 24px rgb(0 0 0 / 0.5);
 
   --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, "Cascadia Mono", "Consolas", "DejaVu Sans Mono", monospace;
@@ -69,14 +78,22 @@
 
 html {
   background: var(--bg);
-  /* Keyboard focus and scrollIntoView must never land under the sticky
-   * navigation bar. */
-  scroll-padding-top: 64px;
+  /* Keyboard focus and scrollIntoView must never land under the window
+   * frame's rail. */
+  scroll-padding-top: 52px;
 }
 
 body {
   margin: 0;
-  background: var(--bg);
+  background-color: var(--bg);
+  /* A deck grid behind everything, pinned so it does not scroll with the
+   * content. Every surface paints its own solid background over it, so no
+   * text is ever read against it. */
+  background-image:
+    linear-gradient(rgb(34 225 255 / 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(34 225 255 / 0.04) 1px, transparent 1px);
+  background-size: 44px 44px;
+  background-attachment: fixed;
   color: var(--fg);
   font-family: var(--font);
   font-size: 14px;
@@ -195,45 +212,247 @@ code {
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   background: var(--accent);
-  color: #ffffff;
+  color: var(--on-accent);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
 }
 
 /* --------------------------------------------------------------------------
- * Shell navigation
+ * The window frame
  *
- * A real bar rather than floating chips: it stays put while the page
- * scrolls, so "Back to overview" can never be scrolled out of reach.
+ * `decorations: false`, so this is the title bar: identity, the shell's
+ * navigation, and the three window buttons in one 52px rail. It stays put
+ * while the page scrolls, so no door is ever scrolled out of reach.
+ *
+ * The rail is the drag region. Anything interactive inside it stops the drag
+ * (`AppFrame` checks the press target), which is why buttons can live in a
+ * surface that a press otherwise hands to the compositor.
  * ------------------------------------------------------------------------ */
 
-.shell__nav {
+.frame {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.frame__body {
+  flex: 1;
+}
+
+.hud {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  /* Line the bar's content up with the centred 780px column below it. */
-  padding: 10px max(20px, calc((100vw - 740px) / 2));
   display: flex;
+  align-items: stretch;
+  height: 52px;
+  padding-left: 16px;
+  background: linear-gradient(180deg, #0e1a2c, #070c15);
+  border-bottom: 1px solid var(--accent);
+  box-shadow: 0 0 22px rgb(34 225 255 / 0.18);
+  /* A dragged window must not select the bar's text on the way. */
+  user-select: none;
+}
+
+.hud__mark {
+  display: flex;
+  align-items: center;
   gap: 8px;
+  padding-right: 20px;
+  /* Pushes everything after it right, so the window buttons hold the corner
+   * even on guided setup, where the rail carries no navigation. */
+  margin-right: auto;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--accent);
 }
 
-.shell__nav button {
-  padding: 6px 12px;
-  border: 1px solid transparent;
-  border-radius: 999px;
+.hud__wedge {
+  font-size: 15px;
+  text-shadow: 0 0 12px currentColor;
+}
+
+.hud__nav {
+  display: flex;
+  align-items: stretch;
+}
+
+.hud__nav button {
+  padding: 0 16px;
+  border: 0;
   background: transparent;
-  color: var(--fg);
+  color: var(--muted);
   font: inherit;
-  font-weight: 550;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: background-color 0.12s ease;
+  /* Sheared edges: the rail reads as one cut strip rather than a row of
+   * pills. The shear is 11px, so the padding above keeps labels clear of it. */
+  clip-path: polygon(11px 0, 100% 0, calc(100% - 11px) 100%, 0 100%);
+  transition:
+    color 0.12s ease,
+    background-color 0.12s ease;
 }
 
-.shell__nav button:hover {
-  background: var(--surface-sunken);
+.hud__nav button:hover {
+  color: var(--fg);
+  background: rgb(34 225 255 / 0.1);
+}
+
+/* The current surface, said in more than colour: the tab is filled and
+ * `aria-current` names it for a screen reader. */
+.hud__nav button[aria-current="page"] {
+  color: var(--on-accent);
+  background: var(--accent);
+}
+
+.hud__window {
+  display: flex;
+  align-items: stretch;
+  margin-left: 8px;
+}
+
+.hud__button {
+  width: 46px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  clip-path: polygon(9px 0, 100% 0, calc(100% - 9px) 100%, 0 100%);
+  transition:
+    color 0.12s ease,
+    background-color 0.12s ease;
+}
+
+.hud__button:hover {
+  color: var(--fg);
+  background: rgb(34 225 255 / 0.14);
+}
+
+.hud__button--close:hover {
+  color: var(--bad);
+  background: rgb(255 92 122 / 0.2);
+}
+
+/* Focus has to clear the sheared edges, so it sits inside rather than outside;
+ * `:focus-visible` at the top of this file offsets outward everywhere else. */
+.hud__nav button:focus-visible,
+.hud__button:focus-visible {
+  outline-offset: -4px;
+}
+
+/* Raised text scaling shrinks the viewport — WebKitGTK folds the desktop's
+ * text DPI into the device pixel ratio — and at 200% the five doors and the
+ * three window buttons no longer share a line. The navigation drops to its
+ * own row rather than a door being hidden or the page scrolling sideways;
+ * the window buttons never leave the top right. */
+@media (max-width: 900px) {
+  .hud {
+    height: auto;
+    flex-wrap: wrap;
+  }
+
+  .hud__mark {
+    flex: 1;
+    min-height: 52px;
+  }
+
+  .hud__nav {
+    order: 3;
+    flex-basis: 100%;
+    flex-wrap: wrap;
+    border-top: 1px solid var(--border);
+  }
+
+  .hud__nav button {
+    flex: 1 0 auto;
+    min-height: 44px;
+    padding: 0 10px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * Resize grips
+ *
+ * GTK skips its resize border when a window is undecorated and the compositor
+ * adds none, so the frame draws its own: eight invisible strips pinned to the
+ * viewport that hand the direction to `window_start_resize`. Pointer-only —
+ * a keyboard user resizes through the window manager.
+ * ------------------------------------------------------------------------ */
+
+.frame__grips {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.frame__grip {
+  position: absolute;
+  pointer-events: auto;
+}
+
+.frame__grip--north,
+.frame__grip--south {
+  left: 8px;
+  right: 8px;
+  height: 4px;
+  cursor: ns-resize;
+}
+.frame__grip--east,
+.frame__grip--west {
+  top: 8px;
+  bottom: 8px;
+  width: 4px;
+  cursor: ew-resize;
+}
+.frame__grip--north {
+  top: 0;
+}
+.frame__grip--south {
+  bottom: 0;
+}
+.frame__grip--east {
+  right: 0;
+}
+.frame__grip--west {
+  left: 0;
+}
+
+.frame__grip--northeast,
+.frame__grip--northwest,
+.frame__grip--southeast,
+.frame__grip--southwest {
+  width: 10px;
+  height: 10px;
+}
+.frame__grip--northwest {
+  top: 0;
+  left: 0;
+  cursor: nwse-resize;
+}
+.frame__grip--northeast {
+  top: 0;
+  right: 0;
+  cursor: nesw-resize;
+}
+.frame__grip--southeast {
+  bottom: 0;
+  right: 0;
+  cursor: nwse-resize;
+}
+.frame__grip--southwest {
+  bottom: 0;
+  left: 0;
+  cursor: nesw-resize;
 }
 
 /* --------------------------------------------------------------------------
@@ -411,7 +630,7 @@ code {
 .onboard__bar {
   height: 6px;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--accent) 0%, #6ea8fb 50%, var(--accent) 100%);
+  background: linear-gradient(90deg, var(--accent) 0%, var(--focus) 50%, var(--accent) 100%);
   background-size: 200% 100%;
   animation: onboard-sweep 1.6s linear infinite;
 }
@@ -481,7 +700,7 @@ code {
 .onboard button.onboard__primary {
   border-color: transparent;
   background: var(--accent);
-  color: #ffffff;
+  color: var(--on-accent);
   font-weight: 600;
 }
 
@@ -602,7 +821,7 @@ code {
 .dash button.dash__primary {
   border-color: transparent;
   background: var(--accent);
-  color: #ffffff;
+  color: var(--on-accent);
   font-weight: 600;
 }
 
@@ -968,7 +1187,7 @@ code {
 .quick button.quick__primary {
   border-color: transparent;
   background: var(--accent);
-  color: #ffffff;
+  color: var(--on-accent);
   font-weight: 600;
 }
 
@@ -1269,7 +1488,7 @@ code {
 .logs button.dash__primary {
   border-color: transparent;
   background: var(--accent);
-  color: #ffffff;
+  color: var(--on-accent);
   font-weight: 600;
 }
 
@@ -1304,26 +1523,10 @@ code {
   gap: 16px;
 }
 
-.diagnostics__symptom {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-
-.diagnostics__symptom label {
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.diagnostics__symptom input {
-  flex: 1 1 16rem;
-  padding: 6px 8px;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--fg);
-  font: inherit;
+/* The Re-check control sits directly in the column flex; without this it
+ * stretches to the column width. */
+.diagnostics > .dash__primary {
+  align-self: flex-start;
 }
 
 .diagnostics__verdict {
@@ -1425,7 +1628,7 @@ code {
 .diagnostics button.dash__primary {
   border-color: transparent;
   background: var(--accent);
-  color: #ffffff;
+  color: var(--on-accent);
   font-weight: 600;
 }
 

@@ -4,12 +4,10 @@
 # SPDX-License-Identifier: MIT
 """Click one tray menu entry over D-Bus, by label.
 
-Why this exists: a hidden Tauri window keeps a 0x0 webview and cannot be
-screenshotted, and the tray menu is the only product path that shows the
-compact window on Linux. Rather than add a test-only door to the app, tests
-click the real menu item the way a desktop panel would: over the bus, via
-`com.canonical.dbusmenu.Event`. The app under test stays byte-identical to
-what a user launches.
+Why this exists: panels drive tray menus over the bus, so tests do the same
+rather than adding a test-only door to the app. The clicker fires the real
+menu item the way a desktop panel would — `com.canonical.dbusmenu.Event` —
+and the app under test stays byte-identical to what a user launches.
 
 The registry file is written by scripts/statusnotifierwatcher.py as items
 register: `{"items": [{"service": ..., "sender": ...}], "hosts": [...]}`,

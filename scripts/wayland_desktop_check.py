@@ -4,14 +4,13 @@
 # SPDX-License-Identifier: MIT
 """Prove close-to-tray on a real Wayland compositor, not on X11 through XWayland.
 
-Closing to the tray is three separate promises, and on Wayland each one is
+Closing to the tray is two separate promises, and on Wayland each one is
 kept by a different layer than on X11. The window manager owns the close
-gesture, `WebviewWindow::hide()` has to actually unmap a surface, and the
-process has to survive both. An X11 run says nothing about any of it: under
-XWayland the app talks a protocol the user's session does not use, and the
-defect this file exists to catch -- a `close` request the client acknowledges
-and then ignores, leaving a window that will not go away -- is invisible
-there. This lane was written after that defect sat open for weeks purely
+gesture and the process has to survive it. An X11 run says nothing about
+either: under XWayland the app talks a protocol the user's session does not
+use, and the defect this file exists to catch -- a `close` request the client
+acknowledges and then ignores, leaving a window that will not go away -- is
+invisible there. This lane was written after that defect sat open for weeks purely
 because no Wayland compositor was available to reproduce it on.
 
 Observation is the Wayland wire log (`WAYLAND_DEBUG=1`), which records the
@@ -26,10 +25,7 @@ interface, so no pointer coordinates are involved.
 Three named checks, all against the shipped release binary:
 
     tray-registers  the app registers a StatusNotifierItem whose menu carries
-                    the quick/open/quit entries the tray contract promises
-    hide-unmaps     showing the quick window then clicking "Open ROCm App"
-                    (which runs hide(quick) before show(main)) destroys the
-                    quick xdg_toplevel: hide() really unmaps on Wayland
+                    the open/more info/quit entries the tray contract promises
     close-to-tray   with the main window focused, Alt+F4 makes the compositor
                     send xdg_toplevel.close, the client destroys that
                     toplevel, and the process is still alive afterwards
@@ -62,7 +58,7 @@ WATCHER_SCRIPT = Path(__file__).resolve().parent / "statusnotifierwatcher.py"
 DEFAULT_APP = APP_ROOT / "src-tauri" / "target" / "release" / "rocm-app"
 DEFAULT_CLI = APP_ROOT / "src-tauri" / "binaries" / "rocm-x86_64-unknown-linux-gnu"
 
-CHECKS = ("tray-registers", "hide-unmaps", "close-to-tray")
+CHECKS = ("tray-registers", "close-to-tray")
 
 # The main window's exact `set_title` string. The quick window sets a
 # different one, which is how the wire log tells the two apart.
@@ -71,7 +67,7 @@ MAIN_TITLE = "ROCm"
 # Every tray menu entry the app promises, as a case-insensitive fragment. A
 # build that renamed one out of existence still registers a tray icon and
 # still passes every other check here.
-MENU_WANTED = ("quick", "open", "quit")
+MENU_WANTED = ("open", "more info", "quit")
 
 # evdev keycodes, which is what RemoteDesktop's NotifyKeyboardKeycode takes.
 KEY_ESC = 1
@@ -115,6 +111,7 @@ CLOSE_SETTLE = 4.0
 
 TITLE_RE = re.compile(r'xdg_toplevel#(\d+)\.set_title\("([^"]*)"\)')
 KEYBOARD_ENTER_RE = re.compile(r"wl_keyboard#\d+\.enter\(")
+KEYBOARD_LEAVE_RE = re.compile(r"wl_keyboard#\d+\.leave\(")
 
 
 class CheckSkipped(Exception):
@@ -204,8 +201,19 @@ def other_toplevel(text: str, exclude: str) -> str | None:
 
 
 def keyboard_focused(text: str) -> bool:
-    """Did the compositor give a surface keyboard focus in this text?"""
-    return bool(KEYBOARD_ENTER_RE.search(text))
+    """Does a surface hold keyboard focus at the end of this text?
+
+    Focus is state, not an event. A window that already had focus when the
+    tray activated it is never sent a second `enter`, and a gesture still
+    reaches it -- so asking "was there an enter just now" fails a build that
+    is behaving perfectly. Ask who holds focus instead: the last `enter`
+    without a `leave` after it.
+    """
+    entered = [m.start() for m in KEYBOARD_ENTER_RE.finditer(text)]
+    left = [m.start() for m in KEYBOARD_LEAVE_RE.finditer(text)]
+    if not entered:
+        return False
+    return not left or entered[-1] > left[-1]
 
 
 def check_menu(items: list[tuple[int, str, str]]) -> tuple[bool, str]:
@@ -220,18 +228,6 @@ def check_menu(items: list[tuple[int, str, str]]) -> tuple[bool, str]:
         return False, f"tray menu has no item matching {wanted}; saw {labels}"
     return True, f"tray menu carries {labels}"
 
-
-def check_hide_unmaps(tail: str, quick: str) -> tuple[bool, str]:
-    """hide() must destroy the quick window's toplevel, not just blank it."""
-    if f"xdg_toplevel#{quick}.destroy()" in tail:
-        return True, (
-            f"hide(quick) destroyed xdg_toplevel#{quick}: "
-            "WebviewWindow::hide() unmaps a Wayland toplevel"
-        )
-    return False, (
-        f"xdg_toplevel#{quick} outlived hide(quick): the client never destroyed it, "
-        "so the hidden window is still mapped on the compositor"
-    )
 
 
 def check_close_to_tray(tail: str, toplevel: str, alive: bool) -> tuple[bool, str]:
@@ -576,13 +572,11 @@ def tray_item(registered: Path) -> dict[str, str] | None:
 
 def drive(lane: Lane, root: Path, app: subprocess.Popen, registered: Path,
           report: Report) -> None:
-    """Every check, in the one order that can produce all three.
+    """Every check, in the one order that can produce both.
 
-    The tray must be up before anything can be clicked; the quick window must
-    be shown before hide() can be watched; and "Open ROCm App" -- which is
-    what proves hide() -- is also what gives the main window keyboard focus,
-    which is what makes Alt+F4 reach it. The app never takes focus by itself
-    in a headless shell.
+    The tray must be up before anything can be clicked, and "Open ROCm App"
+    is what gives the main window keyboard focus, which is what makes Alt+F4
+    reach it. The app never takes focus by itself in a headless shell.
     """
     def wire() -> str:
         return (root / "wire.log").read_text(errors="replace")
@@ -616,9 +610,9 @@ def drive(lane: Lane, root: Path, app: subprocess.Popen, registered: Path,
                     return entry
             return None
 
-        quick_id, open_id = ident("quick"), ident("open")
-        if quick_id is None or open_id is None:
-            report.unreached("the tray menu has no quick/open entry to click")
+        open_id = ident("open")
+        if open_id is None:
+            report.unreached("the tray menu has no open entry to click")
             return
 
         session.start_remote()
@@ -626,28 +620,18 @@ def drive(lane: Lane, root: Path, app: subprocess.Popen, registered: Path,
         time.sleep(1.0)
 
         mark = len(wire())
-        session.click(dest, menu, quick_id)
-        time.sleep(CLICK_SETTLE)
-        quick = other_toplevel(wire()[mark:], main)
-        if quick is None:
-            report.check("hide-unmaps", False,
-                         "clicking the quick entry mapped no second xdg_toplevel")
-        else:
-            report.note(f"quick window is xdg_toplevel#{quick}")
-
-        mark = len(wire())
         session.click(dest, menu, open_id)
         time.sleep(CLICK_SETTLE)
         tail = wire()[mark:]
-        (root / "hide-tail.log").write_text(tail)
-        if quick is not None:
-            report.check("hide-unmaps", *check_hide_unmaps(tail, quick))
-        if not keyboard_focused(tail):
+        (root / "open-tail.log").write_text(tail)
+        # The whole log, not the tail: focus is held state, and the window may
+        # have taken it at launch and never given it back.
+        if not keyboard_focused(wire()):
             report.check("close-to-tray", False,
-                         "the main window never took keyboard focus, so a close "
-                         "gesture could not be delivered to it")
+                         "no surface holds keyboard focus, so a close gesture "
+                         "could not be delivered to the main window")
             return
-        report.ok("main window took keyboard focus from the tray activation")
+        report.ok("main window holds keyboard focus")
 
         mark = len(wire())
         session.keys(
@@ -749,8 +733,8 @@ MULTI_TITLE_LOG = """\
  -> xdg_toplevel#61.set_title("ROCm Logs")
 """
 
-FULL_MENU = [(0, "", "standard"), (1, "Quick status", "standard"),
-             (2, "Open ROCm App", "standard"), (3, "Quit", "standard")]
+FULL_MENU = [(0, "", "standard"), (1, "More Info", "standard"),
+             (2, "Open ROCm App", "standard"), (3, "Quit ROCm App", "standard")]
 
 
 def self_test() -> int:
@@ -799,13 +783,6 @@ def self_test() -> int:
         f"{pairs} -> main #39, newest other #61",
     )
 
-    passed, message = check_hide_unmaps(
-        ' -> xdg_toplevel#52.destroy()\n -> wl_surface#51.destroy()\n', "52"
-    )
-    expect("hide unmaps", passed and "unmaps a Wayland toplevel" in message, message)
-
-    passed, message = check_hide_unmaps(' -> wl_surface#51.commit()\n', "52")
-    expect("hide left it mapped", not passed and "outlived hide(quick)" in message, message)
 
     passed, message = check_menu(FULL_MENU)
     expect("full menu", passed, message)

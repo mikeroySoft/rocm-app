@@ -8,7 +8,7 @@
  * text on the two surfaces that summarise the machine.
  */
 
-import { assertStatusesCarryText, showQuickWindow } from "../desktop";
+import { assertStatusesCarryText } from "../desktop";
 import { assertNoDriverMutation, clickButton, fullWindow, testId, waitForTestId } from "../support";
 import { checkA11y, injectAxe } from "./axe";
 
@@ -33,14 +33,14 @@ describe("axe: healthy", () => {
     await details.waitForClickable({ timeout: 30_000, timeoutMsg: "no Details disclosure" });
     await details.click();
     await checkA11y("runtimes-list");
-    await clickButton("Back to overview");
+    await clickButton("Overview");
   });
 
   it("settings", async () => {
     await testId("open-settings").click();
     await waitForTestId("autostart");
     await checkA11y("settings");
-    await clickButton("Back to overview");
+    await clickButton("Overview");
   });
 
   it("activity, and one opened record", async () => {
@@ -51,19 +51,13 @@ describe("axe: healthy", () => {
       await browser.$("button.logs__record").click();
       await checkA11y("activity-record");
     }
-    await clickButton("Back to overview");
+    await clickButton("Overview");
   });
 
   it("diagnose", async () => {
     await clickButton("Diagnose");
     await waitForTestId("verdict");
     await checkA11y("diagnose");
-  });
-
-  it("quick panel", async () => {
-    await showQuickWindow();
-    await checkA11y("quick");
-    await assertStatusesCarryText("quick");
   });
 
   it("never touched a kernel driver", () => {

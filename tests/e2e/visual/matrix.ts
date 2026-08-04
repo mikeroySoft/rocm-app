@@ -15,16 +15,12 @@
 import {
   assertControlsReachable,
   assertNoHorizontalScroll,
-  assertNoVerticalScroll,
-  assertReachable,
   assertStatusesCarryText,
   recordCopyScan,
   resizeFull,
   saveShot,
   scanVisibleCopy,
-  showQuickWindow,
 } from "../desktop";
-import { fullWindow, testId, until, waitForTestId } from "../support";
 
 /** The text scale this run measures at; the directory names carry it. */
 export const SCALE = process.env["ROCM_VISUAL_SCALE"] ?? "1";
@@ -53,31 +49,4 @@ export async function fullState(state: string): Promise<void> {
     await saveShot(`${state}--full--${w}x${h}`);
   }
   await scanState(state);
-}
-
-/** Photograph and check the compact window, shown through the real tray. */
-export async function quickState(
-  state: string,
-  options: { readonly allowVerticalScroll?: boolean } = {},
-): Promise<void> {
-  await showQuickWindow();
-  await waitForTestId("quick-status");
-  // The panel boots into "Checking…" and fills in when the tray's first
-  // probe lands. The photograph — and the geometry it proves — must be of
-  // the settled state; the checking placeholder is shorter than any real
-  // GPU name and would pass vacuously.
-  await until(`the ${state} panel to settle`, async () => {
-    const status = await testId("quick-status").getAttribute("data-status");
-    return status !== "checking";
-  });
-  await waitForTestId("quick-gpu");
-  const context = `${state} compact (scale ${SCALE})`;
-  await assertNoHorizontalScroll(context);
-  if (options.allowVerticalScroll !== true) {
-    await assertNoVerticalScroll(context);
-  }
-  await assertReachable('[data-testid="quick-open"]', context);
-  await saveShot(`${state}--quick--380x300`);
-  await scanState(`${state} compact`);
-  await fullWindow();
 }

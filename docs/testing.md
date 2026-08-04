@@ -216,10 +216,13 @@ Two claims that only a timeline can prove, and where their tests live:
   ticks with a mutation occupying the middle third and asserts the peak number
   of outstanding full probes is exactly one.
 
-The icon is computed, not shipped: there is no PNG asset and no generator
-script, so a status added without a glyph does not compile. `fixtures/tray.json`
-records each status's glyph mask and colour, so a visual change to them is a
-reviewable diff.
+The icon is computed, not shipped: the AMD arrow is rasterised from the
+artwork's own geometry, so there is no PNG asset and no generator script. It
+says one thing and says it in colour alone — white when there is nothing to do,
+orange when the app wants something — so the seven states are told apart only
+by the menu's first line, the tooltip, and the compact window.
+`fixtures/tray.json` records each status's colour and label, so a change to
+either reading is a reviewable diff.
 
 ## The desktop suite
 
@@ -261,7 +264,7 @@ golden from `fixtures/contract/`.
 | `onboarding`      | `setup-required`  | guided setup, review, approval, progress, result           |
 | `runtime-switch`  | `healthy`         | version list, review, apply, post-change state             |
 | `catalog-install` | `healthy`         | version catalog, pre-release opt-in, exact-version install |
-| `diagnostics`     | `attention`       | Activity, support-bundle export, Diagnose                  |
+| `diagnostics`     | `attention`       | Activity, support-bundle offer, Diagnose                   |
 | `routing`         | `healthy`         | compact and full windows, surface routing, autostart       |
 | `unsupported`     | `unsupported-wsl` | refusal, no change controls, explanation                   |
 
@@ -301,18 +304,20 @@ surviving sanitisation.
 ## The visual and accessibility suites
 
 `npm run test:visual` and `npm run test:a11y` reuse the desktop harness — the
-shipped binary, the isolation roots, the scenario stand-in — and add two
-things through `scripts/ui_quality.py`: a private session bus carrying a
-`StatusNotifierWatcher` stand-in (`scripts/statusnotifierwatcher.py`), and a
-tray-menu clicker (`scripts/tray_menu.py`). The compact window is only ever
-shown the way a user shows it, by clicking "Quick status" in the real tray
-menu over `com.canonical.dbusmenu`; there is no test-only door in the app.
+shipped binary, the isolation roots, the scenario stand-in — and add one
+thing through `scripts/ui_quality.py`: a private session bus carrying a
+`StatusNotifierWatcher` stand-in (`scripts/statusnotifierwatcher.py`) plus a
+tray-menu clicker (`scripts/tray_menu.py`) for the real menu over
+`com.canonical.dbusmenu`. The tray menu is informational plus Open ROCm App /
+More Info / Quit, so the compact window has no menu door on Linux and the
+suites photograph only the full window; there is no test-only door in the
+app.
 
 The visual suite photographs every product state — healthy, setup-required
 (review, progress, success, multi-line failure), attention plus the applied
 update, unsupported, offline-stale, partial, activity (populated, one record,
-export receipt, empty), diagnosis, and a long-content stress state — at
-1024x700 and 1440x900, and the compact panel besides. At every stop it
+the support-bundle offer, empty), diagnosis, and a long-content stress state
+— at 1024x700 and 1440x900. At every stop it
 asserts: no horizontal scroll, every visible control scrollable-to and
 hittable, every status carrier says its state in words, and no app-authored
 copy shows placeholder text, raw backend tokens, runtime keys, or command
@@ -321,10 +326,10 @@ syntax while disclosures are shut. Shots and per-scale contact sheets land in
 
 Text scale is `ROCM_VISUAL_SCALE` → `GDK_DPI_SCALE` on the driver
 environment. WebKitGTK folds that fractional font-DPI scale into the device
-pixel ratio, so 200% halves the CSS viewport — 380x300 becomes 190x150 —
-which is the strictest honest reading of "200% text scale" (`gtk-xft-dpi`
-does nothing; measured). The compact matrix re-runs at 1.25 and 2 against
-the long-content scenario, whose GPU name is a raw lspci string.
+pixel ratio, so 200% halves the CSS viewport, which is the strictest honest
+reading of "200% text scale" (`gtk-xft-dpi` does nothing; measured). The
+long-content scenario re-runs at 1.25 and 2; its GPU name is a raw lspci
+string.
 
 The a11y suite runs axe-core (WCAG 2.1 A + AA tags) on every major state and
 fails on any violation, walks Tab/Shift+Tab/Enter/Space/Escape flows into
@@ -340,9 +345,6 @@ one spec's boot — WebKitGTK maps it onto `prefers-reduced-motion`.
 - WebKitWebDriver screenshots capture the full document, not the viewport,
   so a scrolling state photographs taller than its window. Geometry
   assertions, not the image size, carry the no-clip proof.
-- The compact panel boots into "Checking…" and fills in when the tray's
-  first probe lands; every compact measurement waits for the settled state,
-  because the placeholder is shorter than any real GPU name.
 
 ## Native Wayland
 

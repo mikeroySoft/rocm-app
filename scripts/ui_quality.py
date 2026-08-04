@@ -36,8 +36,10 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 WATCHER_NAME = "org.kde.StatusNotifierWatcher"
 SCALES = {"1": "scale-100", "1.25": "scale-125", "2": "scale-200"}
-#: Only the compact matrix reruns at raised scales; the full suite runs at 1x.
-COMPACT_SPEC = "tests/e2e/visual/compact.visual.ts"
+#: Only the long-content stress state reruns at raised scales; the full
+#: suite runs at 1x. (The compact panel lost its menu door with the tray
+#: rework, so there is no compact matrix any more.)
+SCALED_SPEC = "tests/e2e/visual/long-content.visual.ts"
 
 
 def reexec_on_private_bus() -> None:
@@ -99,7 +101,7 @@ def run_visual(scales: list[str], out: Path, registry: Path, keep_going: bool) -
         env["ROCM_VISUAL_SCALE"] = scale
         env["ROCM_VISUAL_DIR"] = str(out / "shots" / tag)
         env["ROCM_E2E_RUN_ID"] = f"visual-{tag}"
-        extra = [] if scale == "1" else ["--spec", COMPACT_SPEC]
+        extra = [] if scale == "1" else ["--spec", SCALED_SPEC]
         codes[tag] = run_wdio("tests/e2e/wdio.visual.conf.ts", env, extra)
         if codes[tag] != 0 and not keep_going:
             break
@@ -154,26 +156,14 @@ def build_sheets(out: Path) -> list[Path]:
 
     sheets: list[Path] = []
     scale_dirs = sorted(d for d in (out / "shots").glob("*") if d.is_dir())
-    compact: list[tuple[Path, str]] = []
     for scale_dir in scale_dirs:
         shots = sorted(scale_dir.glob("*.png"))
-        compact += [
-            (s, f"{scale_dir.name}/{s.name}")
-            for s in shots
-            if "quick" in s.name or s.name.startswith("compact")
-        ]
         if not shots:
             print(f"note: no shots in {scale_dir}, skipping its sheet")
             continue
         dest = out / f"contact-sheet-{scale_dir.name}.png"
         contact_sheet([(s, s.name) for s in shots], dest)
         sheets.append(dest)
-    if compact:
-        dest = out / "contact-sheet-compact.png"
-        contact_sheet(compact, dest)
-        sheets.append(dest)
-    else:
-        print("note: no compact/quick shots anywhere, skipping the compact sheet")
     return sheets
 
 

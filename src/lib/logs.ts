@@ -306,6 +306,8 @@ export interface DiagnosticsBackend {
   logs(query: LogQuery): Promise<LogsView>;
   diagnose(symptom?: string): Promise<DiagnosisView>;
   exportBundle(destination: string, symptom?: string): Promise<BundleReceipt>;
+  /** Native folder picker for the bundle destination; `null` is a cancel. */
+  pickDestination(): Promise<string | null>;
   /** Describes applying a fix. Applying it still needs an approval. */
   planFix(fixId: string): Promise<ChangePlan>;
   execute(approval: Approval, onEvent: (event: ProgressEvent) => void): Promise<void>;
@@ -335,6 +337,10 @@ export function desktopDiagnostics(): DiagnosticsBackend {
         "diagnostics_export",
         symptom === undefined ? { destination } : { destination, symptom },
       );
+    },
+    pickDestination: async () => {
+      controller.requireTauri();
+      return await invoke<string | null>("diagnostics_pick_destination");
     },
     planFix: async (fixId) => {
       controller.requireTauri();
@@ -415,6 +421,8 @@ export interface DiagnosticsCalls {
   /** One entry per diagnosis; `undefined` is "no symptom given". */
   readonly diagnoses: (string | undefined)[];
   readonly exports: { destination: string; symptom: string | undefined }[];
+  /** Folder-picker openings; each entry is the answer that was given. */
+  readonly picks: (string | null)[];
   readonly fixPlans: string[];
   /** The only mutation either screen can perform. */
   readonly executions: Approval[];
@@ -451,6 +459,8 @@ export interface FixtureDiagnosticsOptions {
   readonly export?: string | undefined;
   readonly plan?: ChangePlan | undefined;
   readonly events?: readonly ProgressEvent[] | undefined;
+  /** What the folder picker answers with; `null` replays a cancel. */
+  readonly destination?: string | null | undefined;
 }
 
 /**
@@ -478,6 +488,7 @@ export function fixtureDiagnosticsBackend(
     fixPlans: [],
     executions: [],
     cancels: 0,
+    picks: [],
   };
   return {
     calls,
@@ -494,6 +505,12 @@ export function fixtureDiagnosticsBackend(
       return outcome.state === "ok"
         ? Promise.resolve(outcome.receipt)
         : Promise.reject(new Error(outcome.failure.detail));
+    },
+    pickDestination: () => {
+      const picked =
+        options.destination === undefined ? "/home/user/rocm-support" : options.destination;
+      calls.picks.push(picked);
+      return Promise.resolve(picked);
     },
     planFix: (fixId) => {
       calls.fixPlans.push(fixId);

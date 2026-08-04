@@ -5,7 +5,6 @@
 /** Activity, Diagnose, and writing a support bundle. */
 
 import { strict as assert } from "node:assert";
-import { join } from "node:path";
 
 import {
   assertIsolatedRoots,
@@ -13,7 +12,6 @@ import {
   assertNoMutationYet,
   clickButton,
   journal,
-  paths,
   testId,
   waitForTestId,
 } from "../support";
@@ -36,7 +34,7 @@ describe("diagnostics", () => {
     assert.match(await notices.getText(), /3 ROCm installs outside ROCm App/);
     await (await waitForTestId("review-removal")).click();
     await waitForTestId("unmanaged");
-    await clickButton("Back to overview");
+    await clickButton("Overview");
     await waitForTestId("verdict");
   });
 
@@ -58,25 +56,25 @@ describe("diagnostics", () => {
     );
   });
 
-  it("writes a support bundle to the folder the user names", async () => {
-    const destination = join(paths.state(), "bundle-out");
-    const field = await waitForTestId("destination");
-    await field.setValue(destination);
-    await testId("export").click();
-    const receipt = await waitForTestId("export-receipt", 60_000);
-    const text = await receipt.getText();
-    assert.match(text, /[0-9a-f]{8}/i, `the receipt showed no digest:\n${text}`);
-
-    const exported = journal().filter((entry) => entry.argv[0] === "app-support-bundle");
-    assert.equal(exported.length, 1, "the export did not go through the CLI exactly once");
-    assert.ok(
-      exported[0]?.argv.includes(destination),
-      `the destination was not passed as one argument: ${exported[0]?.argv.join(" ")}`,
+  it("offers the support bundle behind a native folder picker", async () => {
+    // The destination now comes from a native dialog, which WebDriver cannot
+    // drive. What stays provable end to end: the picker is offered, nothing
+    // is chosen yet, the export is disabled, and no CLI export ever fired.
+    const chooser = await waitForTestId("choose-destination");
+    assert.equal(await chooser.isDisplayed(), true, "the folder picker button is not offered");
+    const destination = await waitForTestId("destination");
+    assert.match(await destination.getText(), /No folder chosen yet\./);
+    assert.equal(
+      await testId("export").isEnabled(),
+      false,
+      "export was enabled without a chosen folder",
     );
+    const exported = journal().filter((entry) => entry.argv[0] === "app-support-bundle");
+    assert.equal(exported.length, 0, "an export ran without a chosen destination");
   });
 
   it("diagnoses from the CLI's own report", async () => {
-    await clickButton("Back to overview");
+    await clickButton("Overview");
     await waitForTestId("verdict");
     await clickButton("Diagnose");
     const verdict = await waitForTestId("verdict");

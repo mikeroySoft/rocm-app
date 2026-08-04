@@ -52,7 +52,7 @@ use rocm_app_core::tray::{
     TrayStatus, TrayView, autostart_desired, icon, left_click_opens_quick_status, menu_id,
     quick_status, reconcile_autostart, start_hidden, tray_view,
 };
-use tauri::menu::{CheckMenuItem, IsMenuItem, MenuBuilder, MenuItem, PredefinedMenuItem};
+use tauri::menu::{IsMenuItem, MenuBuilder, MenuItem, PredefinedMenuItem};
 use tauri::tray::TrayIcon;
 use tauri::{AppHandle, Emitter as _, Manager as _, Wry};
 use tauri_plugin_autostart::ManagerExt as _;
@@ -97,11 +97,10 @@ struct Observation {
 pub struct TrayHost {
     platform: HostPlatform,
     tray: TrayIcon<Wry>,
-    /// The two menu items whose contents change. On Linux a tray menu cannot
-    /// be replaced once set — only its items mutated — so the handles are
-    /// retained rather than the menu rebuilt.
-    status_item: MenuItem<Wry>,
-    login_item: CheckMenuItem<Wry>,
+    /// The info label items whose text changes with each observation. On
+    /// Linux a tray menu cannot be replaced once set — only its items mutated
+    /// — so the handles are retained rather than the menu rebuilt.
+    info_items: Vec<(String, MenuItem<Wry>)>,
     latest: Mutex<Observation>,
     scheduler: Mutex<Scheduler>,
     autostart: AtomicBool,
@@ -119,7 +118,6 @@ impl TrayHost {
             overview: latest.overview.as_ref(),
             error: latest.error.as_deref(),
             platform: self.platform,
-            autostart: self.autostart.load(Ordering::Relaxed),
         })
     }
 
@@ -135,10 +133,11 @@ impl TrayHost {
             image.height,
         )));
         let _ = self.tray.set_tooltip(Some(&view.tooltip));
-        let _ = self.status_item.set_text(&view.short_status);
-        let _ = self
-            .login_item
-            .set_checked(self.autostart.load(Ordering::Relaxed));
+        for (id, item) in &self.info_items {
+            if let Some(entry) = view.items.iter().find(|e| e.id == *id) {
+                let _ = item.set_text(&entry.text);
+            }
+        }
     }
 }
 
@@ -160,18 +159,17 @@ pub fn start(app: &AppHandle) -> tauri::Result<()> {
         overview: None,
         error: None,
         platform,
-        autostart: false,
     };
     let view = tray_view(&checking);
 
-    let mut status_item = None;
-    let mut login_item = None;
+    let mut info_items = Vec::new();
     let mut items: Vec<Box<dyn IsMenuItem<Wry>>> = Vec::with_capacity(view.items.len());
     for entry in &view.items {
         use rocm_app_core::tray::MenuKind;
         let item: Box<dyn IsMenuItem<Wry>> = match entry.kind {
             MenuKind::Separator => Box::new(PredefinedMenuItem::separator(app)?),
-            MenuKind::Label | MenuKind::Action => {
+            // `Check` is wire compatibility only; the model no longer emits it.
+            MenuKind::Label | MenuKind::Action | MenuKind::Check { .. } => {
                 let built = MenuItem::with_id(
                     app,
                     entry.id.clone(),
@@ -179,21 +177,9 @@ pub fn start(app: &AppHandle) -> tauri::Result<()> {
                     entry.enabled,
                     None::<&str>,
                 )?;
-                if entry.id == menu_id::STATUS {
-                    status_item = Some(built.clone());
+                if matches!(entry.kind, MenuKind::Label) {
+                    info_items.push((entry.id.clone(), built.clone()));
                 }
-                Box::new(built)
-            }
-            MenuKind::Check { checked } => {
-                let built = CheckMenuItem::with_id(
-                    app,
-                    entry.id.clone(),
-                    &entry.text,
-                    entry.enabled,
-                    checked,
-                    None::<&str>,
-                )?;
-                login_item = Some(built.clone());
                 Box::new(built)
             }
         };
@@ -236,8 +222,7 @@ pub fn start(app: &AppHandle) -> tauri::Result<()> {
     app.manage(TrayHost {
         platform,
         tray,
-        status_item: status_item.expect("the core menu model always has a status line"),
-        login_item: login_item.expect("the core menu model always has a start-at-login item"),
+        info_items,
         latest: Mutex::new(Observation::default()),
         scheduler: Mutex::new(Scheduler::default()),
         autostart: AtomicBool::new(autostart),
@@ -338,31 +323,31 @@ pub fn focus_existing_instance(app: &AppHandle, argv: &[String]) {
 
 fn on_menu_event(app: &AppHandle, id: &str) {
     match id {
-        menu_id::QUICK_STATUS => show_window(app, QUICK_WINDOW),
         menu_id::OPEN_APP => {
             hide_window(app, QUICK_WINDOW);
             show_window(app, MAIN_WINDOW);
         }
-        menu_id::CHECK_NOW => {
-            if let Some(host) = app.try_state::<TrayHost>() {
-                host.scheduler
-                    .lock()
-                    .expect("poisoned")
-                    .request_full_probe();
-            }
-        }
-        menu_id::START_AT_LOGIN => {
-            if let Some(host) = app.try_state::<TrayHost>() {
-                let next = !host.autostart.load(Ordering::Relaxed);
-                apply_autostart(app, &host, next);
-            }
-        }
+        menu_id::MORE_INFO => open_more_info(),
         // Not `PredefinedMenuItem::quit`, which Tauri documents as unsupported
         // on Linux. `exit(0)` carries a code, so the run loop's
         // `prevent_exit` for code-less exit requests does not block it.
         menu_id::QUIT => app.exit(0),
         _ => {}
     }
+}
+
+/// Open the project's repository in the default browser. Best-effort: a
+/// missing opener must not take the tray with it.
+fn open_more_info() {
+    const URL: &str = "https://github.com/mikeroySoft/rocm-app";
+    #[cfg(target_os = "linux")]
+    let _ = std::process::Command::new("xdg-open").arg(URL).spawn();
+    #[cfg(target_os = "windows")]
+    let _ = std::process::Command::new("cmd")
+        .args(["/C", "start", "", URL])
+        .spawn();
+    #[cfg(not(any(target_os = "linux", target_os = "windows")))]
+    let _ = URL;
 }
 
 // ---------------------------------------------------------------------------
@@ -621,15 +606,6 @@ pub fn tray_quick_status(host: tauri::State<'_, TrayHost>) -> QuickStatus {
 #[tauri::command]
 pub fn tray_model(host: tauri::State<'_, TrayHost>) -> TrayView {
     host.with_input(tray_view)
-}
-
-/// Ask for a fresh full probe now.
-#[tauri::command]
-pub fn tray_check_now(host: tauri::State<'_, TrayHost>) {
-    host.scheduler
-        .lock()
-        .expect("poisoned")
-        .request_full_probe();
 }
 
 /// What Settings shows about starting at login.

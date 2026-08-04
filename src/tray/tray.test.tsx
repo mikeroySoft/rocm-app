@@ -113,16 +113,6 @@ describe("compact tray window", () => {
     expect(backend.calls.opened).toEqual([undefined]);
   });
 
-  it("asks for one re-check per press", async () => {
-    const backend = await showQuick("healthy");
-    const user = userEvent.setup();
-
-    await user.click(screen.getByRole("button", { name: "Check now" }));
-    expect(backend.calls.checkNow).toBe(1);
-    await user.click(screen.getByRole("button", { name: "Check now" }));
-    expect(backend.calls.checkNow).toBe(2);
-  });
-
   /** Esc is the keyboard's way out of an undecorated always-on-top panel. */
   it("asks the host to hide itself on Escape", async () => {
     const backend = await showQuick("healthy");
@@ -173,7 +163,6 @@ describe("compact tray window", () => {
     expect(backend.calls.setAutostart).toEqual([]);
     expect(backend.calls.reads.every((call) => call === "quickStatus")).toBe(true);
     expect(backend.calls.opened).toEqual(["onboarding", undefined]);
-    expect(backend.calls.checkNow).toBe(1);
   });
 
   it("stays usable when the very first read fails", async () => {
@@ -343,7 +332,6 @@ describe("tray fixtures", () => {
     expect(backend.calls).toEqual({
       reads: [],
       opened: [],
-      checkNow: 0,
       setAutostart: [],
       hidden: 0,
     });
@@ -384,11 +372,17 @@ describe("tray routing", () => {
     act(() => {
       handoff({ payload: "nonsense" });
     });
-    expect(screen.queryByRole("button", { name: "Back to overview" })).not.toBeInTheDocument();
+    // The rail says which surface is on screen; an unknown payload must not
+    // move it off the Overview.
+    expect(screen.getByRole("button", { name: "Overview" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
 
     act(() => {
       handoff({ payload: "runtimes" });
     });
-    expect(await screen.findByRole("button", { name: "Back to overview" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "ROCm versions" })).toBeVisible();
+    expect(screen.getByTestId("manage-versions")).toHaveAttribute("aria-current", "page");
   });
 });

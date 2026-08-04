@@ -118,7 +118,6 @@ describe("App shell", () => {
 
     await user.click(await screen.findByTestId("review-removal"));
     const back = await screen.findByRole("button", { name: "Back to setup" });
-    expect(screen.queryByRole("button", { name: "Back to overview" })).not.toBeInTheDocument();
 
     await user.click(back);
     expect(await screen.findByTestId("transition")).toBeInTheDocument();
@@ -130,7 +129,24 @@ describe("App shell", () => {
     const user = userEvent.setup();
 
     await user.click(await screen.findByTestId("review-removal"));
-    expect(await screen.findByRole("button", { name: "Back to overview" })).toBeInTheDocument();
+    // The rail's Overview door is the way back from every entrance but setup.
+    expect(await screen.findByRole("button", { name: "Overview" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Back to setup" })).not.toBeInTheDocument();
+  });
+
+  /**
+   * The window has no decorations of its own, so the frame's buttons are the
+   * only way to minimise, maximise, or dismiss it. Losing them on a surface
+   * would trap the window open.
+   */
+  it("keeps the window buttons on every surface, guided setup included", async () => {
+    landing.current = fixtureState("setup-required").overview;
+    render(<App />);
+
+    expect(await screen.findByRole("button", { name: "Close" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Minimise" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Maximise or restore" })).toBeInTheDocument();
+    // Guided setup owns the screen, so the rail carries no navigation.
+    expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
   });
 });

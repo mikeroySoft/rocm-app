@@ -166,11 +166,10 @@ impl Scheduler {
 
     /// Arm exactly one full probe on the next tick, ignoring the interval.
     ///
-    /// Two callers, one behaviour. A mutation's terminal event — completed,
-    /// failed, or cancelled — arms it because the machine has just been changed
-    /// and a failed operation is the case where nothing else refreshes the
-    /// tray. "Check now" arms it because a user asked. Neither is allowed to
-    /// start a *second* concurrent probe: the in-flight guard still applies.
+    /// A mutation's terminal event — completed, failed, or cancelled — arms it
+    /// because the machine has just been changed and a failed operation is the
+    /// case where nothing else refreshes the tray. It never starts a *second*
+    /// concurrent probe: the in-flight guard still applies.
     pub const fn request_full_probe(&mut self) {
         self.resume_after_mutation = true;
     }

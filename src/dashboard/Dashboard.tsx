@@ -33,16 +33,9 @@ export interface DashboardProps {
   readonly onStartSetup?: (() => void) | undefined;
   /** Open ROCm Installs. Absent when the shell has nowhere to send them. */
   readonly onManageVersions?: (() => void) | undefined;
-  /** Open Settings. Absent when the shell has nowhere to send them. */
-  readonly onOpenSettings?: (() => void) | undefined;
 }
 
-export default function Dashboard({
-  source,
-  onStartSetup,
-  onManageVersions,
-  onOpenSettings,
-}: DashboardProps) {
+export default function Dashboard({ source, onStartSetup, onManageVersions }: DashboardProps) {
   const [overview, setOverview] = useState<HealthOverview | null>(null);
   const [error, setError] = useState<OverviewError | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -214,20 +207,8 @@ export default function Dashboard({
       <Inventory rows={overview.components} />
       <Driver driver={overview.driver} />
 
-      {(onManageVersions !== undefined || onOpenSettings !== undefined) && (
-        <div className="dash__actions">
-          {onManageVersions !== undefined && (
-            <button type="button" onClick={onManageVersions} data-testid="manage-versions">
-              Manage ROCm versions
-            </button>
-          )}
-          {onOpenSettings !== undefined && (
-            <button type="button" onClick={onOpenSettings} data-testid="open-settings">
-              Settings
-            </button>
-          )}
-        </div>
-      )}
+      {/* Manage ROCm and Settings live on the shell nav; the Overview's only
+          action of its own is the notice's removal-guidance door above. */}
     </main>
   );
 }

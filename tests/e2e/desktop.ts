@@ -6,20 +6,17 @@
  * Helpers shared by the visual and accessibility suites.
  *
  * Everything here runs against the shipped release binary through the same
- * harness the functional e2e uses. The one extra capability these suites need
- * is a *mapped* compact window: a hidden Tauri window keeps a 0x0 webview
- * viewport, geometry reads all come back zero, and a WebDriver screenshot of
- * it never completes. The only product path that shows the compact window on
- * Linux is the tray menu, so that is the path used — a real click on the real
- * StatusNotifierItem menu over D-Bus, not a test-only IPC door.
+ * harness the functional e2e uses. The compact window has no menu door on
+ * Linux any more — the tray menu is informational plus Open/More Info/Quit —
+ * so these suites only ever drive the full window; there is no test-only IPC
+ * door to show the compact one.
  */
 
-import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 import { REPO } from "./harness";
-import { compactWindow, fullWindow, until } from "./support";
+import { fullWindow, until } from "./support";
 
 /** Where this run's screenshots land; the orchestrator sets the directory. */
 export function shotDir(): string {
@@ -32,46 +29,6 @@ export async function saveShot(name: string): Promise<string> {
   mkdirSync(dirname(file), { recursive: true });
   await browser.saveScreenshot(file);
   return file;
-}
-
-/**
- * Show the compact window the way a user does: by clicking "Quick status" in
- * the tray menu. Requires the orchestrator's StatusNotifierWatcher session
- * (`ROCM_TRAY_REGISTRY` names its registration file).
- */
-export async function showQuickWindow(): Promise<void> {
-  const registry = process.env["ROCM_TRAY_REGISTRY"];
-  if (!registry) {
-    throw new Error(
-      "ROCM_TRAY_REGISTRY is not set. The visual and a11y suites must run through " +
-        "scripts/ui_quality.py, which owns the session bus and the tray watcher.",
-    );
-  }
-  execFileSync("python3", [join(REPO, "scripts", "tray_menu.py"), registry, "Quick status"], {
-    stdio: "pipe",
-  });
-  await compactWindow();
-  await until("the compact window to be mapped", async () => {
-    const width = await browser.execute(() => window.innerWidth);
-    return width > 0;
-  });
-}
-
-/**
- * Whether the compact window is hidden.
- *
- * A window that was never mapped keeps a 0x0 viewport; one that was shown
- * and then hidden keeps its last size, and the honest signal for it is the
- * page's visibility state, which WebKit ties to the native mapping.
- */
-export async function quickWindowHidden(): Promise<boolean> {
-  await compactWindow();
-  const state = await browser.execute(() => ({
-    width: window.innerWidth,
-    visibility: document.visibilityState,
-  }));
-  await fullWindow();
-  return state.width === 0 || state.visibility === "hidden";
 }
 
 /**

@@ -294,10 +294,15 @@ describe("activity support bundle", () => {
     if (outcome.state !== "ok") {
       throw new Error("the export-ok fixture no longer succeeds");
     }
-    const backend = await showLogs({ logs: "populated", export: "export-ok" });
+    const backend = await showLogs({
+      logs: "populated",
+      export: "export-ok",
+      destination: "/tmp/rocm-bundles",
+    });
     const user = userEvent.setup();
 
-    await user.type(screen.getByTestId("destination"), "/tmp/rocm-bundles");
+    await user.click(screen.getByTestId("choose-destination"));
+    expect(await screen.findByText("/tmp/rocm-bundles")).toBeInTheDocument();
     await user.click(screen.getByTestId("export"));
 
     const receipt = await screen.findByTestId("export-receipt");
@@ -327,7 +332,11 @@ describe("activity support bundle", () => {
     if (record === undefined) {
       throw new Error("the populated fixture no longer has records");
     }
-    const backend = await showLogs({ logs: "populated", export: "export-failed" });
+    const backend = await showLogs({
+      logs: "populated",
+      export: "export-failed",
+      destination: "/read-only",
+    });
     const user = userEvent.setup();
 
     await user.selectOptions(screen.getByTestId("severity"), "warn");
@@ -337,7 +346,7 @@ describe("activity support bundle", () => {
     await user.click(screen.getByTestId(`record-${record.id}`));
     await screen.findByTestId("detail");
 
-    await user.type(screen.getByTestId("destination"), "/read-only");
+    await user.click(screen.getByTestId("choose-destination"));
     await user.click(screen.getByTestId("export"));
 
     const failure = await screen.findByTestId("export-failure");
@@ -349,7 +358,18 @@ describe("activity support bundle", () => {
 
     expect(screen.getByTestId("severity")).toHaveValue("warn");
     expect(screen.getByTestId("detail")).toHaveTextContent(record.summary);
-    expect(screen.getByTestId("destination")).toHaveValue("/read-only");
+    expect(screen.getByTestId("destination")).toHaveTextContent("/read-only");
+  });
+
+  /** A cancelled picker changes nothing: no folder, no enabled export. */
+  it("keeps the export disabled when the picker is cancelled", async () => {
+    await showLogs({ logs: "populated", destination: null });
+    const user = userEvent.setup();
+
+    await user.click(screen.getByTestId("choose-destination"));
+
+    expect(screen.getByTestId("destination")).toHaveTextContent("No folder chosen yet.");
+    expect(screen.getByTestId("export")).toBeDisabled();
   });
 });
 
@@ -359,22 +379,10 @@ describe("diagnose fixtures", () => {
       <Diagnostics backend={fixtureDiagnosticsBackend({ diagnosis: name })} />,
     );
     await screen.findByTestId("verdict");
-    expect(screen.getByTestId("headline")).toHaveTextContent(fixtureDiagnosis(name).view.headline);
+    expect(screen.getByTestId("headline")).toHaveTextContent(
+      name === "no-match" ? "No ROCm problems detected." : fixtureDiagnosis(name).view.headline,
+    );
     unmount();
-  });
-
-  it("re-runs the check with the symptom that was typed in", async () => {
-    const backend = fixtureDiagnosticsBackend({ diagnosis: "matched" });
-    render(<Diagnostics backend={backend} />);
-    await screen.findByTestId("verdict");
-    const user = userEvent.setup();
-
-    await user.type(screen.getByTestId("symptom"), "no gpu found");
-    await user.click(screen.getByTestId("recheck"));
-
-    await waitFor(() => {
-      expect(backend.calls.diagnoses).toEqual([undefined, "no gpu found"]);
-    });
   });
 });
 
@@ -391,17 +399,15 @@ describe("diagnose verdicts", () => {
     expect(screen.queryByRole("button", { name: /apply/i })).toBeNull();
   });
 
-  it("offers the report route and the thresholds in words when nothing matched", async () => {
-    const view = fixtureDiagnosis("no-match").view;
-    if (view.route === null) {
-      throw new Error("the no-match fixture no longer carries a route");
-    }
+  it("shows a clean result as healthy", async () => {
     render(<Diagnostics backend={fixtureDiagnosticsBackend({ diagnosis: "no-match" })} />);
 
-    expect(await screen.findByTestId("route")).toHaveAttribute("href", view.route.url);
-    const thresholds = screen.getByTestId("thresholds");
-    expect(thresholds).toHaveTextContent(String(view.thresholds.match));
-    expect(thresholds).toHaveTextContent(String(view.thresholds.highConfidence));
+    const status = await screen.findByTestId("diagnostics-status");
+    expect(status).toHaveTextContent("Healthy");
+    expect(status).toHaveAttribute("data-value", "healthy");
+    expect(screen.getByTestId("headline")).toHaveTextContent("No ROCm problems detected.");
+    expect(screen.getByTestId("verdict")).toHaveAttribute("data-state", "healthy");
+    expect(screen.queryByTestId("route")).not.toBeInTheDocument();
   });
 
   it("states a finding's confidence as words, not as a score", async () => {
@@ -567,11 +573,11 @@ describe("activity resilience", () => {
 
 describe("diagnose re-check and fix control", () => {
   /**
-   * Regression: the read was keyed on the symptom alone, so a Re-check with
-   * unchanged text cleared the view and never re-ran the read — a permanent
-   * spinner.
+   * Regression: the read was keyed on state that Re-check did not always
+   * change, so pressing it could clear the view and never re-run the read —
+   * a permanent spinner.
    */
-  it("returns a verdict when Re-check is pressed with the same symptom", async () => {
+  it("returns a verdict when Re-check is pressed", async () => {
     const backend = fixtureDiagnosticsBackend({ diagnosis: "matched" });
     render(<Diagnostics backend={backend} />);
     await screen.findByTestId("verdict");

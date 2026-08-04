@@ -80,9 +80,6 @@ export default function QuickStatus({ backend }: QuickStatusProps) {
     },
     [backend],
   );
-  const checkNow = useCallback(() => {
-    void backend.checkNow();
-  }, [backend]);
 
   // A window that cannot say anything still has to offer the way out of
   // itself; a blank always-on-top panel with no controls is a trap.
@@ -185,9 +182,6 @@ export default function QuickStatus({ backend }: QuickStatusProps) {
           }}
         >
           Open ROCm App
-        </button>
-        <button type="button" data-testid="quick-check" onClick={checkNow}>
-          Check now
         </button>
       </div>
     </main>

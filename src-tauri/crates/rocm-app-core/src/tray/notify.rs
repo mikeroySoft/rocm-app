@@ -89,10 +89,10 @@ pub fn on_observation(
     available_update: Option<String>,
 ) -> Option<Notification> {
     // Never interrupt, and never *record*, while the answer is still "we are
-    // looking". Checking is a transient the user caused by launching the app or
-    // pressing Check now. Storing it would make the next real answer look like
-    // a transition and re-announce a verdict the user already has, and would
-    // forget an update that is still being offered.
+    // looking". Checking is a transient the user caused by launching the app.
+    // Storing it would make the next real answer look like a transition and
+    // re-announce a verdict the user already has, and would forget an update
+    // that is still being offered.
     if status == TrayStatus::Checking {
         return None;
     }

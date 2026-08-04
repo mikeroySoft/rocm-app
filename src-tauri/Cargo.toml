@@ -11,7 +11,7 @@ default-members = [".", "crates/rocm-app-core"]
 resolver = "2"
 
 [workspace.package]
-version = "0.0.1"
+version = "0.0.2"
 edition = "2024"
 license = "MIT"
 rust-version = "1.96"
@@ -87,6 +87,10 @@ serde_json.workspace = true
 # `tray-icon` gates the whole `tauri::tray` module; without it `TrayIconBuilder`
 # does not exist.
 tauri = { version = "2.11.5", features = ["tray-icon"] }
+# `Window::start_resize_dragging` takes a `tauri_runtime::ResizeDirection`, and
+# `tauri` re-exports the method but not the type. Same crate, same version
+# `tauri` already resolves — this only makes it nameable.
+tauri-runtime = "2"
 # Plugin set for the tray monitor. Every one of these is used from Rust only —
 # through `ManagerExt` / `NotificationExt`, which read managed Rust state rather
 # than plugin IPC commands — so `capabilities/default.json` still grants exactly
@@ -95,3 +99,12 @@ tauri-plugin-autostart = "2.5.1"
 tauri-plugin-notification = "2.3.3"
 tauri-plugin-single-instance = "2.4.3"
 tauri-plugin-window-state = "2.4.1"
+# Native folder picker for the support-bundle destination. Called from a Rust
+# command only, so the webview gains no dialog permission.
+tauri-plugin-dialog = "2"
+
+# The GTK window behind the Wayland/X11 webview, so the frame can take the
+# toolkit's own title bar off it. Pinned to the version tao already resolves;
+# a mismatch would hand back a different `ApplicationWindow` type.
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk = "0.18.2"

@@ -1,6 +1,6 @@
 {
   "name": "rocm-app",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "ROCm App — install, update, change, monitor, and diagnose managed ROCm on Radeon and Ryzen AI systems.",
   "license": "MIT",
   "private": true,

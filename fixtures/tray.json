@@ -9,22 +9,28 @@
         "tooltip": "Checking this computer…",
         "items": [
           {
-            "id": "status",
-            "text": "ROCm — Checking",
+            "id": "info-gpu",
+            "text": "Graphics card: Checking…",
             "kind": "label",
             "enabled": false
           },
           {
-            "id": "separator-status",
-            "text": "",
-            "kind": "separator",
+            "id": "info-system",
+            "text": "System: Checking…",
+            "kind": "label",
             "enabled": false
           },
           {
-            "id": "quick-status",
-            "text": "Quick status",
-            "kind": "action",
-            "enabled": true
+            "id": "info-rocm",
+            "text": "ROCm in use: Checking…",
+            "kind": "label",
+            "enabled": false
+          },
+          {
+            "id": "separator-info",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
           },
           {
             "id": "open-app",
@@ -33,25 +39,9 @@
             "enabled": true
           },
           {
-            "id": "check-now",
-            "text": "Check now",
+            "id": "more-info",
+            "text": "More Info",
             "kind": "action",
-            "enabled": true
-          },
-          {
-            "id": "separator-settings",
-            "text": "",
-            "kind": "separator",
-            "enabled": false
-          },
-          {
-            "id": "start-at-login",
-            "text": "Start at login",
-            "kind": {
-              "check": {
-                "checked": true
-              }
-            },
             "enabled": true
           },
           {
@@ -74,22 +64,28 @@
         "tooltip": "Checking this computer…",
         "items": [
           {
-            "id": "status",
-            "text": "ROCm — Checking",
+            "id": "info-gpu",
+            "text": "Graphics card: Checking…",
             "kind": "label",
             "enabled": false
           },
           {
-            "id": "separator-status",
-            "text": "",
-            "kind": "separator",
+            "id": "info-system",
+            "text": "System: Checking…",
+            "kind": "label",
             "enabled": false
           },
           {
-            "id": "quick-status",
-            "text": "Quick status",
-            "kind": "action",
-            "enabled": true
+            "id": "info-rocm",
+            "text": "ROCm in use: Checking…",
+            "kind": "label",
+            "enabled": false
+          },
+          {
+            "id": "separator-info",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
           },
           {
             "id": "open-app",
@@ -98,25 +94,9 @@
             "enabled": true
           },
           {
-            "id": "check-now",
-            "text": "Check now",
+            "id": "more-info",
+            "text": "More Info",
             "kind": "action",
-            "enabled": true
-          },
-          {
-            "id": "separator-settings",
-            "text": "",
-            "kind": "separator",
-            "enabled": false
-          },
-          {
-            "id": "start-at-login",
-            "text": "Start at login",
-            "kind": {
-              "check": {
-                "checked": true
-              }
-            },
             "enabled": true
           },
           {
@@ -152,22 +132,28 @@
         "tooltip": "ROCm is set up and working.",
         "items": [
           {
-            "id": "status",
-            "text": "ROCm 7.14.0 — Ready",
+            "id": "info-gpu",
+            "text": "Graphics card: AMD Radeon AI PRO R9700",
             "kind": "label",
             "enabled": false
           },
           {
-            "id": "separator-status",
-            "text": "",
-            "kind": "separator",
+            "id": "info-system",
+            "text": "System: Linux, 64-bit",
+            "kind": "label",
             "enabled": false
           },
           {
-            "id": "quick-status",
-            "text": "Quick status",
-            "kind": "action",
-            "enabled": true
+            "id": "info-rocm",
+            "text": "ROCm in use: 7.14.0",
+            "kind": "label",
+            "enabled": false
+          },
+          {
+            "id": "separator-info",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
           },
           {
             "id": "open-app",
@@ -176,25 +162,9 @@
             "enabled": true
           },
           {
-            "id": "check-now",
-            "text": "Check now",
+            "id": "more-info",
+            "text": "More Info",
             "kind": "action",
-            "enabled": true
-          },
-          {
-            "id": "separator-settings",
-            "text": "",
-            "kind": "separator",
-            "enabled": false
-          },
-          {
-            "id": "start-at-login",
-            "text": "Start at login",
-            "kind": {
-              "check": {
-                "checked": true
-              }
-            },
             "enabled": true
           },
           {
@@ -217,22 +187,28 @@
         "tooltip": "ROCm is set up and working.",
         "items": [
           {
-            "id": "status",
-            "text": "ROCm 7.14.0 — Ready",
+            "id": "info-gpu",
+            "text": "Graphics card: AMD Radeon AI PRO R9700",
             "kind": "label",
             "enabled": false
           },
           {
-            "id": "separator-status",
-            "text": "",
-            "kind": "separator",
+            "id": "info-system",
+            "text": "System: Linux, 64-bit",
+            "kind": "label",
             "enabled": false
           },
           {
-            "id": "quick-status",
-            "text": "Quick status",
-            "kind": "action",
-            "enabled": true
+            "id": "info-rocm",
+            "text": "ROCm in use: 7.14.0",
+            "kind": "label",
+            "enabled": false
+          },
+          {
+            "id": "separator-info",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
           },
           {
             "id": "open-app",
@@ -241,25 +217,9 @@
             "enabled": true
           },
           {
-            "id": "check-now",
-            "text": "Check now",
+            "id": "more-info",
+            "text": "More Info",
             "kind": "action",
-            "enabled": true
-          },
-          {
-            "id": "separator-settings",
-            "text": "",
-            "kind": "separator",
-            "enabled": false
-          },
-          {
-            "id": "start-at-login",
-            "text": "Start at login",
-            "kind": {
-              "check": {
-                "checked": true
-              }
-            },
             "enabled": true
           },
           {
@@ -295,22 +255,28 @@
         "tooltip": "ROCm is not set up on this computer yet.",
         "items": [
           {
-            "id": "status",
-            "text": "ROCm None yet — Setup needed",
+            "id": "info-gpu",
+            "text": "Graphics card: AMD Radeon AI PRO R9700",
             "kind": "label",
             "enabled": false
           },
           {
-            "id": "separator-status",
-            "text": "",
-            "kind": "separator",
+            "id": "info-system",
+            "text": "System: Linux, 64-bit",
+            "kind": "label",
             "enabled": false
           },
           {
-            "id": "quick-status",
-            "text": "Quick status",
-            "kind": "action",
-            "enabled": true
+            "id": "info-rocm",
+            "text": "ROCm in use: None yet",
+            "kind": "label",
+            "enabled": false
+          },
+          {
+            "id": "separator-info",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
           },
           {
             "id": "open-app",
@@ -319,25 +285,9 @@
             "enabled": true
           },
           {
-            "id": "check-now",
-            "text": "Check now",
+            "id": "more-info",
+            "text": "More Info",
             "kind": "action",
-            "enabled": true
-          },
-          {
-            "id": "separator-settings",
-            "text": "",
-            "kind": "separator",
-            "enabled": false
-          },
-          {
-            "id": "start-at-login",
-            "text": "Start at login",
-            "kind": {
-              "check": {
-                "checked": true
-              }
-            },
             "enabled": true
           },
           {
@@ -360,22 +310,28 @@
         "tooltip": "ROCm is not set up on this computer yet.",
         "items": [
           {
-            "id": "status",
-            "text": "ROCm None yet — Setup needed",
+            "id": "info-gpu",
+            "text": "Graphics card: AMD Radeon AI PRO R9700",
             "kind": "label",
             "enabled": false
           },
           {
-            "id": "separator-status",
-            "text": "",
-            "kind": "separator",
+            "id": "info-system",
+            "text": "System: Linux, 64-bit",
+            "kind": "label",
             "enabled": false
           },
           {
-            "id": "quick-status",
-            "text": "Quick status",
-            "kind": "action",
-            "enabled": true
+            "id": "info-rocm",
+            "text": "ROCm in use: None yet",
+            "kind": "label",
+            "enabled": false
+          },
+          {
+            "id": "separator-info",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
           },
           {
             "id": "open-app",
@@ -384,25 +340,9 @@
             "enabled": true
           },
           {
-            "id": "check-now",
-            "text": "Check now",
+            "id": "more-info",
+            "text": "More Info",
             "kind": "action",
-            "enabled": true
-          },
-          {
-            "id": "separator-settings",
-            "text": "",
-            "kind": "separator",
-            "enabled": false
-          },
-          {
-            "id": "start-at-login",
-            "text": "Start at login",
-            "kind": {
-              "check": {
-                "checked": true
-              }
-            },
             "enabled": true
           },
           {
@@ -441,22 +381,28 @@
         "tooltip": "The ROCm version in use did not pass its check.",
         "items": [
           {
-            "id": "status",
-            "text": "ROCm 7.14.0 — failed its check",
+            "id": "info-gpu",
+            "text": "Graphics card: AMD Radeon AI PRO R9700",
             "kind": "label",
             "enabled": false
           },
           {
-            "id": "separator-status",
-            "text": "",
-            "kind": "separator",
+            "id": "info-system",
+            "text": "System: Linux, 64-bit",
+            "kind": "label",
             "enabled": false
           },
           {
-            "id": "quick-status",
-            "text": "Quick status",
-            "kind": "action",
-            "enabled": true
+            "id": "info-rocm",
+            "text": "ROCm in use: 7.14.0 — failed its check",
+            "kind": "label",
+            "enabled": false
+          },
+          {
+            "id": "separator-info",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
           },
           {
             "id": "open-app",
@@ -465,25 +411,9 @@
             "enabled": true
           },
           {
-            "id": "check-now",
-            "text": "Check now",
+            "id": "more-info",
+            "text": "More Info",
             "kind": "action",
-            "enabled": true
-          },
-          {
-            "id": "separator-settings",
-            "text": "",
-            "kind": "separator",
-            "enabled": false
-          },
-          {
-            "id": "start-at-login",
-            "text": "Start at login",
-            "kind": {
-              "check": {
-                "checked": true
-              }
-            },
             "enabled": true
           },
           {
@@ -506,22 +436,28 @@
         "tooltip": "The ROCm version in use did not pass its check.",
         "items": [
           {
-            "id": "status",
-            "text": "ROCm 7.14.0 — failed its check",
+            "id": "info-gpu",
+            "text": "Graphics card: AMD Radeon AI PRO R9700",
             "kind": "label",
             "enabled": false
           },
           {
-            "id": "separator-status",
-            "text": "",
-            "kind": "separator",
+            "id": "info-system",
+            "text": "System: Linux, 64-bit",
+            "kind": "label",
             "enabled": false
           },
           {
-            "id": "quick-status",
-            "text": "Quick status",
-            "kind": "action",
-            "enabled": true
+            "id": "info-rocm",
+            "text": "ROCm in use: 7.14.0 — failed its check",
+            "kind": "label",
+            "enabled": false
+          },
+          {
+            "id": "separator-info",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
           },
           {
             "id": "open-app",
@@ -530,25 +466,9 @@
             "enabled": true
           },
           {
-            "id": "check-now",
-            "text": "Check now",
+            "id": "more-info",
+            "text": "More Info",
             "kind": "action",
-            "enabled": true
-          },
-          {
-            "id": "separator-settings",
-            "text": "",
-            "kind": "separator",
-            "enabled": false
-          },
-          {
-            "id": "start-at-login",
-            "text": "Start at login",
-            "kind": {
-              "check": {
-                "checked": true
-              }
-            },
             "enabled": true
           },
           {
@@ -587,22 +507,28 @@
         "tooltip": "This computer could not reach AMD to check for updates.",
         "items": [
           {
-            "id": "status",
-            "text": "ROCm 7.14.0 — Not sure",
+            "id": "info-gpu",
+            "text": "Graphics card: AMD Radeon AI PRO R9700",
             "kind": "label",
             "enabled": false
           },
           {
-            "id": "separator-status",
-            "text": "",
-            "kind": "separator",
+            "id": "info-system",
+            "text": "System: Linux, 64-bit",
+            "kind": "label",
             "enabled": false
           },
           {
-            "id": "quick-status",
-            "text": "Quick status",
-            "kind": "action",
-            "enabled": true
+            "id": "info-rocm",
+            "text": "ROCm in use: 7.14.0",
+            "kind": "label",
+            "enabled": false
+          },
+          {
+            "id": "separator-info",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
           },
           {
             "id": "open-app",
@@ -611,25 +537,9 @@
             "enabled": true
           },
           {
-            "id": "check-now",
-            "text": "Check now",
+            "id": "more-info",
+            "text": "More Info",
             "kind": "action",
-            "enabled": true
-          },
-          {
-            "id": "separator-settings",
-            "text": "",
-            "kind": "separator",
-            "enabled": false
-          },
-          {
-            "id": "start-at-login",
-            "text": "Start at login",
-            "kind": {
-              "check": {
-                "checked": true
-              }
-            },
             "enabled": true
           },
           {
@@ -652,22 +562,28 @@
         "tooltip": "This computer could not reach AMD to check for updates.",
         "items": [
           {
-            "id": "status",
-            "text": "ROCm 7.14.0 — Not sure",
+            "id": "info-gpu",
+            "text": "Graphics card: AMD Radeon AI PRO R9700",
             "kind": "label",
             "enabled": false
           },
           {
-            "id": "separator-status",
-            "text": "",
-            "kind": "separator",
+            "id": "info-system",
+            "text": "System: Linux, 64-bit",
+            "kind": "label",
             "enabled": false
           },
           {
-            "id": "quick-status",
-            "text": "Quick status",
-            "kind": "action",
-            "enabled": true
+            "id": "info-rocm",
+            "text": "ROCm in use: 7.14.0",
+            "kind": "label",
+            "enabled": false
+          },
+          {
+            "id": "separator-info",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
           },
           {
             "id": "open-app",
@@ -676,25 +592,9 @@
             "enabled": true
           },
           {
-            "id": "check-now",
-            "text": "Check now",
+            "id": "more-info",
+            "text": "More Info",
             "kind": "action",
-            "enabled": true
-          },
-          {
-            "id": "separator-settings",
-            "text": "",
-            "kind": "separator",
-            "enabled": false
-          },
-          {
-            "id": "start-at-login",
-            "text": "Start at login",
-            "kind": {
-              "check": {
-                "checked": true
-              }
-            },
             "enabled": true
           },
           {
@@ -730,22 +630,28 @@
         "tooltip": "This is running inside WSL, which cannot reach the graphics card the way ROCm App needs.",
         "items": [
           {
-            "id": "status",
-            "text": "ROCm 7.14.0 — Not supported",
+            "id": "info-gpu",
+            "text": "Graphics card: AMD Radeon AI PRO R9700",
             "kind": "label",
             "enabled": false
           },
           {
-            "id": "separator-status",
-            "text": "",
-            "kind": "separator",
+            "id": "info-system",
+            "text": "System: Linux, 64-bit (WSL)",
+            "kind": "label",
             "enabled": false
           },
           {
-            "id": "quick-status",
-            "text": "Quick status",
-            "kind": "action",
-            "enabled": true
+            "id": "info-rocm",
+            "text": "ROCm in use: 7.14.0",
+            "kind": "label",
+            "enabled": false
+          },
+          {
+            "id": "separator-info",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
           },
           {
             "id": "open-app",
@@ -754,25 +660,9 @@
             "enabled": true
           },
           {
-            "id": "check-now",
-            "text": "Check now",
+            "id": "more-info",
+            "text": "More Info",
             "kind": "action",
-            "enabled": true
-          },
-          {
-            "id": "separator-settings",
-            "text": "",
-            "kind": "separator",
-            "enabled": false
-          },
-          {
-            "id": "start-at-login",
-            "text": "Start at login",
-            "kind": {
-              "check": {
-                "checked": false
-              }
-            },
             "enabled": true
           },
           {
@@ -795,22 +685,28 @@
         "tooltip": "This is running inside WSL, which cannot reach the graphics card the way ROCm App needs.",
         "items": [
           {
-            "id": "status",
-            "text": "ROCm 7.14.0 — Not supported",
+            "id": "info-gpu",
+            "text": "Graphics card: AMD Radeon AI PRO R9700",
             "kind": "label",
             "enabled": false
           },
           {
-            "id": "separator-status",
-            "text": "",
-            "kind": "separator",
+            "id": "info-system",
+            "text": "System: Linux, 64-bit (WSL)",
+            "kind": "label",
             "enabled": false
           },
           {
-            "id": "quick-status",
-            "text": "Quick status",
-            "kind": "action",
-            "enabled": true
+            "id": "info-rocm",
+            "text": "ROCm in use: 7.14.0",
+            "kind": "label",
+            "enabled": false
+          },
+          {
+            "id": "separator-info",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
           },
           {
             "id": "open-app",
@@ -819,25 +715,9 @@
             "enabled": true
           },
           {
-            "id": "check-now",
-            "text": "Check now",
+            "id": "more-info",
+            "text": "More Info",
             "kind": "action",
-            "enabled": true
-          },
-          {
-            "id": "separator-settings",
-            "text": "",
-            "kind": "separator",
-            "enabled": false
-          },
-          {
-            "id": "start-at-login",
-            "text": "Start at login",
-            "kind": {
-              "check": {
-                "checked": false
-              }
-            },
             "enabled": true
           },
           {
@@ -873,22 +753,28 @@
         "tooltip": "The ROCm command-line tool this app found cannot report status. Reinstall ROCm App so the app and the command-line tool match.",
         "items": [
           {
-            "id": "status",
-            "text": "ROCm 7.14.0 — Cannot check",
+            "id": "info-gpu",
+            "text": "Graphics card: AMD Radeon AI PRO R9700",
             "kind": "label",
             "enabled": false
           },
           {
-            "id": "separator-status",
-            "text": "",
-            "kind": "separator",
+            "id": "info-system",
+            "text": "System: Linux, 64-bit",
+            "kind": "label",
             "enabled": false
           },
           {
-            "id": "quick-status",
-            "text": "Quick status",
-            "kind": "action",
-            "enabled": true
+            "id": "info-rocm",
+            "text": "ROCm in use: 7.14.0",
+            "kind": "label",
+            "enabled": false
+          },
+          {
+            "id": "separator-info",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
           },
           {
             "id": "open-app",
@@ -897,25 +783,9 @@
             "enabled": true
           },
           {
-            "id": "check-now",
-            "text": "Check now",
+            "id": "more-info",
+            "text": "More Info",
             "kind": "action",
-            "enabled": true
-          },
-          {
-            "id": "separator-settings",
-            "text": "",
-            "kind": "separator",
-            "enabled": false
-          },
-          {
-            "id": "start-at-login",
-            "text": "Start at login",
-            "kind": {
-              "check": {
-                "checked": true
-              }
-            },
             "enabled": true
           },
           {
@@ -938,22 +808,28 @@
         "tooltip": "The ROCm command-line tool this app found cannot report status. Reinstall ROCm App so the app and the command-line tool match.",
         "items": [
           {
-            "id": "status",
-            "text": "ROCm 7.14.0 — Cannot check",
+            "id": "info-gpu",
+            "text": "Graphics card: AMD Radeon AI PRO R9700",
             "kind": "label",
             "enabled": false
           },
           {
-            "id": "separator-status",
-            "text": "",
-            "kind": "separator",
+            "id": "info-system",
+            "text": "System: Linux, 64-bit",
+            "kind": "label",
             "enabled": false
           },
           {
-            "id": "quick-status",
-            "text": "Quick status",
-            "kind": "action",
-            "enabled": true
+            "id": "info-rocm",
+            "text": "ROCm in use: 7.14.0",
+            "kind": "label",
+            "enabled": false
+          },
+          {
+            "id": "separator-info",
+            "text": "",
+            "kind": "separator",
+            "enabled": false
           },
           {
             "id": "open-app",
@@ -962,25 +838,9 @@
             "enabled": true
           },
           {
-            "id": "check-now",
-            "text": "Check now",
+            "id": "more-info",
+            "text": "More Info",
             "kind": "action",
-            "enabled": true
-          },
-          {
-            "id": "separator-settings",
-            "text": "",
-            "kind": "separator",
-            "enabled": false
-          },
-          {
-            "id": "start-at-login",
-            "text": "Start at login",
-            "kind": {
-              "check": {
-                "checked": true
-              }
-            },
             "enabled": true
           },
           {
@@ -1029,107 +889,37 @@
     {
       "status": "checking",
       "label": "Checking",
-      "colour": "#9AA0A6",
-      "mask": [
-        "........",
-        "........",
-        "........",
-        "##.##.##",
-        "##.##.##",
-        "........",
-        "........",
-        "........"
-      ]
+      "colour": "#FFFFFF"
     },
     {
       "status": "healthy",
       "label": "Ready",
-      "colour": "#1E9E52",
-      "mask": [
-        "........",
-        "......##",
-        ".....##.",
-        "....##..",
-        "#...##..",
-        "##.##...",
-        ".####...",
-        "..##...."
-      ]
+      "colour": "#FFFFFF"
     },
     {
       "status": "unknown",
       "label": "Not sure",
-      "colour": "#7A6FF0",
-      "mask": [
-        "..####..",
-        ".##..##.",
-        ".....##.",
-        "....##..",
-        "...##...",
-        "...##...",
-        "........",
-        "...##..."
-      ]
+      "colour": "#E8A33D"
     },
     {
       "status": "setup-required",
       "label": "Setup needed",
-      "colour": "#2C7BE5",
-      "mask": [
-        "...##...",
-        "...##...",
-        "...##...",
-        "...##...",
-        ".######.",
-        "..####..",
-        "...##...",
-        "........"
-      ]
+      "colour": "#E8A33D"
     },
     {
       "status": "attention",
       "label": "Needs attention",
-      "colour": "#E8A33D",
-      "mask": [
-        "...##...",
-        "...##...",
-        "...##...",
-        "...##...",
-        "...##...",
-        "........",
-        "...##...",
-        "...##..."
-      ]
+      "colour": "#E8A33D"
     },
     {
       "status": "unsupported",
       "label": "Not supported",
-      "colour": "#6B6B6B",
-      "mask": [
-        "......##",
-        ".....##.",
-        "....##..",
-        "...##...",
-        "..##....",
-        ".##.....",
-        "##......",
-        "........"
-      ]
+      "colour": "#FFFFFF"
     },
     {
       "status": "error",
       "label": "Cannot check",
-      "colour": "#D64545",
-      "mask": [
-        "##....##",
-        ".##..##.",
-        "..####..",
-        "...##...",
-        "..####..",
-        ".##..##.",
-        "##....##",
-        "........"
-      ]
+      "colour": "#E8A33D"
     }
   ]
 }

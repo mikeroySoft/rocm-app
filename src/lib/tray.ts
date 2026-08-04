@@ -73,7 +73,6 @@ export interface TrayBackend {
   quickStatus(): Promise<QuickStatus>;
   autostart(): Promise<AutostartState>;
   setAutostart(enabled: boolean): Promise<AutostartState>;
-  checkNow(): Promise<void>;
   openFull(surface?: FullSurface): Promise<void>;
   /** Dismiss the compact window; Esc calls this. */
   hideQuick(): Promise<void>;
@@ -92,10 +91,6 @@ export function desktopTray(): TrayBackend {
     setAutostart: async (enabled) => {
       requireTauri();
       return await invoke<AutostartState>("tray_set_autostart", { enabled });
-    },
-    checkNow: async () => {
-      requireTauri();
-      await invoke("tray_check_now");
     },
     // The key is omitted rather than sent as `undefined`, so the command's
     // `Option<FullSurface>` reliably arrives as `None` and Rust leaves the
@@ -165,8 +160,6 @@ export interface TrayCalls {
   readonly reads: ("quickStatus" | "autostart")[];
   /** Each hand-off. `undefined` means "just show the main window". */
   readonly opened: (FullSurface | undefined)[];
-  /** Re-probe requests, which read the machine rather than change it. */
-  checkNow: number;
   /** Autostart writes — the only mutation any tray surface can perform. */
   readonly setAutostart: boolean[];
   /** Dismissals — a window hide, which changes nothing on the machine. */
@@ -195,7 +188,7 @@ export function fixtureTray(
 ): FixtureTray {
   const quick = fixtureQuickStatus(name);
   const autostart = options.autostart ?? fixtureAutostart(1);
-  const calls: TrayCalls = { reads: [], opened: [], checkNow: 0, setAutostart: [], hidden: 0 };
+  const calls: TrayCalls = { reads: [], opened: [], setAutostart: [], hidden: 0 };
   return {
     calls,
     quickStatus: () => {
@@ -211,10 +204,6 @@ export function fixtureTray(
       return options.failAutostart === true
         ? Promise.reject(new Error("this computer refused to change the startup setting"))
         : Promise.resolve({ ...autostart });
-    },
-    checkNow: () => {
-      calls.checkNow += 1;
-      return Promise.resolve();
     },
     openFull: (surface) => {
       calls.opened.push(surface);

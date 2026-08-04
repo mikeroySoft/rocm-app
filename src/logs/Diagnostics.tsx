@@ -10,10 +10,10 @@
  * control only where the backend left `blocked` empty, and prints the reason
  * everywhere else — a dead button that fails on click teaches nothing.
  *
- * Three verdicts get three screens. "Not a ROCm problem", "here is the likely
- * cause" and "we could not tell" need different next steps, and a view that
- * collapses them into one "no result" sends two of those three groups to the
- * same dead end.
+ * A symptom-free run with no findings is healthy. Once a user names a symptom,
+ * "not a ROCm problem", "here is the likely cause", and "we could not tell"
+ * need different next steps; collapsing them into one "no result" sends people
+ * to the wrong dead end.
  *
  * Applying takes the same review-then-approve path as every other change:
  * `planFix` describes it, and only an approved plan reaches `execute`.
@@ -37,8 +37,6 @@ export interface DiagnosticsProps {
 
 export default function Diagnostics({ backend }: DiagnosticsProps) {
   const [view, setView] = useState<DiagnosisView | null>(null);
-  const [symptom, setSymptom] = useState<string | null>(null);
-  const [draft, setDraft] = useState("");
   const [stage, setStage] = useState<Stage>({ step: "report" });
   const [refusal, setRefusal] = useState<string | null>(null);
   const [generation, setGeneration] = useState(0);
@@ -49,7 +47,7 @@ export default function Diagnostics({ backend }: DiagnosticsProps) {
     // as dead code, which is exactly the guard that matters.
     const mounted = { current: true };
     void backend
-      .diagnose(symptom ?? undefined)
+      .diagnose()
       .then((next) => {
         if (mounted.current) {
           setView(next);
@@ -64,21 +62,15 @@ export default function Diagnostics({ backend }: DiagnosticsProps) {
     return () => {
       mounted.current = false;
     };
-    // `generation` re-runs the read when Re-check is pressed with the same
-    // symptom: the view is cleared before the key is set, so a key that does
-    // not change would otherwise leave the spinner up forever.
-  }, [backend, symptom, generation]);
+    // `generation` re-runs the read when Re-check is pressed: the view is
+    // cleared before the key is set, so a key that does not change would
+    // otherwise leave the spinner up forever.
+  }, [backend, generation]);
 
-  const recheck = useCallback(
-    (event: React.FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      const wanted = draft.trim();
-      setView(null);
-      setSymptom(wanted === "" ? null : wanted);
-      setGeneration((n) => n + 1);
-    },
-    [draft],
-  );
+  const recheck = useCallback(() => {
+    setView(null);
+    setGeneration((n) => n + 1);
+  }, []);
 
   const review = useCallback(
     (fixId: string) => {
@@ -226,27 +218,28 @@ export default function Diagnostics({ backend }: DiagnosticsProps) {
     );
   }
 
+  const healthy = view !== null && view.state.state === "no-match" && view.findings.length === 0;
+
   return (
     <main className="diagnostics" aria-labelledby="diagnostics-heading">
-      <h1 id="diagnostics-heading" className="dash__title" data-testid="headline">
-        {view === null ? "Checking what is wrong\u2026" : view.headline}
-      </h1>
+      <header className="dash__header">
+        {healthy && (
+          <p className="dash__verdict" data-testid="diagnostics-status" data-value="healthy">
+            Healthy
+          </p>
+        )}
+        <h1 id="diagnostics-heading" className="dash__title" data-testid="headline">
+          {view === null
+            ? "Checking ROCm\u2026"
+            : healthy
+              ? "No ROCm problems detected."
+              : view.headline}
+        </h1>
+      </header>
 
-      <form className="diagnostics__symptom" onSubmit={recheck}>
-        <label htmlFor="diagnostics-symptom">Describe what went wrong (optional)</label>
-        <input
-          id="diagnostics-symptom"
-          type="text"
-          data-testid="symptom"
-          value={draft}
-          onChange={(event) => {
-            setDraft(event.target.value);
-          }}
-        />
-        <button type="submit" className="dash__primary" data-testid="recheck">
-          Re-check
-        </button>
-      </form>
+      <button type="button" className="dash__primary" data-testid="recheck" onClick={recheck}>
+        Re-check
+      </button>
 
       {refusal !== null && (
         <p className="onboard__refusal" role="alert" data-testid="diagnostics-refusal">
@@ -259,7 +252,7 @@ export default function Diagnostics({ backend }: DiagnosticsProps) {
           Looking at this computer&hellip;
         </p>
       ) : (
-        <Verdict view={view} onApply={review} />
+        <Verdict view={view} healthy={healthy} onApply={review} />
       )}
     </main>
   );
@@ -267,9 +260,11 @@ export default function Diagnostics({ backend }: DiagnosticsProps) {
 
 function Verdict({
   view,
+  healthy,
   onApply,
 }: {
   readonly view: DiagnosisView;
+  readonly healthy: boolean;
   readonly onApply: (fixId: string) => void;
 }) {
   const state = view.state;
@@ -286,6 +281,15 @@ function Verdict({
         </section>
       );
     case "no-match":
+      if (healthy) {
+        return (
+          <section className="diagnostics__verdict" data-testid="verdict" data-state="healthy">
+            <p className="dash__body">
+              ROCm App checked this computer against its known ROCm problems and found none.
+            </p>
+          </section>
+        );
+      }
       return (
         <section className="diagnostics__verdict" data-testid="verdict" data-state="no-match">
           <p className="dash__body">

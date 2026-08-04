@@ -3,14 +3,17 @@
 // SPDX-License-Identifier: MIT
 
 /**
- * Activity and Diagnose: populated records, one record's detail, the export
- * receipt, the empty state, and the diagnosis report.
+ * Activity and Diagnose: populated records, one record's detail, the support
+ * bundle offer, the empty state, and the diagnosis report.
  *
  * The shipped `app-logs` fixture is a machine that has recorded nothing, so
  * the populated state is produced by feeding the stand-in CLI a response
  * with records in the producer's own schema. Honesty gate: the app's Rust
  * consumer parses what we wrote — a drifted shape refuses to render and the
  * spec fails on the very next wait.
+ *
+ * The export receipt is no longer photographed: the destination comes from a
+ * native folder picker WebDriver cannot drive.
  */
 
 import { readFileSync, writeFileSync } from "node:fs";
@@ -109,17 +112,9 @@ describe("visual: activity and diagnose", () => {
     await fullState("activity-record");
   });
 
-  it("photographs the export receipt", async () => {
-    const home = (JSON.parse(process.env["ROCM_E2E_ENV"] ?? "{}") as Record<string, string>)[
-      "HOME"
-    ];
-    if (!home) {
-      throw new Error("ROCM_E2E_ENV carries no HOME; the harness always sets one");
-    }
-    await (await waitForTestId("destination")).setValue(join(home, "bundle"));
-    await (await waitForTestId("export")).click();
-    await waitForTestId("export-receipt", 60_000);
-    await fullState("activity-export-receipt");
+  it("photographs the support bundle offer", async () => {
+    await waitForTestId("choose-destination");
+    await fullState("activity-export-offer");
   });
 
   it("photographs the empty state", async () => {
@@ -137,7 +132,7 @@ describe("visual: activity and diagnose", () => {
   });
 
   it("photographs the diagnosis report", async () => {
-    await clickButton("Back to overview");
+    await clickButton("Overview");
     await waitForTestId("verdict");
     await clickButton("Diagnose");
     await waitForTestId("verdict");
@@ -147,9 +142,9 @@ describe("visual: activity and diagnose", () => {
     await fullState("diagnostics-report");
   });
 
-  it("read and exported, but changed nothing", () => {
-    // The export writes a bundle file at the destination the user named;
-    // it is not a machine mutation and the journal must agree.
+  it("read everything and changed nothing", () => {
+    // A read-only pass: records, detail, the bundle offer, and the diagnosis
+    // are all reads, and the journal must agree.
     const performed = mutations();
     if (performed.length !== 0) {
       throw new Error(`expected a read-only pass, saw: ${JSON.stringify(performed)}`);

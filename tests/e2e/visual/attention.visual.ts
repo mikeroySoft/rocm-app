@@ -68,7 +68,7 @@ describe("visual: attention and update", () => {
   it("shows the healed overview after the update", async () => {
     await browser.$("button*=Back to ROCm versions").click();
     await waitForTestId("rows");
-    await browser.$("button*=Back to overview").click();
+    await browser.$("button*=Overview").click();
     await waitForTestId("verdict");
     // The snapshot behind the fixture switched to healthy when the update
     // ran; the overview must have followed it.

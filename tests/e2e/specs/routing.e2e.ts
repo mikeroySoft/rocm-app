@@ -46,7 +46,7 @@ describe("compact and full routing", () => {
   it("routes Overview to ROCm versions and back", async () => {
     await (await waitForTestId("manage-versions")).click();
     await waitForTestId("rows");
-    await clickButton("Back to overview");
+    await clickButton("Overview");
     await waitForTestId("verdict");
   });
 

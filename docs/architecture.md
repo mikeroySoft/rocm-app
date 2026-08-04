@@ -51,10 +51,12 @@ It may not:
 | Layer        | Component                          | Responsibility                                                                    | Status      |
 | ------------ | ---------------------------------- | --------------------------------------------------------------------------------- | ----------- |
 | Presentation | `src/App.tsx`                      | Route between onboarding, overview, runtimes, activity, diagnostics, settings     | Implemented |
-| Presentation | `src/lib/*.ts` backends            | One typed seam per surface (dashboard, onboarding, runtimes, tray, logs)          | Implemented |
+| Presentation | `src/shell/AppFrame.tsx`           | Draw the window's own title bar, navigation rail, buttons, and resize grips       | Implemented |
+| Presentation | `src/lib/*.ts` backends            | One typed seam per surface (dashboard, onboarding, runtimes, tray, logs, window)  | Implemented |
 | Desktop      | `src-tauri/src/lib.rs`             | Construct controller state and register typed Tauri commands                      | Implemented |
 | Desktop      | `src-tauri/src/controller_host.rs` | Implement production adapters and renderer-safe command responses                 | Implemented |
 | Desktop      | `src-tauri/src/tray_host.rs`       | Own the tray icon, quick window, notifications, and autostart plumbing            | Implemented |
+| Desktop      | `src-tauri/src/window_host.rs`     | Move, size, and dismiss the calling window; strip the toolkit's own title bar     | Implemented |
 | Domain       | `rocm-app-core::contract`          | Decode schema version 1 and fail closed on unknown action/support vocabulary      | Implemented |
 | Domain       | `rocm-app-core::platform`          | Classify native Windows, native Linux, WSL, and unsupported hosts                 | Implemented |
 | Domain       | `rocm-app-core::onboarding`        | Produce a pure ready-or-blocked first-run recommendation                          | Implemented |

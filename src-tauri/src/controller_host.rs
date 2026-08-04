@@ -1040,6 +1040,21 @@ pub fn diagnostics_export(
     )?)
 }
 
+/// Native folder picker for the support bundle destination.
+///
+/// Lives behind a Rust command so `capabilities/default.json` keeps granting
+/// exactly `core:default`: the webview asks for a choice and receives a path,
+/// never a dialog API. `command(async)` moves it off the main thread, which
+/// is what the plugin's blocking call requires.
+#[tauri::command(async)]
+pub fn diagnostics_pick_destination(app: tauri::AppHandle) -> Option<String> {
+    use tauri_plugin_dialog::DialogExt as _;
+    app.dialog()
+        .file()
+        .blocking_pick_folder()
+        .map(|path| path.to_string())
+}
+
 /// Describe applying a fix, without applying it.
 ///
 /// A plan, not an execution: applying still needs an explicit approval through

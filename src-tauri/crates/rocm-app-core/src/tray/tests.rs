@@ -61,7 +61,6 @@ fn input(overview: &HealthOverview, platform: HostPlatform) -> TrayInput<'_> {
         overview: Some(overview),
         error: None,
         platform,
-        autostart: true,
     }
 }
 
@@ -69,14 +68,35 @@ fn input(overview: &HealthOverview, platform: HostPlatform) -> TrayInput<'_> {
 // Status and icon
 // ---------------------------------------------------------------------------
 
+/// The icon no longer distinguishes the seven states — words do. Nothing may
+/// quietly drop that last carrier.
 #[test]
-fn tray_every_status_carries_shape_and_colour_independently() {
+fn tray_every_status_says_itself_in_words() {
     for (i, a) in TrayStatus::ALL.iter().enumerate() {
         for b in &TrayStatus::ALL[i + 1..] {
-            assert_ne!(a.mask(), b.mask(), "{a:?} and {b:?} share a glyph");
-            assert_ne!(a.rgb(), b.rgb(), "{a:?} and {b:?} share a colour");
             assert_ne!(a.label(), b.label(), "{a:?} and {b:?} share a label");
         }
+    }
+}
+
+/// Two readings, and only two: white when there is nothing to do, orange when
+/// the app wants something. An unsupported host wants nothing — it is a state
+/// nobody can leave, so nagging about it forever would be a lie about what a
+/// user could fix.
+#[test]
+fn tray_icon_colour_says_only_whether_something_is_wanted() {
+    const CALM: (u8, u8, u8) = (0xFF, 0xFF, 0xFF);
+    const WANTED: (u8, u8, u8) = (0xE8, 0xA3, 0x3D);
+
+    for status in TrayStatus::ALL {
+        let expected = match status {
+            TrayStatus::Checking | TrayStatus::Healthy | TrayStatus::Unsupported => CALM,
+            TrayStatus::Unknown
+            | TrayStatus::SetupRequired
+            | TrayStatus::Attention
+            | TrayStatus::Error => WANTED,
+        };
+        assert_eq!(status.rgb(), expected, "{status:?} is the wrong colour");
     }
 }
 
@@ -87,9 +107,9 @@ fn tray_icon_is_a_transparent_backed_rgba_buffer() {
     assert_eq!(image.height, ICON_SIZE);
     assert_eq!(image.rgba.len(), (ICON_SIZE * ICON_SIZE * 4) as usize);
 
-    // The top-left pixel is background in every glyph, so it must be fully
-    // transparent: an opaque backdrop would show as a coloured square on a
-    // tray whose theme does not match.
+    // The corner is outside the mark, so it must be fully transparent: an
+    // opaque backdrop would show as a coloured square on a tray whose theme
+    // does not match.
     assert_eq!(&image.rgba[0..4], &[0, 0, 0, 0]);
     // And something was actually drawn.
     assert!(
@@ -98,17 +118,48 @@ fn tray_icon_is_a_transparent_backed_rgba_buffer() {
     );
 }
 
+/// One mark, two colours. Every state paints the same pixels; only the ink
+/// changes, and only between "nothing to do" and "wants something".
 #[test]
-fn tray_icons_differ_pixel_for_pixel_between_statuses() {
-    for (i, a) in TrayStatus::ALL.iter().enumerate() {
-        for b in &TrayStatus::ALL[i + 1..] {
-            assert_ne!(
-                icon(*a).rgba,
-                icon(*b).rgba,
-                "{a:?} and {b:?} rasterise identically"
-            );
-        }
+fn tray_icons_are_one_mark_in_one_of_two_colours() {
+    let calm = icon(TrayStatus::Healthy).rgba;
+    let wanted = icon(TrayStatus::Attention).rgba;
+    assert_ne!(calm, wanted, "the two readings are indistinguishable");
+
+    for status in TrayStatus::ALL {
+        let drawn = icon(status).rgba;
+        // Alpha only: the shape is the mark, whatever the colour.
+        let same_shape = drawn
+            .iter()
+            .zip(&calm)
+            .enumerate()
+            .all(|(i, (a, b))| i % 4 != 3 || a == b);
+        assert!(same_shape, "{status:?} draws a different mark");
+        assert!(
+            drawn == calm || drawn == wanted,
+            "{status:?} is a third reading"
+        );
     }
+}
+
+#[test]
+fn tray_icon_mark_is_antialiased_and_hollow() {
+    let image = icon(TrayStatus::Healthy);
+    let alpha_at = |x: u32, y: u32| image.rgba[((y * ICON_SIZE + x) * 4 + 3) as usize];
+
+    // The mark is all diagonals. Without coverage sampling every one of them
+    // is a staircase, and the icon is only ever seen scaled down.
+    assert!(
+        image.rgba.chunks_exact(4).any(|px| (1..0xFF).contains(&px[3])),
+        "the mark's edges are hard, so nothing is being antialiased"
+    );
+
+    // The arrow's centre is open, which is most of what makes it read as the
+    // AMD mark rather than a blob at panel size.
+    let middle = ICON_SIZE / 2;
+    assert_eq!(alpha_at(middle, middle), 0, "the mark's centre filled in");
+    // And the mark itself is there: its top-right corner is solid.
+    assert_eq!(alpha_at(ICON_SIZE - 3, 2), 0xFF, "the mark is missing");
 }
 
 #[test]
@@ -141,7 +192,6 @@ fn tray_shows_checking_before_the_first_probe_answers() {
         overview: None,
         error: None,
         platform: HostPlatform::Linux,
-        autostart: true,
     };
     assert_eq!(checking.status(), TrayStatus::Checking);
     let view = tray_view(&checking);
@@ -162,7 +212,6 @@ fn tray_reports_error_rather_than_the_last_good_verdict() {
         overview: Some(&healthy),
         error: Some("The ROCm command-line tool could not be found."),
         platform: HostPlatform::Linux,
-        autostart: true,
     };
     assert_eq!(failing.status(), TrayStatus::Error);
     let view = tray_view(&failing);
@@ -210,22 +259,65 @@ fn tray_menu_shape_is_identical_on_every_platform_and_status() {
     }
 }
 
-/// Tauri documents tray click events as unsupported on Linux, so the two
-/// windows must both be reachable from the menu — otherwise a Linux user has
-/// no way to open the compact view at all.
+/// The menu is three read-only facts and three actions, in a fixed order.
 #[test]
-fn tray_menu_reaches_both_windows_without_a_click_event_on_linux() {
-    assert!(!left_click_opens_quick_status(HostPlatform::Linux));
+fn tray_menu_is_three_facts_and_three_actions() {
     let view = tray_view(&input(&overview_named("healthy"), HostPlatform::Linux));
-    for wanted in [menu_id::QUICK_STATUS, menu_id::OPEN_APP, menu_id::CHECK_NOW] {
-        let entry = view
-            .items
+    let expected: [(&str, MenuKind, bool); 8] = [
+        (menu_id::INFO_GPU, MenuKind::Label, false),
+        (menu_id::INFO_SYSTEM, MenuKind::Label, false),
+        (menu_id::INFO_ROCM, MenuKind::Label, false),
+        ("separator-info", MenuKind::Separator, false),
+        (menu_id::OPEN_APP, MenuKind::Action, true),
+        (menu_id::MORE_INFO, MenuKind::Action, true),
+        ("separator-quit", MenuKind::Separator, false),
+        (menu_id::QUIT, MenuKind::Action, true),
+    ];
+    let got: Vec<(&str, MenuKind, bool)> = view
+        .items
+        .iter()
+        .map(|i| (i.id.as_str(), i.kind, i.enabled))
+        .collect();
+    assert_eq!(got, expected);
+}
+
+/// The info lines state the machine's facts, admit "Checking…" before the
+/// first answer, and say "Unknown" — not "Checking…" forever — after a
+/// failed probe.
+#[test]
+fn tray_info_lines_state_facts_or_admit_ignorance() {
+    let healthy = overview_named("healthy");
+    let view = tray_view(&input(&healthy, HostPlatform::Linux));
+    let text_of = |view: &TrayView, id: &str| {
+        view.items
             .iter()
-            .find(|i| i.id == wanted)
-            .unwrap_or_else(|| panic!("no {wanted} entry"));
-        assert!(entry.enabled, "{wanted} is present but dead");
-        assert!(matches!(entry.kind, MenuKind::Action));
-    }
+            .find(|i| i.id == id)
+            .unwrap_or_else(|| panic!("no {id} entry"))
+            .text
+            .clone()
+    };
+    assert!(text_of(&view, menu_id::INFO_GPU).starts_with("Graphics card: "));
+    assert!(text_of(&view, menu_id::INFO_SYSTEM).starts_with("System: "));
+    assert!(text_of(&view, menu_id::INFO_ROCM).starts_with("ROCm in use: "));
+    assert!(!text_of(&view, menu_id::INFO_GPU).contains("Checking"));
+
+    let checking = tray_view(&TrayInput {
+        overview: None,
+        error: None,
+        platform: HostPlatform::Linux,
+    });
+    assert_eq!(
+        text_of(&checking, menu_id::INFO_GPU),
+        "Graphics card: Checking…"
+    );
+
+    let failed = tray_view(&TrayInput {
+        overview: None,
+        error: Some("The ROCm command-line tool could not be found."),
+        platform: HostPlatform::Linux,
+    });
+    assert_eq!(text_of(&failed, menu_id::INFO_GPU), "Graphics card: Unknown");
+    assert_eq!(text_of(&failed, menu_id::INFO_ROCM), "ROCm in use: Unknown");
 }
 
 #[test]
@@ -261,49 +353,6 @@ fn tray_menu_never_offers_a_change() {
 }
 
 #[test]
-fn tray_start_at_login_is_shown_but_dead_on_an_unsupported_host() {
-    for (platform, expected) in [
-        (HostPlatform::Linux, true),
-        (HostPlatform::Windows, true),
-        (HostPlatform::Wsl, false),
-        (HostPlatform::Unsupported, false),
-    ] {
-        let overview = overview_named("healthy");
-        let view = tray_view(&input(&overview, platform));
-        let entry = view
-            .items
-            .iter()
-            .find(|i| i.id == menu_id::START_AT_LOGIN)
-            .expect("start at login entry");
-        assert_eq!(entry.enabled, expected, "{platform:?}");
-        // Present either way: a hidden control cannot explain itself.
-        assert!(matches!(entry.kind, MenuKind::Check { checked: true }));
-        // Check now stays live even where nothing can be installed — it is how
-        // a user on an unsupported host finds out that is what they are.
-        assert!(
-            view.items
-                .iter()
-                .find(|i| i.id == menu_id::CHECK_NOW)
-                .is_some_and(|i| i.enabled)
-        );
-    }
-}
-
-#[test]
-fn tray_check_state_follows_the_persisted_autostart_choice() {
-    let overview = overview_named("healthy");
-    let mut off = input(&overview, HostPlatform::Linux);
-    off.autostart = false;
-    let view = tray_view(&off);
-    let entry = view
-        .items
-        .iter()
-        .find(|i| i.id == menu_id::START_AT_LOGIN)
-        .expect("entry");
-    assert!(matches!(entry.kind, MenuKind::Check { checked: false }));
-}
-
-#[test]
 fn tray_status_line_states_the_verdict_in_words() {
     for verdict in [
         HealthVerdict::Healthy,
@@ -321,10 +370,6 @@ fn tray_status_line_states_the_verdict_in_words() {
             view.short_status,
             status.label()
         );
-        // The same words are the first menu item, so a right-click alone
-        // answers the question without opening anything.
-        assert_eq!(view.items[0].text, view.short_status);
-        assert!(!view.items[0].enabled, "the status line is not clickable");
     }
 }
 
@@ -402,7 +447,6 @@ fn tray_quick_status_offers_no_shortcut_when_the_probe_failed() {
         overview: Some(&healthy),
         error: Some("The ROCm command-line tool could not be found."),
         platform: HostPlatform::Linux,
-        autostart: true,
     });
     assert_eq!(quick.status, TrayStatus::Error);
     assert!(quick.action.is_none());
@@ -418,7 +462,6 @@ fn tray_quick_status_says_it_is_still_looking_before_the_first_answer() {
         overview: None,
         error: None,
         platform: HostPlatform::Linux,
-        autostart: true,
     });
     assert_eq!(quick.status, TrayStatus::Checking);
     assert!(quick.gpu.contains("Not known yet"));
@@ -811,8 +854,8 @@ struct TrayFixtureState {
 struct TrayFixtures {
     states: Vec<TrayFixtureState>,
     autostart: Vec<AutostartState>,
-    /// Rendered icon identity, so a Phase 12 visual change to the glyphs is a
-    /// visible diff rather than a silent one.
+    /// What each status paints, so a change to the icon's reading is a visible
+    /// diff rather than a silent one.
     icons: Vec<IconFixture>,
 }
 
@@ -822,7 +865,6 @@ struct IconFixture {
     status: TrayStatus,
     label: String,
     colour: String,
-    mask: Vec<String>,
 }
 
 fn fixture_state(name: &str, description: &str, input: &TrayInput<'_>) -> TrayFixtureState {
@@ -858,7 +900,6 @@ fn build_fixtures() -> TrayFixtures {
                 overview: None,
                 error: None,
                 platform: HostPlatform::Linux,
-                autostart: true,
             },
         ),
         fixture_state(
@@ -882,7 +923,7 @@ fn build_fixtures() -> TrayFixtures {
             &input(&stale, HostPlatform::Linux),
         ),
     ];
-    // An unsupported host, with autostart off because it can never be on.
+    // An unsupported host.
     states.push(fixture_state(
         "unsupported",
         "a host the app cannot manage ROCm on",
@@ -890,7 +931,6 @@ fn build_fixtures() -> TrayFixtures {
             overview: Some(&wsl),
             error: None,
             platform: HostPlatform::Wsl,
-            autostart: false,
         },
     ));
     states.push(fixture_state(
@@ -903,7 +943,6 @@ fn build_fixtures() -> TrayFixtures {
                  Reinstall ROCm App so the app and the command-line tool match.",
             ),
             platform: HostPlatform::Linux,
-            autostart: true,
         },
     ));
 
@@ -938,7 +977,6 @@ fn build_fixtures() -> TrayFixtures {
                     status: *status,
                     label: status.label().to_owned(),
                     colour: format!("#{r:02X}{g:02X}{b:02X}"),
-                    mask: status.mask().iter().map(|row| (*row).to_owned()).collect(),
                 }
             })
             .collect(),
@@ -965,3 +1003,4 @@ fn tray_fixtures_match_the_committed_file() {
          ROCM_APP_WRITE_FIXTURES=1 cargo test -p rocm-app-core tray_fixtures"
     );
 }
+

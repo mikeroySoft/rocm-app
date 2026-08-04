@@ -4,13 +4,12 @@
 
 /**
  * The healthy machine, driven by keyboard alone: Tab order on the Overview,
- * visible focus, Enter and Space activation, and the quick panel's focus
- * cycle and Escape dismissal. Every key sent lands in the transcript.
+ * visible focus, Enter and Space activation. Every key sent lands in the
+ * transcript.
  */
 
 import { strict as assert } from "node:assert";
 
-import { assertStatusesCarryText, quickWindowHidden, showQuickWindow } from "../desktop";
 import {
   assertNoDriverMutation,
   clickButton,
@@ -28,13 +27,6 @@ const INTERACTIVE: Readonly<Record<string, true>> = {
   INPUT: true,
   SELECT: true,
   SUMMARY: true,
-};
-
-/** The compact panel's whole keyboard surface, by testid. */
-const QUICK_CONTROLS: Readonly<Record<string, true>> = {
-  "quick-action": true,
-  "quick-open": true,
-  "quick-check": true,
 };
 
 describe("keyboard: healthy", () => {
@@ -121,8 +113,8 @@ describe("keyboard: healthy", () => {
     await waitForTestId("sources");
     await pressUntil(
       "Tab",
-      'the "Back to overview" button',
-      (el) => el.tag === "BUTTON" && el.text === "Back to overview",
+      "the Overview nav button",
+      (el) => el.tag === "BUTTON" && el.text === "Overview",
       30,
     );
     await press("Enter");
@@ -144,30 +136,7 @@ describe("keyboard: healthy", () => {
     await until("the autostart checkbox to report the original state", async () => {
       return (await autostartChecked()) === before;
     });
-    await clickButton("Back to overview");
-  });
-
-  it("the quick panel cycles focus within its own controls", async () => {
-    await showQuickWindow();
-    note("- (switched to the quick panel)");
-    const seen: ActiveElement[] = [];
-    for (let step = 0; step < 6; step += 1) {
-      seen.push(await press("Tab"));
-    }
-    for (const el of seen) {
-      assert.ok(
-        el.testid !== null && QUICK_CONTROLS[el.testid] === true,
-        `focus left the quick panel controls: ${describeActive(el)}`,
-      );
-    }
-    await assertStatusesCarryText("quick keyboard");
-  });
-
-  it("Escape dismisses the quick panel", async () => {
-    // The Esc-dismiss behaviour is a product contract; if it is not there
-    // yet, this stays red rather than being weakened.
-    await press("Escape");
-    await until("the quick panel to hide", () => quickWindowHidden());
+    await clickButton("Overview");
   });
 
   it("never touched a kernel driver", () => {

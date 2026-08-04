@@ -81,12 +81,13 @@ not anything is open.
   process, and is the only thing that does.
 - **One process.** Launching the app again focuses the window that is already
   open. A second launch that carries `--hidden` does not steal focus.
-- **The tray menu offers no changes.** Quick status, Open ROCm App, Check now,
-  Start at login, Quit. Install, update, activate, and remove stay behind a
-  reviewed plan in a real window.
+- **The tray menu offers no changes.** Three facts — graphics card, system,
+  ROCm in use — then Open ROCm App, More Info (the project page in the
+  default browser), and Quit ROCm App. Install, update, activate, and remove
+  stay behind a reviewed plan in a real window.
 - **Left click opens the compact window on Windows only.** Tauri documents tray
-  icon click events as unsupported on Linux, so both windows are reachable from
-  the menu on both platforms and nothing depends on a click.
+  icon click events as unsupported on Linux, so the main window is reachable
+  from the menu on both platforms and nothing depends on a click.
 - **Notifications are transition-only.** The app speaks up when the health
   verdict _changes_, when an update it would actually offer becomes available,
   and when an operation finishes or fails. The last thing said is persisted, so
@@ -107,12 +108,12 @@ not anything is open.
 
 Four version numbers appear in the product, and they move independently:
 
-| Number          | Where it appears               | What it is                                                              |
-| --------------- | ------------------------------ | ----------------------------------------------------------------------- |
-| App version     | Package name, inventory        | The `rocm-app` desktop package itself                                   |
-| CLI version     | Overview inventory             | The bundled `rocm` build the app ships and drives                       |
-| Contract schema | Error copy only                | The `app-snapshot` JSON version; a future schema means "update the app" |
-| ROCm version    | Overview, Manage ROCm versions | The managed runtime a change installs, activates, or removes            |
+| Number          | Where it appears        | What it is                                                              |
+| --------------- | ----------------------- | ----------------------------------------------------------------------- |
+| App version     | Package name, inventory | The `rocm-app` desktop package itself                                   |
+| CLI version     | Overview inventory      | The bundled `rocm` build the app ships and drives                       |
+| Contract schema | Error copy only         | The `app-snapshot` JSON version; a future schema means "update the app" |
+| ROCm version    | Overview, Manage ROCm   | The managed runtime a change installs, activates, or removes            |
 
 The installer bundles a CLI it is compatible with and records the pairing in
 `compatibility.json`, so app and CLI versions move together on an installed

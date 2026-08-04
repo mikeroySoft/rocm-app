@@ -18,7 +18,7 @@
  * asked for one.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { DEFAULT_QUERY, exportFailure } from "../lib/logs";
 import type {
   BundleReceipt,
@@ -79,10 +79,9 @@ export default function Logs({ backend }: LogsProps) {
   const [selected, setSelected] = useState<LogRecord | null>(null);
   const [draft, setDraft] = useState("");
   const [since, setSince] = useState("any");
-  const [destination, setDestination] = useState("");
+  const [destination, setDestination] = useState<string | null>(null);
   const [exported, setExported] = useState<ExportState>({ step: "idle" });
   const [copied, setCopied] = useState<string | null>(null);
-  const destinationRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // Liveness lives on an object rather than a `let`: the compiler narrows a
@@ -209,13 +208,31 @@ export default function Logs({ backend }: LogsProps) {
       });
   }, [selected]);
 
+  // The folder comes from the native picker, never from typed text: the
+  // dialog lives behind a Rust command, so the webview needs no filesystem
+  // or dialog permission of its own. Cancelling keeps the previous choice.
+  const chooseFolder = useCallback(() => {
+    void backend
+      .pickDestination()
+      .then((picked) => {
+        if (picked !== null) {
+          setDestination(picked);
+        }
+      })
+      .catch(() => {
+        // A host without a dialog changes nothing; the button stays.
+      });
+  }, [backend]);
+
   const createBundle = useCallback(
     (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
-      const folder = destination.trim();
+      if (destination === null) {
+        return;
+      }
       setExported({ step: "working" });
       void backend
-        .exportBundle(folder)
+        .exportBundle(destination)
         .then((receipt) => {
           setExported({ step: "written", receipt });
         })
@@ -479,32 +496,22 @@ export default function Logs({ backend }: LogsProps) {
               A single redacted archive to attach to a report. Nothing leaves this computer.
             </p>
             <form className="logs__field" onSubmit={createBundle}>
-              <label htmlFor="logs-destination">Folder to write it to</label>
-              <input
-                id="logs-destination"
-                ref={destinationRef}
-                type="text"
-                data-testid="destination"
-                value={destination}
-                onChange={(event) => {
-                  setDestination(event.target.value);
-                }}
-              />
+              <button type="button" data-testid="choose-destination" onClick={chooseFolder}>
+                Choose a folder&hellip;
+              </button>
+              <p className="dash__muted" data-testid="destination">
+                {destination ?? "No folder chosen yet."}
+              </p>
               <button
                 type="submit"
                 className="dash__primary"
                 data-testid="export"
-                disabled={destination.trim() === "" || exported.step === "working"}
+                disabled={destination === null || exported.step === "working"}
               >
                 Create a support bundle
               </button>
             </form>
-            <ExportOutcome
-              state={exported}
-              onChooseFolder={() => {
-                destinationRef.current?.focus();
-              }}
-            />
+            <ExportOutcome state={exported} onChooseFolder={chooseFolder} />
           </section>
         </>
       )}
