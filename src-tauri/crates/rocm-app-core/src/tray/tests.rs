@@ -113,7 +113,7 @@ fn tray_icon_is_a_transparent_backed_rgba_buffer() {
     assert_eq!(&image.rgba[0..4], &[0, 0, 0, 0]);
     // And something was actually drawn.
     assert!(
-        image.rgba.chunks_exact(4).any(|px| px[3] == 0xFF),
+        image.rgba.as_chunks::<4>().0.iter().any(|px| px[3] == 0xFF),
         "healthy icon is entirely blank"
     );
 }
@@ -150,7 +150,7 @@ fn tray_icon_mark_is_antialiased_and_hollow() {
     // The mark is all diagonals. Without coverage sampling every one of them
     // is a staircase, and the icon is only ever seen scaled down.
     assert!(
-        image.rgba.chunks_exact(4).any(|px| (1..0xFF).contains(&px[3])),
+        image.rgba.as_chunks::<4>().0.iter().any(|px| (1..0xFF).contains(&px[3])),
         "the mark's edges are hard, so nothing is being antialiased"
     );
 
