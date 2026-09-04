@@ -1,0 +1,38 @@
+# agent-factory configuration. Docs: https://github.com/mikeroySoft/agent-factory
+# Gate checks proposed by District from: --check
+
+[[gate.check]]
+name = "typecheck"
+run = [
+    "npm",
+    "run",
+    "typecheck",
+]
+exclusive = false
+
+[[gate.check]]
+name = "lint"
+run = [
+    "npm",
+    "run",
+    "lint",
+]
+exclusive = false
+
+[[gate.check]]
+name = "fmt"
+run = [
+    "npm",
+    "run",
+    "fmt:check",
+]
+exclusive = false
+
+[[gate.check]]
+name = "tests"
+run = [
+    "npx",
+    "vitest",
+    "run",
+]
+exclusive = false

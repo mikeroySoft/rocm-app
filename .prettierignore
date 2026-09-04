@@ -6,3 +6,4 @@
 /dist/
 /test-results/
 /src-tauri/target/
+.github/ISSUE_TEMPLATE/agent_task.md
